@@ -1,0 +1,25 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Client — {{ client.name if client else 'Inconnu' }}{% endblock %}
+
+{% block content %}
+  <h1>Client</h1>
+
+  {% if error %}
+    <div style="color:#b00020">{{ error }}</div>
+  {% endif %}
+
+  {% if client %}
+    <div>
+      <strong>Nom:</strong> {{ client.name }}<br>
+      <strong>Adresse:</strong> {{ client.address }}<br>
+      <strong>Email:</strong> {{ client.email }}<br>
+      <strong>Téléphone:</strong> {{ client.phone }}<br>
+    </div>
+    <div style="margin-top:12px;">
+      <a class="btn" href="/clients/{{ client.id }}/edit">Éditer</a>
+    </div>
+  {% else %}
+    <p>Client introuvable.</p>
+  {% endif %}
+{% endblock %}

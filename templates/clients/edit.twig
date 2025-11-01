@@ -1,0 +1,27 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Éditer client{% endblock %}
+
+{% block content %}
+  <h1>{{ client ? 'Éditer le client' : 'Nouveau client' }}</h1>
+
+  <form method="post" action="/clients/{{ client ? client.id : 0 }}/edit">
+    <div class="form-field">
+      <label for="name">Nom</label>
+      <input id="name" name="name" type="text" required value="{{ client.name if client }}">
+    </div>
+    <div class="form-field">
+      <label for="address">Adresse</label>
+      <input id="address" name="address" type="text" value="{{ client.address if client }}">
+    </div>
+    <div class="form-field">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" value="{{ client.email if client }}">
+    </div>
+    <div class="form-field">
+      <label for="phone">Téléphone</label>
+      <input id="phone" name="phone" type="text" value="{{ client.phone if client }}">
+    </div>
+    <button class="btn" type="submit">Enregistrer</button>
+  </form>
+{% endblock %}

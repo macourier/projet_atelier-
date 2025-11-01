@@ -1,0 +1,31 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Vélos — Atelier Vélo{% endblock %}
+
+{% block content %}
+  <h1>Vélos</h1>
+  <div style="margin-bottom:12px;">
+    <a class="btn" href="/velos/0/edit">Nouveau vélo</a>
+  </div>
+
+  {% if velos is empty %}
+    <p>Aucun vélo enregistré.</p>
+  {% else %}
+    <table>
+      <thead>
+        <tr><th>Client</th><th>Marque</th><th>Modèle</th><th>Série</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for v in velos %}
+          <tr>
+            <td>{{ v.client_name }}</td>
+            <td>{{ v.brand }}</td>
+            <td>{{ v.model }}</td>
+            <td>{{ v.serial }}</td>
+            <td><a href="/velos/{{ v.id }}/edit">Éditer</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endblock %}

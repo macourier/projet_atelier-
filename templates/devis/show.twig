@@ -1,0 +1,29 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Devis — {{ devis.numero if devis else 'Inconnu' }}{% endblock %}
+
+{% block content %}
+  <h1>Devis {{ devis.numero if devis }}</h1>
+
+  {% if error %}
+    <div style="color:#b00020">{{ error }}</div>
+  {% endif %}
+
+  {% if devis %}
+    <div>
+      <strong>Client:</strong> {{ client.name }}<br>
+      <strong>Montant HT:</strong> {{ devis.montant_ht }}€<br>
+      <strong>Montant TVA:</strong> {{ devis.montant_tva }}€<br>
+      <strong>Montant TTC:</strong> {{ devis.montant_ttc }}€<br>
+      <strong>Status:</strong> {{ devis.status }}<br>
+    </div>
+
+    <div style="margin-top:12px;">
+      {% if devis.pdf_path %}
+        <a class="btn" href="{{ devis.pdf_path }}">Télécharger le PDF</a>
+      {% endif %}
+    </div>
+  {% else %}
+    <p>Devis introuvable.</p>
+  {% endif %}
+{% endblock %}

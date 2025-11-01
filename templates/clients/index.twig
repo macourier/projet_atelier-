@@ -1,0 +1,30 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Clients — Atelier Vélo{% endblock %}
+
+{% block content %}
+  <h1>Clients</h1>
+  <div style="margin-bottom:12px;">
+    <a class="btn" href="/clients/0/edit">Nouveau client</a>
+  </div>
+
+  {% if clients is empty %}
+    <p>Aucun client trouvé.</p>
+  {% else %}
+    <table>
+      <thead>
+        <tr><th>Nom</th><th>Email</th><th>Téléphone</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for c in clients %}
+          <tr>
+            <td>{{ c.name }}</td>
+            <td>{{ c.email }}</td>
+            <td>{{ c.phone }}</td>
+            <td><a href="/clients/{{ c.id }}">Voir</a> — <a href="/clients/{{ c.id }}/edit">Éditer</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endblock %}

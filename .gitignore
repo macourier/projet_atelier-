@@ -1,0 +1,23 @@
+# Project files to ignore
+/vendor/
+/.env
+/data/*.db
+/cache/
+/tmp/
+/node_modules/
+/.idea/
+/.vscode/
+/.env.local
+
+# Composer
+composer.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# PHPUnit and other tooling caches
+.phpunit.result.cache

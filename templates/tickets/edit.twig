@@ -1,0 +1,58 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Ticket — {{ ticket.id if ticket else 'Nouveau' }}{% endblock %}
+
+{% block content %}
+  <h1>Ticket {{ ticket.id if ticket else '—' }}</h1>
+
+  {% if client %}
+    <div><strong>Client:</strong> {{ client.name }}</div>
+  {% endif %}
+
+  <form method="post" action="/tickets/{{ ticket ? ticket.id : 0 }}/edit">
+    <div class="form-field">
+      <label for="description">Description</label>
+      <textarea id="description" name="description" rows="4">{{ ticket.description if ticket }}</textarea>
+    </div>
+
+    <h3>Prestations</h3>
+    {% if prestations is empty %}
+      <p>Aucune prestation pour ce ticket.</p>
+    {% else %}
+      <table>
+        <thead><tr><th>Label</th><th>Qte</th><th>Prix HT</th></tr></thead>
+        <tbody>
+          {% for p in prestations %}
+            <tr>
+              <td>{{ p.label }}</td>
+              <td>{{ p.quantite }}</td>
+              <td>{{ p.prix_ht_snapshot }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+
+    <h3>Consommables</h3>
+    {% if consommables is empty %}
+      <p>Aucun consommable pour ce ticket.</p>
+    {% else %}
+      <table>
+        <thead><tr><th>Label</th><th>Qte</th><th>Prix HT</th></tr></thead>
+        <tbody>
+          {% for c in consommables %}
+            <tr>
+              <td>{{ c.label }}</td>
+              <td>{{ c.quantite }}</td>
+              <td>{{ c.prix_ht_snapshot }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+
+    <div style="margin-top:12px;">
+      <button class="btn" type="submit">Enregistrer</button>
+    </div>
+  </form>
+{% endblock %}

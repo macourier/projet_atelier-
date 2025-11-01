@@ -1,0 +1,29 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Facture — {{ facture.numero if facture else 'Inconnue' }}{% endblock %}
+
+{% block content %}
+  <h1>Facture {{ facture.numero if facture }}</h1>
+
+  {% if error %}
+    <div style="color:#b00020">{{ error }}</div>
+  {% endif %}
+
+  {% if facture %}
+    <div>
+      <strong>Client:</strong> {{ client.name }}<br>
+      <strong>Montant HT:</strong> {{ facture.montant_ht }}€<br>
+      <strong>Montant TVA:</strong> {{ facture.montant_tva }}€<br>
+      <strong>Montant TTC:</strong> {{ facture.montant_ttc }}€<br>
+      <strong>Status:</strong> {{ facture.status }}<br>
+    </div>
+
+    <div style="margin-top:12px;">
+      {% if facture.pdf_path %}
+        <a class="btn" href="{{ facture.pdf_path }}">Télécharger le PDF</a>
+      {% endif %}
+    </div>
+  {% else %}
+    <p>Facture introuvable.</p>
+  {% endif %}
+{% endblock %}

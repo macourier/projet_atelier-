@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}Atelier Vélo — Facturation{% endblock %}</title>
+  <style>
+    /* Simple tactile-friendly layout */
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:0; padding:0; background:#f7f7f7; color:#222; }
+    .container { max-width:900px; margin:0 auto; padding:16px; }
+    header { display:flex; align-items:center; justify-content:space-between; padding:12px 0; }
+    .brand { font-weight:700; font-size:1.1rem; }
+    nav a { margin-left:8px; text-decoration:none; color:#0366d6; }
+    main { background:white; border-radius:8px; padding:16px; box-shadow:0 2px 6px rgba(0,0,0,0.04); }
+    .btn { display:inline-block; padding:12px 18px; border-radius:8px; text-decoration:none; background:#0366d6; color:white; font-weight:600; }
+    .btn-secondary { background:#6c757d; }
+    .form-field { margin-bottom:12px; }
+    input[type="text"], input[type="email"], input[type="password"], textarea, select { width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th, td { padding:10px; border-bottom:1px solid #eee; text-align:left; }
+    .sticky-total { position: sticky; bottom:0; background:linear-gradient(180deg, rgba(255,255,255,0.0), #fff); padding-top:8px; }
+    footer { margin-top:12px; color:#666; font-size:0.9rem; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">{{- (env.COMPANY_NAME ?? 'Atelier Vélo') -}}</div>
+      <nav>
+        <a href="/dashboard">Tableau</a>
+        <a href="/clients">Clients</a>
+        <a href="/velos">Vélos</a>
+        <a href="/logout">Déconnexion</a>
+      </nav>
+    </header>
+
+    <main>
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+      © {{ "now"|date("Y") }} {{ env.COMPANY_NAME ?? 'Atelier Vélo' }} — TVA {{ env.TVA_DEFAULT ?? '20' }}%
+    </footer>
+  </div>
+</body>
+</html>

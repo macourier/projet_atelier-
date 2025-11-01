@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: DejaVu Sans, Arial, sans-serif; font-size:12px; color:#222; }
+    .header { display:flex; justify-content:space-between; margin-bottom:20px; }
+    .company { text-align:right; }
+    .client { margin-bottom:12px; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th, td { border:1px solid #ddd; padding:8px; text-align:left; }
+    th { background:#f5f5f5; }
+    .totals { margin-top:12px; float:right; width:300px; }
+    .small { font-size:11px; color:#666; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h2>Devis</h2>
+      <div>N°: {{ devis.numero }}</div>
+      <div>Date: {{ devis.created_at|default("N/A") }}</div>
+    </div>
+    <div class="company">
+      <strong>{{ env.COMPANY_NAME }}</strong><br>
+      {{ env.COMPANY_ADDRESS }}<br>
+      {{ env.COMPANY_EMAIL }}<br>
+      {{ env.COMPANY_PHONE }}
+    </div>
+  </div>
+
+  <div class="client">
+    <strong>Client :</strong><br>
+    {{ client.name }}<br>
+    {{ client.address }}<br>
+    {{ client.email }}
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Libellé</th><th>Qté</th><th>Prix HT</th><th>TVA %</th><th>Total HT</th></tr>
+    </thead>
+    <tbody>
+      {% for line in devis.lines|default([]) %}
+        <tr>
+          <td>{{ line.label }}</td>
+          <td>{{ line.quantite }}</td>
+          <td>{{ line.prix_ht_snapshot }}</td>
+          <td>{{ line.tva_snapshot }}</td>
+          <td>{{ (line.prix_ht_snapshot * line.quantite)|number_format(2, ',', ' ') }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div><strong>Montant HT:</strong> {{ devis.montant_ht|default('0') }} €</div>
+    <div><strong>Montant TVA:</strong> {{ devis.montant_tva|default('0') }} €</div>
+    <div style="font-size:1.1rem; margin-top:8px;"><strong>Total TTC:</strong> {{ devis.montant_ttc|default('0') }} €</div>
+  </div>
+
+  <div style="clear:both; margin-top:40px;" class="small">
+    TVA par défaut: {{ env.TVA_DEFAULT }}%. Conditions : devis valable 30 jours.
+  </div>
+</body>
+</html>
