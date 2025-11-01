@@ -9,7 +9,7 @@
         "twig/twig": "^3.0",
         "vlucas/phpdotenv": "^5.5",
         "ramsey/uuid": "^4.7",
-        "dompdf/dompdf": "^2.2",
+        "dompdf/dompdf": "^2.0",
         "symfony/mailer": "^6.0",
         "symfony/http-client": "^6.0",
         "phpoffice/phpspreadsheet": "^1.29"
@@ -25,6 +25,9 @@
         }
     },
     "scripts": {
-        "start": "php -S localhost:8080 -t public"
+        "start": "php -S localhost:8080 -t public",
+        "migrate": "php bin/migrate.php",
+        "post-install-cmd": "php -r \"if (!file_exists('data/app.db')) echo 'Reminder: run \"composer migrate\" to initialize the database\\n';\"",
+        "post-update-cmd": "php -r \"if (!file_exists('data/app.db')) echo 'Reminder: run \"composer migrate\" to initialize the database\\n';\""
     }
 }
