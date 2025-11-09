@@ -1,0 +1,102 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Admin — Dashboard utilisateur{% endblock %}
+
+{% block content %}
+  <style>
+    /* Barre admin horizontale (persistante) */
+    .admin-navbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 10px 0;
+      margin: -12px 0 16px;
+    }
+    .admin-tiles {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .admin-tile {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      color: #111827;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: transform .06s ease, background .12s ease, box-shadow .12s ease;
+    }
+    .admin-tile:hover {
+      background: #f3f4f6;
+      transform: translateY(-1px);
+      box-shadow: 0 1px 6px rgba(0,0,0,.05);
+    }
+    .admin-tile .icon {
+      width: 20px;
+      text-align: center;
+      color: #2563eb;
+    }
+    .muted {
+      color: #6b7280;
+      font-size: .95rem;
+    }
+  </style>
+
+  <h1 style="margin: 0 0 8px;">Dashboard utilisateur</h1>
+  <div class="muted" style="margin-bottom: 14px;">
+    Accès administrateur rapide — utilisez les tuiles ci‑dessous pour naviguer.
+  </div>
+
+  <div class="admin-navbar">
+    <div class="admin-tiles">
+      <!-- Première tuile requise: Editer catalogue -->
+      <a class="admin-tile" href="/admin/prestations" title="Éditer catalogue">
+        <span class="icon"><i class="fas fa-cog"></i></span>
+        <span>Éditer catalogue</span>
+      </a>
+      <!-- Tuiles supplémentaires (placeholders, inactifs pour l’instant) -->
+      <a class="admin-tile" href="/clients" title="Clients">
+        <span class="icon"><i class="fas fa-user-friends"></i></span>
+        <span>Clients</span>
+      </a>
+      <a class="admin-tile" href="/tickets/0/edit" title="Tickets (nouveau)">
+        <span class="icon"><i class="fas fa-tools"></i></span>
+        <span>Tickets</span>
+      </a>
+      <a class="admin-tile" href="/devis/new" title="Nouveau devis">
+        <span class="icon"><i class="fas fa-file-invoice"></i></span>
+        <span>Devis</span>
+      </a>
+      <a class="admin-tile" href="/factures/1/show" title="Factures (exemple)">
+        <span class="icon"><i class="fas fa-file-invoice-dollar"></i></span>
+        <span>Factures</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Zone tableau de bord (contenu léger pour démarrer) -->
+  <section style="margin-top: 12px;">
+    <div class="tiles" style="display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 12px;">
+      <div class="tile" style="border:1px solid #e5e7eb; background:#fff; border-radius:10px; padding:12px;">
+        <div class="tile-title" style="font-weight:700; margin-bottom:6px;">
+          <i class="fas fa-receipt"></i> Astuce
+        </div>
+        <div class="text-muted">Cliquez sur “Éditer catalogue” pour gérer vos prestations (prix, TVA, catégories).</div>
+      </div>
+      <div class="tile" style="border:1px solid #e5e7eb; background:#fff; border-radius:10px; padding:12px;">
+        <div class="tile-title" style="font-weight:700; margin-bottom:6px;">
+          <i class="fas fa-info-circle"></i> À venir
+        </div>
+        <div class="text-muted">Ajoutez ici vos indicateurs clés ou liens rapides vers les fonctions d’administration.</div>
+      </div>
+    </div>
+  </section>
+{% endblock %}

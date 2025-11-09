@@ -1,9 +1,9 @@
 {% extends 'layout.twig' %}
 
-{% block title %}Client — {{ client.name if client else 'Inconnu' }}{% endblock %}
+{% block title %}Dashboard client — {{ client.name|default('Inconnu') }}{% endblock %}
 
 {% block content %}
-  <h1>Client</h1>
+  <h1>Dashboard client</h1>
 
   {% if error %}
     <div style="color:#b00020">{{ error }}</div>
@@ -16,10 +16,291 @@
       <strong>Email:</strong> {{ client.email }}<br>
       <strong>Téléphone:</strong> {{ client.phone }}<br>
     </div>
-    <div style="margin-top:12px;">
-      <a class="btn" href="/clients/{{ client.id }}/edit">Éditer</a>
+
+    {% set fromDevis = app.request.getQueryParams().from|default('') %}
+    {% if fromDevis == 'devis' %}
+      <div class="bg-white border shadow" style="padding:10px; border-radius:.75rem; margin:12px 0; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong>Brouillon devis détecté</strong><br>
+          Vous pouvez créer un ticket à partir des éléments saisis.
+        </div>
+        <div class="flex gap-8">
+          <button class="btn btn-secondary" type="button" onclick="createTicketFromDraft({{ client.id }})">
+            <i class="fas fa-file-invoice" style="margin-right:6px;"></i>Créer le ticket depuis devis
+          </button>
+          <button class="btn btn-ghost btn-ghost-sm" type="button" onclick="localStorage.removeItem('devisDraft'); localStorage.removeItem('clientDraft'); this.closest('div.bg-white').remove();">
+            Ignorer
+          </button>
+        </div>
+      </div>
+    {% endif %}
+
+    <div style="display:flex; gap:8px; margin:12px 0;">
+      <a class="btn" href="/clients/{{ client.id|default(0) }}/edit">Éditer le client</a>
+      <a class="btn" href="/tickets/0/edit?client_id={{ client.id }}">Nouveau ticket</a>
+      <a class="btn btn-secondary" href="/catalogue?client_id={{ client.id }}">Nouveau devis</a>
+      <a class="btn btn-danger" href="/tickets/0/edit?client_id={{ client.id }}&from=facture">Nouvelle facture</a>
     </div>
+
+    {# Vue 360° — KPIs #}
+    {% if kpis is defined %}
+      <div class="tiles">
+        <div class="tile">
+          <div class="tile-title"><i class="fas fa-tools"></i> Tickets</div>
+          <div class="text-muted">Ouverts</div>
+          <div style="font-size:1.4rem; font-weight:700;">{{ kpis.tickets_open }}</div>
+          <div class="text-muted">Clos</div>
+          <div style="font-size:1.2rem; font-weight:700;">{{ kpis.tickets_closed }}</div>
+        </div>
+        <div class="tile">
+          <div class="tile-title"><i class="fas fa-file-invoice"></i> Devis</div>
+          <div style="font-size:1.6rem; font-weight:700;">{{ kpis.devis }}</div>
+        </div>
+        <div class="tile">
+          <div class="tile-title"><i class="fas fa-euro-sign"></i> Factures à payer</div>
+          <div class="text-muted">Nombre</div>
+          <div style="font-size:1.4rem; font-weight:700;">{{ kpis.factures_unpaid }}</div>
+          <div class="text-muted">Total TTC</div>
+          <div style="font-size:1.2rem; font-weight:700;">{{ '%.2f'|format(kpis.impayes_ttc|default(0)) }} €</div>
+        </div>
+        <div class="tile">
+          <div class="tile-title"><i class="fas fa-history"></i> Dernière activité</div>
+          <div style="font-size:1.1rem; font-weight:700;">{{ kpis.last_activity|default('—') }}</div>
+        </div>
+      </div>
+    {% endif %}
+
+    {# Section Vélos supprimée — informations vélo désormais sur le Ticket #}
+
+    {# Séparer Tickets ouverts et Tickets clos #}
+    {% if tickets is defined and tickets is not empty %}
+
+      {# Construire listes ouvertes/clos #}
+      {% set openTickets = [] %}
+      {% set closedTickets = [] %}
+      {% for t in tickets %}
+        {% if t.status == 'open' %}
+          {% set openTickets = openTickets|merge([t]) %}
+        {% else %}
+          {% set closedTickets = closedTickets|merge([t]) %}
+        {% endif %}
+      {% endfor %}
+
+      <h2 id="tickets-open">Tickets ouverts</h2>
+      {% if openTickets is not empty %}
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Vélo</th><th>Statut</th><th>Total HT</th><th>Facture</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for t in openTickets %}
+              <tr id="row-ticket-{{ t.id }}">
+                <td>#{{ t.id }}</td>
+                <td>{{ t.bike_model|default('—') }}</td>
+                <td>{{ t.status }}</td>
+                <td>{{ t.total_ht|default(0) }}</td>
+                <td>
+                  {% if facturesByTicket is defined and facturesByTicket[t.id]|default(null) and facturesByTicket[t.id].pdf_path %}
+                    <a href="{{ facturesByTicket[t.id].pdf_path }}" target="_blank">Facture PDF</a>
+                  {% else %}—{% endif %}
+                </td>
+                <td><a href="/tickets/{{ t.id }}/edit">Ouvrir</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p>Aucun ticket ouvert.</p>
+      {% endif %}
+
+      <h2 id="tickets-closed" style="margin-top:16px;">Tickets clos</h2>
+      {% if closedTickets is not empty %}
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Vélo</th><th>Statut</th><th>Total HT</th><th>Facture</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for t in closedTickets %}
+              <tr id="row-ticket-{{ t.id }}">
+                <td>#{{ t.id }}</td>
+                <td>{{ t.bike_model|default('—') }}</td>
+                <td>{{ t.status }}</td>
+                <td>{{ t.total_ht|default(0) }}</td>
+                <td>
+                  {% if facturesByTicket is defined and facturesByTicket[t.id]|default(null) and facturesByTicket[t.id].pdf_path %}
+                    <a href="{{ facturesByTicket[t.id].pdf_path }}" target="_blank">Facture PDF</a>
+                  {% else %}—{% endif %}
+                </td>
+                <td><a href="/tickets/{{ t.id }}/edit">Ouvrir</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p>Aucun ticket clos.</p>
+      {% endif %}
+
+      <script>
+        (function(){
+          try{
+            const u = new URL(window.location.href);
+            const ct = u.searchParams.get('created_ticket');
+            if (ct) {
+              // toast
+              const t = document.createElement('div');
+              t.className = 'toast';
+              t.textContent = 'Ticket créé ✓';
+              document.body.appendChild(t);
+              setTimeout(()=>{ t.remove(); }, 5000);
+              // scroll sur la section "tickets ouverts" et surligner la ligne si présente
+              const openSec = document.getElementById('tickets-open');
+              if (openSec) openSec.scrollIntoView({behavior:'smooth', block:'start'});
+              const row = document.getElementById('row-ticket-' + ct);
+              if (row) {
+                row.style.outline = '2px solid #3b82f6';
+                row.style.outlineOffset = '2px';
+                setTimeout(()=>{ row.style.outline=''; row.style.outlineOffset=''; }, 4000);
+              }
+            }
+          }catch(_e){}
+        })();
+      </script>
+
+    {% else %}
+      <p>Aucun ticket pour ce client.</p>
+    {% endif %}
   {% else %}
     <p>Client introuvable.</p>
   {% endif %}
+  <script>
+    function createTicketFromDraft(clientId){
+      try{
+        const raw = localStorage.getItem('devisDraft');
+        const draft = raw ? JSON.parse(raw) : null;
+        if (!draft) {
+          alert('Aucun brouillon de devis trouvé.');
+          return;
+        }
+        // Construire un formulaire POST caché vers /tickets/0/edit
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = '/tickets/0/edit';
+
+        const add = (n,v) => { const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i); };
+
+        add('client_id', String(clientId));
+        if (Array.isArray(draft.rows)) {
+          draft.rows.forEach(r=>{
+            // On ne pousse que si coche MO ou Pièce
+            if (r.checked || r.pieceChecked) {
+              add('prest_id[]', r.id || '');
+              add('qty[]', r.moQty || '1');
+              add('price_override[]', r.moInput || '');
+              add('piece_qty[]', r.pieceQty || '0');
+              add('piece_price_override[]', r.pieceInput || '');
+            }
+          });
+        }
+        document.body.appendChild(form);
+        // Nettoyer le brouillon pour éviter de re-proposer
+        localStorage.removeItem('devisDraft');
+        localStorage.removeItem('clientDraft');
+        form.submit();
+      }catch(e){
+        console.error(e);
+        alert('Impossible de créer le ticket depuis le brouillon.');
+      }
+    }
+    // Auto-création automatique seulement si autostart=1 et qu'un brouillon contient des lignes
+    (function(){
+      try{
+        const params = new URLSearchParams(window.location.search || '');
+        if (params.get('autostart') === '1') {
+          const raw = localStorage.getItem('devisDraft');
+          if (raw) {
+            const d = JSON.parse(raw);
+            const hasLines = Array.isArray(d?.rows) && d.rows.some(r=>!!r?.checked || !!r?.pieceChecked);
+            if (hasLines) {
+              createTicketFromDraft({{ client.id }});
+            }
+          }
+        }
+      }catch(e){}
+    })();
+  </script>
+
+  <script>
+    // Toast "Facturation effectuée" si ?invoiced=1
+    (function(){
+      try{
+        const u = new URL(window.location.href);
+        if (u.searchParams.get('invoiced') === '1') {
+          const t = document.createElement('div');
+          t.className = 'toast';
+          t.textContent = 'Facturation validée ✓';
+          document.body.appendChild(t);
+          setTimeout(()=>{ t.remove(); }, 5000);
+        }
+      }catch(_e){}
+    })();
+  </script>
+
+  <script>
+    // Re-crée un ticket automatiquement à partir du brouillon issu du Catalogue
+    function createTicketFromDraft(clientId){
+      try{
+        const raw = localStorage.getItem('devisDraft');
+        const draft = raw ? JSON.parse(raw) : null;
+        if (!draft) {
+          alert('Aucun brouillon de devis trouvé.');
+          return;
+        }
+        // Construire un formulaire POST caché vers /tickets/0/edit
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = '/tickets/0/edit';
+
+        const add = (n,v) => { const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i); };
+
+        add('client_id', String(clientId));
+        if (Array.isArray(draft.rows)) {
+          draft.rows.forEach(r=>{
+            // On ne pousse que si coche MO ou Pièce
+            if (r.checked || r.pieceChecked) {
+              add('prest_id[]', r.id || '');
+              add('qty[]', r.moQty || '1');
+              add('price_override[]', r.moInput || '');
+              add('piece_qty[]', r.pieceQty || '0');
+              add('piece_price_override[]', r.pieceInput || '');
+            }
+          });
+        }
+        document.body.appendChild(form);
+        // Nettoyer le brouillon pour éviter de re-proposer
+        localStorage.removeItem('devisDraft');
+        localStorage.removeItem('clientDraft');
+        form.submit();
+      }catch(e){
+        console.error(e);
+        alert('Impossible de créer le ticket depuis le brouillon.');
+      }
+    }
+
+    // Auto-création du ticket si ?autostart=1 est présent (retour depuis /catalogue)
+    (function(){
+      try{
+        const params = new URLSearchParams(window.location.search || '');
+        if (params.get('autostart') === '1') {
+          const raw = localStorage.getItem('devisDraft');
+          if (raw) {
+            const d = JSON.parse(raw);
+            const hasLines = Array.isArray(d?.rows) && d.rows.some(r=>!!r?.checked || !!r?.pieceChecked);
+            if (hasLines) {
+              createTicketFromDraft({{ client.id }});
+            }
+          }
+        }
+      }catch(e){}
+    })();
+  </script>
 {% endblock %}

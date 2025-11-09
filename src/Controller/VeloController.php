@@ -35,16 +35,27 @@ class VeloController
         $id = (int)($args['id'] ?? 0);
         $velo = null;
         $clients = [];
+        $selectedClientId = null;
         if ($this->pdo) {
             if ($id > 0) {
                 $stmt = $this->pdo->prepare('SELECT * FROM velos WHERE id = :id LIMIT 1');
                 $stmt->execute(['id' => $id]);
                 $velo = $stmt->fetch();
+            } else {
+                // Pré-sélection client via query param ?client_id=...
+                $query = $request->getQueryParams();
+                if (!empty($query['client_id'])) {
+                    $selectedClientId = (int)$query['client_id'];
+                }
             }
             $stmt = $this->pdo->query('SELECT id, name FROM clients ORDER BY name');
             $clients = $stmt->fetchAll();
         }
-        $response->getBody()->write($this->twig->render('velos/edit.twig', ['velo' => $velo, 'clients' => $clients]));
+        $response->getBody()->write($this->twig->render('velos/edit.twig', [
+            'velo' => $velo,
+            'clients' => $clients,
+            'selectedClientId' => $selectedClientId
+        ]));
         return $response;
     }
 

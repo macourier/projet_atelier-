@@ -18,6 +18,7 @@ class PdfService
         $this->options = new Options();
         $this->options->set('isRemoteEnabled', true);
         $this->options->set('defaultFont', 'DejaVu Sans');
+        $this->options->set('isHtml5ParserEnabled', true);
 
         if ($options) {
             foreach ($options as $k => $v) {
@@ -48,7 +49,7 @@ class PdfService
             }
         }
 
-        $dompdf->loadHtml($html);
+        $dompdf->loadHtml($html, 'UTF-8');
         $dompdf->render();
 
         return $dompdf->output();

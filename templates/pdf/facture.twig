@@ -38,15 +38,14 @@
 
   <table>
     <thead>
-      <tr><th>Libellé</th><th>Qté</th><th>Prix HT</th><th>TVA %</th><th>Total HT</th></tr>
+      <tr><th>Libellé</th><th>Qté</th><th>Prix</th><th>Total</th></tr>
     </thead>
     <tbody>
       {% for line in facture.lines|default([]) %}
         <tr>
           <td>{{ line.label }}</td>
           <td>{{ line.quantite }}</td>
-          <td>{{ line.prix_ht_snapshot }}</td>
-          <td>{{ line.tva_snapshot }}</td>
+          <td>{{ line.prix_ht_snapshot|number_format(2, ',', ' ') }}</td>
           <td>{{ (line.prix_ht_snapshot * line.quantite)|number_format(2, ',', ' ') }}</td>
         </tr>
       {% endfor %}
@@ -54,13 +53,8 @@
   </table>
 
   <div class="totals">
-    <div><strong>Montant HT:</strong> {{ facture.montant_ht|default('0') }} €</div>
-    <div><strong>Montant TVA:</strong> {{ facture.montant_tva|default('0') }} €</div>
-    <div style="font-size:1.1rem; margin-top:8px;"><strong>Total TTC:</strong> {{ facture.montant_ttc|default('0') }} €</div>
+    <div style="font-size:1.1rem; margin-top:8px;"><strong>TOTAL:</strong> {{ facture.montant_ttc|default('0') }} €</div>
   </div>
 
-  <div style="clear:both; margin-top:40px;" class="small">
-    TVA par défaut: {{ env.TVA_DEFAULT }}%. Merci de votre confiance.
-  </div>
 </body>
 </html>

@@ -1,9 +1,9 @@
 {% extends 'layout.twig' %}
 
-{% block title %}Devis — {{ devis.numero if devis else 'Inconnu' }}{% endblock %}
+{% block title %}Devis — {{ devis.numero|default('Inconnu') }}{% endblock %}
 
 {% block content %}
-  <h1>Devis {{ devis.numero if devis }}</h1>
+  <h1>Devis {{ devis.numero|default('—') }}</h1>
 
   {% if error %}
     <div style="color:#b00020">{{ error }}</div>

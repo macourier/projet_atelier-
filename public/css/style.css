@@ -1,0 +1,228 @@
+/* PROJET_ATELIER — Thème tactile atelier vélo
+   Palette
+   --bg: #f6f6f6; --text: #2c2c2c; --tile: #dfe6ed; --tile-hover: #bcd2e6;
+   --primary: #0069d9; --secondary: #ffc107; --danger: #dc3545;
+   --row-hover: #eef4fa; --toast-success: #28a745; --toast-error: #c0392b;
+*/
+:root{
+  --bg:#f6f6f6; --text:#2c2c2c; --tile:#dfe6ed; --tile-hover:#bcd2e6;
+  --primary:#0069d9; --secondary:#ffc107; --danger:#dc3545;
+  --row-hover:#eef4fa; --toast-success:#28a745; --toast-error:#c0392b;
+  --radius:1rem;
+}
+
+/* Base */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+.container{max-width:1100px; margin:0 auto; padding:16px}
+
+/* Header / nav */
+header{display:flex; align-items:center; justify-content:space-between; padding:12px 0}
+.brand{font-weight:700; font-size:1.15rem}
+nav a{margin-left:10px; color:#0366d6; text-decoration:none}
+nav a:hover{opacity:.85}
+
+/* Card / main surface */
+main{
+  background:#fff; border-radius:12px; padding:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
+}
+
+/* Boutons tactiles */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-height:48px; padding:.6rem 1rem; border-radius:.75rem; border:1px solid transparent;
+  background:var(--primary); color:#fff; font-weight:600; text-decoration:none; cursor:pointer;
+  transition: background .25s ease, transform .2s ease, box-shadow .2s ease;
+}
+.btn:hover{filter:brightness(.95)}
+.btn:active{transform:scale(.98)}
+.btn-secondary{background:var(--secondary); color:#2c2c2c; border-color:#d7a906}
+.btn-danger{background:var(--danger)}
+.btn-round{
+  width:48px; height:48px; border-radius:999px; display:inline-flex; justify-content:center; align-items:center;
+}
+
+/* Inputs / selects */
+input[type=text], input[type=email], input[type=password], input[type=number], textarea, select{
+  width:100%; min-height:48px; padding:.6rem .8rem; border-radius:.75rem; border:1px solid #ddd; background:#fff;
+}
+/* Sélecteur compact pour la quantité */
+select.select-qty{
+  width:auto !important;
+  min-height:32px !important;
+  height:32px !important;
+  padding:.2rem .5rem !important;
+  border-radius:8px !important;
+  font-size:.95rem;
+}
+.form-field{margin-bottom:12px}
+
+/* Tableaux (admin) */
+table{width:100%; border-collapse:collapse; margin-top:12px; background:#fff; border-radius:.75rem; overflow:hidden}
+th,td{padding:12px; border-bottom:1px solid #eee; text-align:left; font-size:.98rem}
+tbody tr:nth-child(even){background:#fafbfd}
+tbody tr:hover{background:var(--row-hover); box-shadow:inset 0 0 0 9999px rgba(0,0,0,0.01)}
+
+/* Cellules éditables — admin */
+input.cell{background:#fff}
+input.cell:focus{outline:none; background:#fff3cd; transition:background .25s ease}
+
+/* Tuiles catégories */
+.tiles{display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; margin:12px 0}
+.tile{
+  background:var(--tile); border-radius:var(--radius); padding:16px;
+  box-shadow:0 2px 4px rgba(0,0,0,.1); cursor:pointer; user-select:none;
+  transition:transform .1s ease, background .25s ease, box-shadow .25s ease;
+  display:flex; flex-direction:column; gap:6px; min-height:200px;
+}
+.tile:hover{background:var(--tile-hover)}
+.tile:active{transform:scale(.97)}
+.tile-title{font-weight:700; display:flex; align-items:center; gap:.5rem}
+
+/* Accordéon catégories → prestations */
+.category{background:#fff; border-radius:var(--radius); border:1px solid #e9eef4; overflow:hidden; margin-bottom:10px}
+.category-header{
+  display:flex; align-items:center; justify-content:space-between; padding:12px 14px; cursor:pointer;
+  background:var(--tile); transition:background .25s ease
+}
+.category-header:hover{background:var(--tile-hover)}
+.category .prestations{max-height:0; opacity:0; overflow:hidden}
+.category.open .prestations{max-height:1000px; opacity:1; transition:all .4s ease}
+
+/* Lignes prestation */
+.prestation{display:flex; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid #eef2f6}
+.prestation .label{flex:1}
+.badge{display:inline-block; padding:.15rem .5rem; font-size:.75rem; background:#eef2f6; border-radius:.5rem}
+.badge-free{background:#fff3cd}
+
+/* Icônes sémantiques (FontAwesome) */
+.icon-price::before{content:"\f153"; font-family:"Font Awesome 5 Free"; font-weight:900}
+.icon-edit::before{content:"\f044"; font-family:"Font Awesome 5 Free"; font-weight:900}
+.icon-piece::before{content:"\f12e"; font-family:"Font Awesome 5 Free"; font-weight:900}
+.icon-delete::before{content:"\f1f8"; font-family:"Font Awesome 5 Free"; font-weight:900}
+.icon-add::before{content:"\f067"; font-family:"Font Awesome 5 Free"; font-weight:900}
+
+/* Pied collant (totaux) */
+.footer-sticky{
+  position:sticky; bottom:0; background:linear-gradient(180deg, rgba(255,255,255,0.0), #fff);
+  padding:10px 10px; border-top:1px solid #eee; display:flex; align-items:center; gap:10px; justify-content:space-between;
+}
+
+/* Mise en évidence élégante du TOTAL */
+.total-pill{
+  display:inline-flex; align-items:center; gap:10px;
+  padding:.45rem .9rem; border-radius:9999px;
+  background:linear-gradient(180deg,#f8fbff,#eef6ff);
+  border:1px solid #d6e4ff;
+  box-shadow:0 1px 3px rgba(0,0,0,.06) inset, 0 1px 2px rgba(13,110,253,.06);
+}
+.total-pill .icon{ color:#4361ee; }
+.total-pill .total-label{
+  font-size:.8rem; letter-spacing:.06em; color:#4361ee;
+  font-weight:700; text-transform:uppercase;
+}
+.total-pill .total-amount{
+  font-size:1.30rem; font-weight:600; color:#1b1f23;
+}
+
+/* Toasts */
+.toast{
+  position:fixed; bottom:1rem; right:1rem; background:var(--toast-success); color:#fff;
+  padding:1rem 1.5rem; border-radius:.5rem; z-index:2000; box-shadow:0 6px 20px rgba(0,0,0,.15);
+  animation:fadein .3s ease, fadeout .3s ease 4.7s forwards;
+}
+.toast.error{background:var(--toast-error)}
+@keyframes fadein{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)}}
+@keyframes fadeout{to{opacity:0; transform:translateY(20px)}}
+
+/* Effets de focus accessibles */
+a:focus, button:focus, input:focus, select:focus, textarea:focus{
+  outline: 2px solid #80bdff; outline-offset:2px;
+}
+
+/* Responsif */
+@media (max-width: 640px){
+  .tiles{grid-template-columns:repeat(2,1fr)}
+  .btn{min-height:44px}
+}
+
+/* Utilitaires */
+.text-right{text-align:right}
+.text-muted{color:#6c757d}
+.flex{display:flex} .gap-8{gap:8px} .gap-12{gap:12px}
+.round{border-radius:999px}
+.shadow{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.border{border:1px solid #e6e6e6}
+.bg-white{background:#fff}
+.bg-tile{background:var(--tile)}
+
+/* Bouton fantôme (discret) pour "Prix libre" */
+.btn-ghost{
+  background:#f1f3f5; color:var(--text); border:1px solid #e5e7eb;
+  min-height:36px; padding:.4rem .8rem; border-radius:.5rem; font-weight:600; cursor:pointer;
+  transition: background .2s ease, color .2s ease, transform .15s ease;
+}
+.btn-ghost:hover{ background:#e9ecef; }
+.btn-ghost:active{ transform:scale(.98); }
+
+/* Variante typographique pour libellé "Prix" (poids de fonte plus léger) */
+.price-soft{
+  font-weight:300;
+}
+
+/* Lignes de prix (base/appliqué) sous chaque bloc */
+.price-lines{ font-size:.9rem; line-height:1.35; margin-top:4px; color:#444; }
+.price-base.striked{ text-decoration: line-through; opacity:.7; }
+.section-title{ font-weight:700; }
+
+/* Cartes et structure de ligne (prestation) */
+.row-card{
+  background:#fff; border:1px solid #e9eef4; border-radius:12px; padding:12px 14px;
+  box-shadow:0 1px 2px rgba(0,0,0,.03); margin-bottom:10px;
+}
+.row-header{ display:flex; flex-direction:column; gap:4px; }
+.row-body{ display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:flex-start; }
+@media (max-width:720px){ .row-body{ grid-template-columns:1fr; } }
+.divider{ border-top:1px solid #eef2f6; margin:8px 0; }
+
+/* Variante plus légère du bouton fantôme */
+.btn-ghost-sm{ min-height:32px; padding:.25rem .6rem; font-size:.9rem; }
+
+/* Micro animations */
+@keyframes pulse{ 0%{background:transparent} 50%{background:#f1f3f5} 100%{background:transparent} }
+.pulse-on-change{ animation:pulse .6s ease; }
+
+/* === Admin: Carte d'ajout prestation (tactile) === */
+/* Pastel-blue styling for the add-tile */
+.acc-section.acc-add .acc-header{
+  background: linear-gradient(180deg, #eaf5ff, #e6f5ff);
+}
+.acc-section.acc-add .acc-header:hover{
+  background: linear-gradient(180deg, #e6f5ff, #dff0ff);
+}
+.card-add{
+  background:#f0f8ff; /* light pastel blue */
+  border:1px solid #d7ecff;
+  border-radius:16px; padding:16px 18px;
+  box-shadow:0 2px 10px rgba(0,0,0,.04); margin:12px 0;
+}
+.card-add-title{ margin:0 0 8px; font-weight:800; font-size:1.08rem; color:#08306b }
+.form-stack{ display:flex; flex-direction:column; gap:14px; }
+.input{ width:100%; min-height:48px; padding:.6rem .8rem; border-radius:12px; border:1px solid #dfe3ea; }
+.input:focus{ outline:2px solid #80bdff; outline-offset:2px; }
+.input-price{ display:flex; align-items:center; gap:8px; }
+.input-price .icon{ width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; background:#f1f5f9; border-radius:8px; }
+.hint{ color:#6b7280; font-size:.85rem; }
+.input-error{ border-color:#dc3545 !important; }
+.form-grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width: 720px){ .form-grid-2{ grid-template-columns:1fr; } }
+.form-actions{ display:flex; justify-content:flex-end; }
+.btn-accent{ background:#0069d9; color:#fff; font-weight:700; min-height:50px; padding:.7rem 1.2rem; border-radius:12px; border:1px solid transparent; }
+.btn-accent:hover{ filter:brightness(.96); }
+.toolbar-inline{ display:flex; align-items:flex-end; gap:12px; justify-content:space-between; margin:8px 0; }

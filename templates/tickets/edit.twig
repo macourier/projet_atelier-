@@ -1,58 +1,386 @@
 {% extends 'layout.twig' %}
 
-{% block title %}Ticket — {{ ticket.id if ticket else 'Nouveau' }}{% endblock %}
+{% block title %}Ticket — {{ ticket.id|default('Nouveau') }}{% endblock %}
 
 {% block content %}
-  <h1>Ticket {{ ticket.id if ticket else '—' }}</h1>
+  <h1>Ticket {{ ticket.id|default('—') }}</h1>
 
-  {% if client %}
-    <div><strong>Client:</strong> {{ client.name }}</div>
-  {% endif %}
 
-  <form method="post" action="/tickets/{{ ticket ? ticket.id : 0 }}/edit">
+  <form method="post" action="/tickets/{{ ticket ? ticket.id : 0 }}/edit" x-data="ticketForm()" x-init="debouncedRecalc()" @change="debouncedRecalc()" @input="debouncedRecalc()">
+
+    {% if client %}
+      <input type="hidden" name="client_id" value="{{ client.id }}">
+    {% endif %}
+    <div id="pending-hidden" style="display:none"></div>
+
     <div class="form-field">
-      <label for="description">Description</label>
-      <textarea id="description" name="description" rows="4">{{ ticket.description if ticket }}</textarea>
+      <label for="received_at">Date de réception</label>
+      <input id="received_at" type="datetime-local" name="received_at" value="{{ (ticket.received_at|default('now'))|date('Y-m-d\\TH:i') }}" readonly>
     </div>
 
-    <h3>Prestations</h3>
-    {% if prestations is empty %}
-      <p>Aucune prestation pour ce ticket.</p>
+    {% if not ticket %}
+    <fieldset class="form-field">
+      <legend style="font-weight:600;">Vélo</legend>
+      <div class="form-field">
+        <label for="bike_brand">Marque</label>
+        <input id="bike_brand" name="bike_brand" type="text" value="{{ ticket.bike_brand|default('') }}" placeholder="Ex: Trek">
+      </div>
+      <div class="form-field">
+        <label for="bike_model">Modèle</label>
+        <input id="bike_model" name="bike_model" type="text" value="{{ ticket.bike_model|default('') }}" placeholder="Ex: Rockrider 540">
+      </div>
+      <div class="form-field">
+        <label for="bike_serial">N° de série</label>
+        <input id="bike_serial" name="bike_serial" type="text" value="{{ ticket.bike_serial|default('') }}" placeholder="Ex: SN1234567">
+      </div>
+      <div class="form-field">
+        <label for="bike_notes">Notes</label>
+        <textarea id="bike_notes" name="bike_notes" rows="2">{{ ticket.bike_notes|default('') }}</textarea>
+      </div>
+    </fieldset>
     {% else %}
-      <table>
-        <thead><tr><th>Label</th><th>Qte</th><th>Prix HT</th></tr></thead>
-        <tbody>
+    {% endif %}
+
+    <div id="catalogue" x-show="showCatalogue" x-transition.opacity x-transition.duration.250ms style="transform-origin: top;">
+      <h2 style="margin:16px 0 8px;">Catalogue</h2>
+
+    {# Accordéons par catégorie #}
+    {% set tvadef = env.TVA_DEFAULT|default(20) %}
+    <div x-data="{ openCat: null }">
+    {% for cat, items in catalogue|default({}) %}
+      <div class="category" x-data="{ id: '{{ cat|e('js') }}' }" :class="{ 'open': openCat === id }">
+        <div class="category-header"
+             role="button"
+             tabindex="0"
+             :aria-expanded="openCat === id ? 'true' : 'false'"
+             @click="openCat = (openCat === id ? null : id); $nextTick(() => { $el.scrollIntoView({ behavior: 'smooth', block: 'start' }); })"
+             @keydown.enter.prevent="openCat = (openCat === id ? null : id)"
+             @keydown.space.prevent="openCat = (openCat === id ? null : id)">
+          <div style="font-weight:700; display:flex; align-items:center; gap:.5rem;">
+            <i class="fas fa-cog"></i> {{ cat }}
+          </div>
+          <div><i class="fas" :class="openCat === id ? 'fa-chevron-up' : 'fa-chevron-down'"></i></div>
+        </div>
+        <template x-if="openCat === id"><div class="prestations">
+          {% for item in items %}
+            <div class="prestation row-card" x-data="{ 
+                    checked:false, pieceChecked:false, 
+                    moQty:1, pieceQty:1, 
+                    moBase:0, pieceBase:0, 
+                    moEdit:false, pieceEdit:false, 
+                    moInput:'', pieceInput:'',
+                    moFinal(){ return this.moInput!=='' && !isNaN(+this.moInput) ? +this.moInput : this.moBase; },
+                    pieceFinal(){ return this.pieceInput!=='' && !isNaN(+this.pieceInput) ? +this.pieceInput : this.pieceBase; },
+                    moValid(){ return this.moInput!=='' && !isNaN(+this.moInput); },
+                    pieceValid(){ return this.pieceInput!=='' && !isNaN(+this.pieceInput); },
+                    resetMo(){ this.moInput=''; this.moQty=1; },
+                    resetPiece(){ this.pieceInput=''; this.pieceQty=1; }
+                 }"
+                 x-init="moBase=parseFloat($el.dataset.price)||0; pieceBase=parseFloat($el.dataset.piecePrice)||0; baseTva=parseFloat($el.dataset.tva)||20"
+                 data-price="{{ item.prix_main_oeuvre_ht|default(0) }}"
+                 data-tva="{{ item.tva_pct|default(tvadef) }}"
+                 data-piece-price="{{ item.piece_prix_ht|default(0) }}"
+                 data-piece-label="{{ item.piece_libelle|default('Pièce') }}">
+              <input type="checkbox" class="round prest-check" style="width:20px;height:20px"
+                     x-model="checked" @change="if($el.checked){ pieceChecked = true; } $root.recalc()">
+              <div class="label">
+                <div style="font-weight:600">{{ item.libelle }}</div>
+              </div>
+
+              <input type="hidden" name="prest_id[]" value="{{ item.id }}" :disabled="!checked">
+
+              <div class="row-body">
+                <!-- Main d’œuvre -->
+                <div>
+                  <div class="text-muted section-title" style="font-size:.8rem; display:flex; align-items:center; gap:8px;"><i class="fas fa-wrench"></i><span>Main d’œuvre</span></div>
+                  <div class="price-lines">
+                    Prix de base MO: <strong><span>{{ (item.prix_main_oeuvre_ht|default(0))|number_format(0, ',', ' ') }}</span> €</strong>
+                  </div>
+                  <div class="flex gap-8" style="align-items:center;">
+                    <label class="text-muted" style="font-size:.8rem;">Qté</label>
+                    <div class="qty-spinner" style="display:flex; align-items:center; gap:6px;">
+                      <button type="button" class="btn btn-ghost btn-ghost-sm" :disabled="!checked" @click="moQty = Math.max(1, Number(moQty||1)-1); $root.debouncedRecalc()">−</button>
+                      <input name="qty[]" type="number" min="1" :disabled="!checked" x-model="moQty" @input="$root.debouncedRecalc()" class="select-qty" style="width:64px">
+                      <button type="button" class="btn btn-ghost btn-ghost-sm" :disabled="!checked" @click="moQty = Number(moQty||1)+1; $root.debouncedRecalc()">+</button>
+                    </div>
+
+                    <div class="flex gap-8" style="align-items:center;">
+                      <button type="button" class="btn btn-ghost btn-ghost-sm price-soft" :disabled="!checked" 
+                              x-show="!moEdit && moInput===''" 
+                              @click="moEdit=true" x-transition>
+                        Prix
+                      </button>
+                      <div x-show="moEdit" x-transition style="display:flex; align-items:center; gap:8px;">
+                        <input type="number" step="0.01" placeholder="0.00" :disabled="!checked"
+                               x-model="moInput" style="width:120px" @input="$root.recalc()">
+                        <button type="button" class="btn" :class="moValid() ? 'btn-success' : 'btn-ghost btn-ghost-sm'"
+                                @click="if(moValid()){ moEdit=false; $root.recalc(); }" x-transition>
+                          Valider
+                        </button>
+                      </div>
+                      <a href="javascript:void(0)" class="text-muted" style="font-size:.85rem;" 
+                         x-show="moInput!==''" x-transition
+                         @click="resetMo(); $root.recalc()">Réinitialiser</a>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Pièce -->
+                <div>
+                  <div class="text-muted section-title" style="font-size:.8rem; display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" class="round piece-check" style="width:18px;height:18px" x-model="pieceChecked" @change="$root.recalc()">
+                    <i class="fas fa-puzzle-piece"></i><span x-text="$el.closest('.prestation')?.dataset?.pieceLabel || 'Pièce'">Pièce</span>
+                  </div>
+                  <div class="price-lines">
+                    <template x-if="pieceInput===''">
+                      <span>Prix de base Pièce: <strong x-text="$root.fmt(pieceBase)">{{ (item.piece_prix_ht|default(0))|number_format(2, '.', '') }}</strong> €</span>
+                    </template>
+                    <template x-if="pieceInput!==''">
+                      <span>Prix <span style="padding:0 6px; border-radius:6px; background:#fffbeb; color:#92400e; font-weight:600;">modifié</span>: <strong x-text="$root.fmt(pieceFinal())"></strong> €</span>
+                      <span class="text-muted" style="margin-left:6px;">(Prix de base Pièce: <span x-text="$root.fmt(pieceBase)"></span> €)</span>
+                    </template>
+                  </div>
+                  <div class="flex gap-8" style="align-items:center; margin-top:6px;">
+                    <label class="text-muted" style="font-size:.8rem;">Qté</label>
+                    <div class="qty-spinner" style="display:flex; align-items:center; gap:6px;">
+                      <button type="button" class="btn btn-ghost btn-ghost-sm" :disabled="!pieceChecked" @click="pieceQty = Math.max(1, Number(pieceQty||1)-1); $root.debouncedRecalc()">−</button>
+                      <input name="piece_qty[]" type="number" min="1" :disabled="!pieceChecked" x-model="pieceQty" @input="$root.debouncedRecalc()" class="select-qty" style="width:64px">
+                      <button type="button" class="btn btn-ghost btn-ghost-sm" :disabled="!pieceChecked" @click="pieceQty = Number(pieceQty||1)+1; $root.debouncedRecalc()">+</button>
+                    </div>
+
+                    <div class="flex gap-8" style="align-items:center;">
+                      <button type="button" class="btn btn-ghost btn-ghost-sm price-soft" :disabled="!pieceChecked" 
+                              x-show="!pieceEdit && pieceInput===''" 
+                              @click="pieceEdit=true" x-transition>
+                        Prix
+                      </button>
+                      <div x-show="pieceEdit" x-transition style="display:flex; align-items:center; gap:8px;">
+                        <input type="number" step="0.01" placeholder="0.00" :disabled="!pieceChecked"
+                               x-model="pieceInput" style="width:120px" @input="$root.recalc()">
+                        <button type="button" class="btn" :class="pieceValid() ? 'btn-success' : 'btn-ghost btn-ghost-sm'"
+                                @click="if(pieceValid()){ pieceEdit=false; $root.recalc(); }" x-transition>
+                          Valider
+                        </button>
+                      </div>
+                      <a href="javascript:void(0)" class="text-muted" style="font-size:.85rem;" 
+                         x-show="pieceInput!==''" x-transition
+                         @click="resetPiece(); $root.recalc()">Réinitialiser</a>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Inputs masqués pour POST (persistance) -->
+                <input type="hidden" name="price_override[]" :value="moInput" :disabled="!checked">
+                <input type="hidden" name="piece_price_override[]" :value="pieceInput" :disabled="!pieceChecked">
+              </div>
+            </div>
+          {% endfor %}
+        </div></template>
+      </div>
+    {% else %}
+      <p class="text-muted">Le catalogue est vide. Allez dans Administration → Prestations pour le remplir.</p>
+    {% endfor %}
+    </div>
+    </div>
+
+    {# Lignes déjà enregistrées (lecture seule) #}
+    {% if prestations is not empty or consommables is not empty %}
+      <h3 style="margin-top:16px;">Récapitulatif</h3>
+      {% if prestations is not empty %}
+        <table>
+          <thead><tr><th>Prestation</th><th>Qté</th><th>Unitaire TTC</th><th>Sous-total TTC</th></tr></thead>
+          <tbody>
           {% for p in prestations %}
             <tr>
               <td>{{ p.label }}</td>
               <td>{{ p.quantite }}</td>
-              <td>{{ p.prix_ht_snapshot }}</td>
+              <td>{{ '%.2f'|format((p.prix_ht_snapshot|default(0)) * (1 + (p.tva_snapshot|default(tvadef))/100)) }}</td>
+              <td>{{ '%.2f'|format(((p.prix_ht_snapshot|default(0)) * (1 + (p.tva_snapshot|default(tvadef))/100)) * (p.quantite|default(1))) }}</td>
             </tr>
           {% endfor %}
-        </tbody>
-      </table>
-    {% endif %}
+          </tbody>
+        </table>
+      {% endif %}
 
-    <h3>Consommables</h3>
-    {% if consommables is empty %}
-      <p>Aucun consommable pour ce ticket.</p>
-    {% else %}
-      <table>
-        <thead><tr><th>Label</th><th>Qte</th><th>Prix HT</th></tr></thead>
-        <tbody>
+      {% if consommables is not empty %}
+        <table>
+          <thead><tr><th>Consommable</th><th>Qté</th><th>Unitaire TTC</th><th>Sous-total TTC</th></tr></thead>
+          <tbody>
           {% for c in consommables %}
             <tr>
               <td>{{ c.label }}</td>
               <td>{{ c.quantite }}</td>
-              <td>{{ c.prix_ht_snapshot }}</td>
+              <td>{{ '%.2f'|format((c.prix_ht_snapshot|default(0)) * (1 + (c.tva_snapshot|default(tvadef))/100)) }}</td>
+              <td>{{ '%.2f'|format(((c.prix_ht_snapshot|default(0)) * (1 + (c.tva_snapshot|default(tvadef))/100)) * (c.quantite|default(1))) }}</td>
             </tr>
           {% endfor %}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      {% endif %}
     {% endif %}
 
-    <div style="margin-top:12px;">
-      <button class="btn" type="submit">Enregistrer</button>
+    <div x-show="pending.length > 0" style="margin-top:12px;">
+      <h3>Nouveaux éléments</h3>
+      <table>
+        <thead><tr><th>Libellé</th><th>Qté</th><th>Sous-total TTC</th></tr></thead>
+        <tbody>
+          <template x-for="p in pending" :key="p.label + '-' + p.ttc">
+            <tr>
+              <td x-text="p.label"></td>
+              <td x-text="p.qty"></td>
+              <td x-text="fmt(p.ttc)"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+
+
+    <div class="footer-sticky">
+      <div class="total-pill">
+        <i class="fas fa-receipt icon"></i>
+        <span class="total-label">Total</span>
+        <span class="total-amount" id="t-total">{{ '%.2f'|format(totaux.ttc|default(totaux.ht|default(0))) }}</span>
+        <span class="text-muted" style="font-size:.9rem;">€</span>
+      </div>
+      <div class="flex gap-8">
+        <div class="flex" style="gap:8px;">
+          {% if client %}
+          <a class="btn btn-ghost btn-ghost-sm" href="/clients/{{ client.id }}">Dashboard client</a>
+          {% endif %}
+          <button type="button" class="btn btn-secondary" @click="showCatalogue=true; $nextTick(()=>{ const c=document.getElementById('catalogue'); if(c){ c.scrollIntoView({behavior:'smooth', block:'start'});} });">
+            <i class="fas fa-plus" style="margin-right:6px;"></i>Ajouter prestation
+          </button>
+        </div>
+        <button class="btn" type="submit"><i class="fas fa-save" style="margin-right:6px;"></i>Enregistrer</button>
+        <button class="btn btn-danger" type="submit" @click.prevent="handleFacturer($el)"
+                {% if not ticket %}disabled{% endif %}
+                formaction="/tickets/{{ ticket ? ticket.id : 0 }}/facturer/confirm">
+          <i class="fas fa-file-invoice-dollar" style="margin-right:6px;"></i>Facturer
+        </button>
+      </div>
     </div>
   </form>
+
+  {% include 'components/pave_numerique.twig' %}
+
+  <script>
+    function ticketForm(){
+      return {
+        pending: [],
+        showCatalogue: false,
+        baseTtc: Number("{{ '%.2f'|format(totaux.ttc|default(0)) }}"),
+        lastTotal: Number("{{ '%.2f'|format(totaux.ttc|default(0)) }}"),
+        debounceId: null,
+        debouncedRecalc(){ if (this.debounceId) clearTimeout(this.debounceId); this.debounceId = setTimeout(()=>{ this.recalc(); }, 130); },
+        fmt(n){ return Number(n).toFixed(2); },
+        toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{ t.remove(); }, 3000); },
+        ttc(mq,mp,pq,pp,tva){ const ht=(Number(mq||0)*Number(mp||0))+(Number(pq||0)*Number(pp||0)); return ht*(1+Number(tva||0)/100); },
+        addFromRow(id,label,mq,mp,pq,pp,tva){
+          const qty = Number(mq||0) + Number(pq||0);
+          const amount = this.ttc(mq,mp,pq,pp,tva);
+          // Récap dynamique
+          this.pending.push({ label, qty, ttc: amount });
+          // Injection d'inputs cachés pour persistance
+          const cont = document.getElementById('pending-hidden');
+          if (cont) {
+            const add = (n,v)=>{ const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=String(v); cont.appendChild(i); };
+            // MO
+            const moQty = Number(mq||0);
+            const moPrice = (mp!==null && mp!==undefined && mp!=='') ? mp : '';
+            if (moQty > 0) {
+              add('prest_id[]', id);
+              add('qty[]', moQty);
+              add('price_override[]', moPrice);
+            }
+            // Pièce
+            const pQty = Number(pq||0);
+            const pPrice = (pp!==null && pp!==undefined && pp!=='') ? pp : '';
+            if (pQty > 0) {
+              add('prest_id[]', id);
+              add('piece_qty[]', pQty);
+              add('piece_price_override[]', pPrice);
+            }
+          }
+          this.recalc();
+        },
+        recalc(){
+          let total = this.baseTtc || 0;
+          document.querySelectorAll('.prestation').forEach((row)=>{
+            const moCb = row.querySelector('input.prest-check');
+            const pieceCb = row.querySelector('input.piece-check');
+            const includeRow = ((moCb && moCb.checked) || (pieceCb && pieceCb.checked));
+            if (!includeRow) return;
+
+            // MO
+            let qty = 0, price = 0;
+            if (moCb && moCb.checked) {
+              const qtyEl = row.querySelector("select[name='qty[]']") || row.querySelector("input[name='qty[]']");
+              const ovEl  = row.querySelector("input[name='price_override[]']");
+              qty = parseFloat(qtyEl?.value || '0'); if (isNaN(qty) || qty < 0) qty = 0;
+              price = parseFloat(ovEl?.value || '');
+              if (isNaN(price)) price = parseFloat(row.dataset.price || '0');
+            }
+
+            // Pièce
+            let pqty = 0, pprice = 0;
+            if (pieceCb && pieceCb.checked) {
+              const pQtyEl = row.querySelector("select[name='piece_qty[]']");
+              const pOvEl  = row.querySelector("input[name='piece_price_override[]']");
+              pqty = parseFloat(pQtyEl?.value || '0'); if (isNaN(pqty) || pqty < 0) pqty = 0;
+              pprice = parseFloat(pOvEl?.value || '');
+              if (isNaN(pprice)) pprice = parseFloat(row.dataset.piecePrice || '0');
+            }
+
+            total += (qty * price) + (pqty * pprice);
+          });
+          const fmt = (n) => Number(n).toFixed(2);
+          const totalEl = document.getElementById('t-total');
+          if (totalEl) {
+            totalEl.textContent = fmt(total);
+            // Inject CSS bounce une seule fois
+            if (!document.getElementById('css-total-bounce')) {
+              const st = document.createElement('style');
+              st.id = 'css-total-bounce';
+              st.textContent = '@keyframes totalBounce{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}} .total-pill.bounce{animation:totalBounce .3s ease-in-out}';
+              document.head.appendChild(st);
+            }
+            const pill = document.querySelector('.total-pill');
+            if (pill && total !== this.lastTotal) {
+              pill.classList.add('bounce');
+              setTimeout(()=>pill.classList.remove('bounce'), 350);
+              this.lastTotal = total;
+            }
+          }
+        },
+        handleFacturer(btn){
+          const ph = document.getElementById('pending-hidden');
+          const hasPending = (this.pending && this.pending.length > 0) || (ph && ph.children && ph.children.length > 0);
+          let proceed = true;
+          if (hasPending) {
+            proceed = window.confirm("Vous n'avez pas enregistré l'ajout de prestation. Poursuivre la facturation ?");
+          }
+          if (!proceed) return;
+          const form = btn.form || document.querySelector('form');
+          if (!form) return;
+          const fa = btn.getAttribute('formaction');
+          if (fa) form.setAttribute('action', fa);
+          const fm = btn.getAttribute('formmethod');
+          if (fm) form.setAttribute('method', fm);
+          form.submit();
+        }
+      }
+    }
+    // Affiche un toast simple si ?success=1
+    (function(){
+      const u = new URL(window.location.href);
+      if (u.searchParams.get('success') === '1') {
+        const t = document.createElement('div');
+        t.className = 'toast';
+        t.textContent = 'Enregistré ✓';
+        document.body.appendChild(t);
+        setTimeout(()=>{ t.remove(); }, 5000);
+      }
+    })();
+  </script>
 {% endblock %}

@@ -1,0 +1,552 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Catalogue{% endblock %}
+
+{% block content %}
+
+
+  {# Bloc coordonnées client supprimé sur la page d'accueil /catalogue #}
+
+  <form method="post" action="/devis/pdf/direct" target="_blank" x-data="ticketForm()" x-init="recalc(); loadDevisDraft()" @change="recalc()" @input="recalc()">
+    {% if client %}
+      <input type="hidden" name="client_id" value="{{ client.id }}">
+    {% endif %}
+
+    {# Champ description supprimé sur la page d'accueil /catalogue #}
+
+    <h2 style="margin:16px 0 8px;">Catalogue</h2>
+
+    <div id="piece-help-banner" role="status" aria-live="polite" style="margin:10px 0 12px; background:#FFFBEB; border:1px solid #FBC02D; color:#1C1C1C; padding:10px 12px; border-radius:12px; display:none;">
+      <div style="font-weight:700; margin-bottom:4px;">Aide — Prix de base Pièce non visible</div>
+      <div style="font-size:.95rem;">
+        - Rafraîchir la page (Ctrl+F5) après sauvegarde dans l’Admin.<br>
+        - Vérifier que “Prix pièce” n’est pas 0 dans l’Admin Prestations.<br>
+        - Recharger le catalogue après l’enregistrement (éviter les onglets anciens).
+      </div>
+      <div class="flex" style="gap:8px; margin-top:8px; flex-wrap:wrap;">
+        <a class="btn btn-ghost btn-ghost-sm" href="/admin/prestations">Ouvrir l’Admin Prestations</a>
+        <a class="btn btn-ghost btn-ghost-sm" href="mailto:{{ env.COMPANY_EMAIL|default('contact@example.com') }}?subject=Retour%20Prix%20Pi%C3%A8ce&body=Expliquez%20votre%20cas%20:%0A-%20Prestation%20:%20...%0A-%20Prix%20pi%C3%A8ce%20saisi%20:%20...%0A-%20Heure%20:%20...%0A-%20Capture%20:%20...">Envoyer un retour</a>
+        <button type="button" class="btn btn-ghost btn-ghost-sm" onclick="localStorage.setItem('hide_piece_banner','1'); document.getElementById('piece-help-banner').style.display='none';">Ne plus afficher</button>
+      </div>
+    </div>
+    <script>
+      (function(){
+        try{
+          if(localStorage.getItem('hide_piece_banner')!=='1'){
+            var b=document.getElementById('piece-help-banner');
+            if(b) b.style.display='block';
+          }
+        }catch(_e){}
+      })();
+    </script>
+
+    {% set tvadef = env.TVA_DEFAULT|default(20) %}
+    <div x-data="{ openCat: null }">
+    {% for cat, items in catalogue|default({}) %}
+      <div class="category" x-data="{ id: '{{ cat|e('js') }}' }" :class="{ 'open': openCat === id }">
+        <div class="category-header"
+             role="button"
+             tabindex="0"
+             :aria-expanded="openCat === id ? 'true' : 'false'"
+             @click="openCat = (openCat === id ? null : id); $nextTick(() => { $el.scrollIntoView({ behavior: 'smooth', block: 'start' }); })"
+             @keydown.enter.prevent="openCat = (openCat === id ? null : id)"
+             @keydown.space.prevent="openCat = (openCat === id ? null : id)">
+          <div style="font-weight:700; display:flex; align-items:center; gap:.5rem;">
+            <i class="fas fa-cog"></i> {{ cat }}
+          </div>
+          <div><i class="fas" :class="openCat === id ? 'fa-chevron-up' : 'fa-chevron-down'"></i></div>
+        </div>
+        <div class="prestations">
+          {% for item in items %}
+            <div class="prestation row-card" data-id="{{ item.id }}" x-data="{ 
+                    checked:false, pieceChecked:false, 
+                    moQty:1, pieceQty:1, 
+                    moBase:0, pieceBase:0, 
+                    moEdit:false, pieceEdit:false, 
+                    moInput:'', pieceInput:'',
+                    moFinal(){ return this.moInput!=='' && !isNaN(+this.moInput) ? +this.moInput : this.moBase; },
+                    pieceFinal(){ return this.pieceInput!=='' && !isNaN(+this.pieceInput) ? +this.pieceInput : this.pieceBase; },
+                    moValid(){ return this.moInput!=='' && !isNaN(+this.moInput); },
+                    pieceValid(){ return this.pieceInput!=='' && !isNaN(+this.pieceInput); },
+                    resetMo(){ this.moInput=''; this.moQty=1; },
+                    resetPiece(){ this.pieceInput=''; this.pieceQty=1; }
+                 }"
+                 x-init="moBase=parseFloat($el.dataset.price)||0; pieceBase=parseFloat($el.dataset.piecePrice)||0; baseTva=parseFloat($el.dataset.tva)||20"
+                 data-price="{{ item.prix_main_oeuvre_ht|default(0) }}"
+                 data-tva="{{ item.tva_pct|default(tvadef) }}"
+                 data-piece-price="{{ item.piece_prix_ht|default(0) }}"
+                 data-piece-label="{{ item.piece_libelle|default('Pièce') }}">
+              <input type="checkbox" class="round prest-check" style="width:20px;height:20px"
+                     x-model="checked" @change="$root.recalc()">
+              <div class="label">
+                <div style="font-weight:600">{{ item.libelle }}</div>
+              </div>
+
+              <input type="hidden" name="prest_id[]" value="{{ item.id }}" :disabled="!checked">
+
+              <div class="row-body">
+                <!-- Main d’œuvre -->
+                <div>
+                  <div class="text-muted section-title" style="font-size:.8rem; display:flex; align-items:center; gap:8px;"><i class="fas fa-wrench"></i><span>Main d’œuvre</span></div>
+                  <div class="price-lines">
+                    Prix de base MO: <strong><span>{{ (item.prix_main_oeuvre_ht|default(0))|number_format(0, ',', ' ') }}</span> €</strong>
+                  </div>
+                  <div class="flex gap-8" style="align-items:center;">
+                    <label class="text-muted" style="font-size:.8rem;">Qté</label>
+                    <select name="qty[]" :disabled="!checked" x-model="moQty" @change="$root.recalc()" class="select-qty">
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                    </select>
+
+                    <div class="flex gap-8" style="align-items:center;">
+                      <button type="button" class="btn btn-ghost btn-ghost-sm price-soft" :disabled="!checked" 
+                              x-show="!moEdit && moInput===''" 
+                              @click="moEdit=true" x-transition>
+                        Prix
+                      </button>
+                      <div x-show="moEdit" x-transition style="display:flex; align-items:center; gap:8px;">
+                        <input type="number" step="0.01" placeholder="0.00" :disabled="!checked"
+                               x-model="moInput" style="width:120px" @input="$root.recalc()">
+                        <button type="button" class="btn" :class="moValid() ? 'btn-success' : 'btn-ghost btn-ghost-sm'"
+                                @click="if(moValid()){ moEdit=false; $root.recalc(); }" x-transition>
+                          Valider
+                        </button>
+                      </div>
+                      <a href="javascript:void(0)" class="text-muted" style="font-size:.85rem;" 
+                         x-show="moInput!==''" x-transition
+                         @click="resetMo(); $root.recalc()">Réinitialiser</a>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Pièce -->
+                <div>
+                  <div class="text-muted section-title" style="font-size:.8rem; display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" class="round piece-check" style="width:18px;height:18px" x-model="pieceChecked" @change="$root.recalc()">
+                    <i class="fas fa-puzzle-piece"></i><span x-text="$el.closest('.prestation')?.dataset?.pieceLabel || 'Pièce'">Pièce</span>
+                  </div>
+                  <div class="price-lines">
+                    <template x-if="pieceInput===''">
+                      <span>Prix de base Pièce: <strong>{{ (item.piece_prix_ht|default(0))|number_format(2, '.', '') }}</strong> €</span>
+                    </template>
+                    <template x-if="pieceInput!==''">
+                      <span>Prix <span style="padding:0 6px; border-radius:6px; background:#fffbeb; color:#92400e; font-weight:600;">modifié</span>: <strong x-text="$root.fmt(pieceFinal())"></strong> €</span>
+                      <span class="text-muted" style="margin-left:6px;">(Prix de base Pièce: <span x-text="$root.fmt(pieceBase)"></span> €)</span>
+                    </template>
+                  </div>
+                  {% if env.APP_DEBUG|default('false') == 'true' %}
+                  <div class="text-muted" style="font-size:.85rem; margin-top:4px;">
+                    DEBUG — item.piece_prix_ht={{ item.piece_prix_ht|default('') }}, dataset=<span x-text="$el.closest('.prestation')?.dataset?.piecePrice"></span>, pieceBase=<span x-text="$root.fmt(pieceBase)"></span>, pieceInput=<span x-text="pieceInput"></span>
+                  </div>
+                  {% endif %}
+                  <div class="flex gap-8" style="align-items:center; margin-top:6px;">
+                    <label class="text-muted" style="font-size:.8rem;">Qté</label>
+                    <select name="piece_qty[]" :disabled="!pieceChecked" x-model="pieceQty" @change="$root.recalc()" class="select-qty">
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                    </select>
+
+                    <div class="flex gap-8" style="align-items:center;">
+                      <button type="button" class="btn btn-ghost btn-ghost-sm price-soft" :disabled="!pieceChecked" 
+                              x-show="!pieceEdit && pieceInput===''" 
+                              @click="pieceEdit=true" x-transition>
+                        Prix
+                      </button>
+                      <div x-show="pieceEdit" x-transition style="display:flex; align-items:center; gap:8px;">
+                        <input type="number" step="0.01" placeholder="0.00" :disabled="!pieceChecked"
+                               x-model="pieceInput" style="width:120px" @input="$root.recalc()">
+                        <button type="button" class="btn" :class="pieceValid() ? 'btn-success' : 'btn-ghost btn-ghost-sm'"
+                                @click="if(pieceValid()){ pieceEdit=false; $root.recalc(); }" x-transition>
+                          Valider
+                        </button>
+                      </div>
+                      <a href="javascript:void(0)" class="text-muted" style="font-size:.85rem;" 
+                         x-show="pieceInput!==''" x-transition
+                         @click="resetPiece(); $root.recalc()">Réinitialiser</a>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Inputs masqués pour POST (persistance) -->
+                <input type="hidden" name="price_override[]" :value="moInput" :disabled="!checked">
+                <input type="hidden" name="piece_price_override[]" :value="pieceInput" :disabled="!pieceChecked">
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% else %}
+      <p class="text-muted">Le catalogue est vide. Allez dans Administration → Prestations pour le remplir.</p>
+    {% endfor %}
+    </div>
+
+    <div class="footer-sticky">
+      <div class="total-pill">
+        <i class="fas fa-receipt icon"></i>
+        <span class="total-label">Total</span>
+        <span class="total-amount" id="t-total">0.00</span>
+        <span class="text-muted" style="font-size:.9rem;">€</span>
+      </div>
+      <div class="flex gap-8">
+        <button class="btn btn-secondary" type="button" onclick="saveDevisDraft(); return openDevisModal();"><i class="fas fa-file-invoice" style="margin-right:6px;"></i>Devis PDF</button>
+        <a class="btn btn-ghost btn-ghost-sm" href="javascript:void(0)" onclick="saveDevisDraft(); return goNewClient();">
+          <i class="fas fa-user-plus" style="margin-right:6px;"></i>Nouveau client
+        </a>
+      </div>
+    </div>
+  </form>
+
+  <!-- Modal infos client (optionnel) pour PDF direct -->
+  <div id="devis-modal" style="position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:2000;">
+    <div style="background:#fff; padding:16px; border-radius:12px; width:90%; max-width:420px;">
+      <h3 style="margin-top:0;">Informations client (optionnel)</h3>
+      <div class="form-field">
+        <label for="m_name">Nom</label>
+        <input id="m_name" type="text" placeholder="Nom (optionnel)">
+      </div>
+      <div class="form-field">
+        <label for="m_phone">Téléphone</label>
+        <input id="m_phone" type="text" placeholder="Téléphone (optionnel)">
+      </div>
+      <div class="form-field">
+        <label for="m_brand">Marque du vélo</label>
+        <input id="m_brand" type="text" placeholder="Marque du vélo (optionnel)">
+      </div>
+      <div class="flex gap-8" style="justify-content:flex-end;">
+        <button type="button" class="btn btn-ghost btn-ghost-sm" onclick="closeDevisModal()">Annuler</button>
+        <button type="button" class="btn btn-secondary" onclick="submitDirectPdf()">Continuer</button>
+      </div>
+    </div>
+  </div>
+
+  {% include 'components/pave_numerique.twig' %}
+
+  <script>
+    function ticketForm(){
+      return {
+        lastTotal: 0,
+        fmt(n){ const v = Number(n); return Number.isFinite(v) ? v.toFixed(2) : '0.00'; },
+        recalc(){
+          let total = 0;
+          document.querySelectorAll('.prestation').forEach((row)=>{
+            const moCb = row.querySelector('input.prest-check');
+            const pieceCb = row.querySelector('input.piece-check');
+            const includeRow = ((moCb && moCb.checked) || (pieceCb && pieceCb.checked));
+            if (!includeRow) return;
+
+            // MO
+            let qty = 0, price = 0;
+            if (moCb && moCb.checked) {
+              const qtyEl = row.querySelector("select[name='qty[]']") || row.querySelector("input[name='qty[]']");
+              const ovEl  = row.querySelector("input[name='price_override[]']");
+              qty = parseFloat(qtyEl?.value || '0'); if (isNaN(qty) || qty < 0) qty = 0;
+              price = parseFloat(ovEl?.value || '');
+              if (isNaN(price)) price = parseFloat(row.dataset.price || '0');
+            }
+
+            // Pièce
+            let pqty = 0, pprice = 0;
+            if (pieceCb && pieceCb.checked) {
+              const pQtyEl = row.querySelector("select[name='piece_qty[]']");
+              const pOvEl  = row.querySelector("input[name='piece_price_override[]']");
+              pqty = parseFloat(pQtyEl?.value || '0'); if (isNaN(pqty) || pqty < 0) pqty = 0;
+              pprice = parseFloat(pOvEl?.value || '');
+              if (isNaN(pprice)) pprice = parseFloat(row.dataset.piecePrice || '0');
+            }
+
+            total += (qty * price) + (pqty * pprice);
+          });
+          const fmt = (n) => Number(n).toFixed(2);
+          const totalEl = document.getElementById('t-total');
+          if (totalEl) {
+            totalEl.textContent = fmt(total);
+            // Inject CSS bounce once
+            if (!document.getElementById('css-total-bounce')) {
+              const st = document.createElement('style');
+              st.id = 'css-total-bounce';
+              st.textContent = '@keyframes totalBounce{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}} .total-pill.bounce{animation:totalBounce .32s ease-in-out}';
+              document.head.appendChild(st);
+            }
+            const pill = document.querySelector('.total-pill');
+            if (pill && total !== this.lastTotal) {
+              pill.classList.add('bounce');
+              setTimeout(()=>pill.classList.remove('bounce'), 360);
+              this.lastTotal = total;
+            }
+          }
+        }
+      }
+    }
+    // Sauvegarde locale du brouillon avant navigation (pour "Nouveau client")
+    function saveDevisDraft(){
+      const draft = {
+        rows: []
+      };
+      document.querySelectorAll('.prestation').forEach((row)=>{
+        const id = row.getAttribute('data-id');
+        const moCb = row.querySelector('input.prest-check');
+        const pieceCb = row.querySelector('input.piece-check');
+        const moQty = row.querySelector("select[name='qty[]']")?.value || '1';
+        const moInput = row.querySelector("input[name='price_override[]']")?.value || '';
+        const pieceQty = row.querySelector("select[name='piece_qty[]']")?.value || '1';
+        const pieceInput = row.querySelector("input[name='piece_price_override[]']")?.value || '';
+        draft.rows.push({
+          id, checked: !!moCb?.checked, moQty, moInput,
+          pieceChecked: !!pieceCb?.checked, pieceQty, pieceInput
+        });
+      });
+      localStorage.setItem('devisDraft', JSON.stringify(draft));
+    }
+    function loadDevisDraft(){
+      try{
+        const raw = localStorage.getItem('devisDraft');
+        if(!raw) return;
+        const draft = JSON.parse(raw);
+        if(Array.isArray(draft.rows)){
+          draft.rows.forEach((r)=>{
+            const row = document.querySelector(`.prestation[data-id='${r.id}']`);
+            if(!row) return;
+            const moCb = row.querySelector('input.prest-check');
+            if(moCb){ moCb.checked = !!r.checked; }
+            const moQty = row.querySelector("select[name='qty[]']");
+            if(moQty){ moQty.value = r.moQty || '1'; }
+            const moOv = row.querySelector("input[name='price_override[]']");
+            if(moOv){ moOv.value = r.moInput || ''; }
+
+            const pieceCb = row.querySelector('input.piece-check');
+            if(pieceCb){ pieceCb.checked = !!r.pieceChecked; }
+            const pQty = row.querySelector("select[name='piece_qty[]']");
+            if(pQty){ pQty.value = r.pieceQty || '1'; }
+            const pOv = row.querySelector("input[name='piece_price_override[]']");
+            if(pOv){ pOv.value = r.pieceInput || ''; }
+          });
+        }
+        // on recalcule une fois chargé
+        if (typeof ticketForm === 'function') {
+          // trigger via any alpine root if needed; fallback:
+          const totalEl = document.getElementById('t-total');
+          if (totalEl) {
+            // fire input event to trigger recalc handler
+            const e = new Event('input');
+            document.body.dispatchEvent(e);
+          }
+        }
+      }catch(e){ console.warn('Devis draft restore error', e); }
+    }
+    // Lecture des champs coordonnées client (si saisis)
+    function readClientFields(){
+      const name = (document.getElementById('client_name')?.value || '').trim();
+      const address = (document.getElementById('client_address')?.value || '').trim();
+      const email = (document.getElementById('client_email')?.value || '').trim();
+      const phone = (document.getElementById('client_phone')?.value || '').trim();
+      return { name, address, email, phone };
+    }
+    function markClientValidated(){
+      const chk = document.getElementById('client-valid-check');
+      if (chk) chk.style.display = 'inline';
+      const det = document.querySelector('.bg-white details');
+      if (det && det.open) det.open = false;
+    }
+    function validateClientDraft(){
+      const f = readClientFields();
+      if (!f.name) { alert('Veuillez saisir au moins le nom du client.'); return false; }
+      localStorage.setItem('clientDraft', JSON.stringify(f));
+      try { sessionStorage.setItem('clientDraftValidated','1'); } catch(_e){}
+      markClientValidated();
+      return false;
+    }
+    // Création d'un client pré-rempli (sans auto-création du ticket)
+    function createClientPrefilled(){
+      const f = readClientFields();
+      const qs = [
+        'return=' + encodeURIComponent('/catalogue'),
+        f.name ? ('name=' + encodeURIComponent(f.name)) : '',
+        f.address ? ('address=' + encodeURIComponent(f.address)) : '',
+        f.email ? ('email=' + encodeURIComponent(f.email)) : '',
+        f.phone ? ('phone=' + encodeURIComponent(f.phone)) : ''
+      ].filter(Boolean).join('&');
+      window.location.href = '/clients/0/edit?' + qs;
+      return false;
+    }
+    // Bouton "Nouveau client" en bas:
+    // - si client déjà sélectionné: aller au dashboard et auto-créer le ticket
+    // - sinon: aller sur création client pré-remplie puis auto-création du ticket après save
+    function hasSelectedLines(){
+      try{
+        const d = JSON.parse(localStorage.getItem('devisDraft') || 'null');
+        if (d && Array.isArray(d.rows)) {
+          return d.rows.some(r => !!r?.checked || !!r?.pieceChecked);
+        }
+      }catch(_e){}
+      // fallback DOM scan
+      let any = false;
+      document.querySelectorAll('.prestation').forEach((row)=>{
+        const mo = row.querySelector('input.prest-check');
+        const pc = row.querySelector('input.piece-check');
+        if ((mo && mo.checked) || (pc && pc.checked)) any = true;
+      });
+      return any;
+    }
+    function goNewClient(){
+      const autostart = hasSelectedLines();
+      // Toujours créer un nouveau client (ne pas réutiliser un client_id existant)
+      const live = readClientFields();
+      const hasLive = !!(live && (live.name || live.address || live.email || live.phone));
+      let f = null;
+      if (hasLive) {
+        f = live;
+        try{ localStorage.setItem('clientDraft', JSON.stringify(f)); }catch(_e){}
+      } else {
+        const validated = (sessionStorage.getItem('clientDraftValidated') === '1');
+        if (validated) {
+          try{
+            f = JSON.parse(localStorage.getItem('clientDraft') || 'null');
+          }catch(_e){}
+        }
+      }
+      if (f && f.name) {
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = '/clients/0/edit';
+        const add = (n,v)=>{ const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i); };
+        add('return','/catalogue');
+        add('auto_create','1');
+        if (autostart) {
+          add('autostart','1');
+          // Joindre les lignes sélectionnées au POST pour création serveur du ticket
+          try{
+            const raw = localStorage.getItem('devisDraft');
+            const draft = raw ? JSON.parse(raw) : null;
+            if (draft && Array.isArray(draft.rows)) {
+              draft.rows.forEach(r=>{
+                if (r.checked || r.pieceChecked) {
+                  add('prest_id[]', r.id || '');
+                  add('qty[]', r.moQty || '1');
+                  add('price_override[]', r.moInput || '');
+                  add('piece_qty[]', r.pieceQty || '0');
+                  add('piece_price_override[]', r.pieceInput || '');
+                }
+              });
+            }
+            // Indicateur pour le serveur
+            add('_create_ticket_from_builder','1');
+          }catch(_e){}
+        }
+        add('name', f.name || '');
+        add('address', f.address || '');
+        add('email', f.email || '');
+        add('phone', f.phone || '');
+        document.body.appendChild(form);
+        form.submit();
+        return false;
+      }
+      // Rien saisi → bascule sur l’édition client (vierge)
+      window.location.href = '/clients/0/edit?return=' + encodeURIComponent('/catalogue');
+      return false;
+    }
+    function preSubmitPdf(){
+      const form = document.querySelector('form[action="/tickets/0/edit"]');
+      // Client déjà sélectionné → soumission directe en PDF
+      const cidEl = document.querySelector('input[name="client_id"]');
+      const cid = cidEl ? String(cidEl.value || '') : '';
+      if (cid) { form.submit(); return false; }
+
+      // Pas de client: tenter à partir du brouillon validé
+      let f = null;
+      try{ f = JSON.parse(localStorage.getItem('clientDraft') || 'null'); }catch(_e){}
+      if (!f || !f.name) {
+        if (typeof readClientFields === 'function') {
+          const tmp = readClientFields();
+          if (tmp && tmp.name) f = tmp;
+        }
+      }
+      if (f && f.name) {
+        // Sauvegarder brouillon devis (lignes) puis créer le client en POST silencieux avec pdf=1
+        if (typeof saveDevisDraft === 'function') { saveDevisDraft(); }
+        const cform = document.createElement('form');
+        cform.method = 'post';
+        cform.action = '/clients/0/edit';
+        const add = (n,v)=>{ const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; cform.appendChild(i); };
+        add('return','/catalogue');
+        add('auto_create','1');
+        add('pdf','1');
+        add('name', f.name || '');
+        add('address', f.address || '');
+        add('email', f.email || '');
+        add('phone', f.phone || '');
+        document.body.appendChild(cform);
+        cform.submit();
+        return false;
+      }
+
+      // Rien saisi → ouvrir la section coordonnées et notifier
+      const det = document.querySelector('.bg-white details');
+      if (det) det.open = true;
+      alert('Veuillez saisir les coordonnées du client avant de générer le PDF.');
+      return false;
+    }
+
+    (function(){
+      try{
+        // Réinitialiser le flag de validation à chaque arrivée sur /devis/new
+        sessionStorage.setItem('clientDraftValidated','0');
+        const cd = JSON.parse(localStorage.getItem('clientDraft') || 'null');
+        if (cd && cd.name) { markClientValidated(); }
+      }catch(_e){}
+    })();
+    // Modal PDF direct
+    function openDevisModal(){
+      const m = document.getElementById('devis-modal');
+      if (m) { m.style.display = 'flex'; }
+      return false;
+    }
+    function closeDevisModal(){
+      const m = document.getElementById('devis-modal');
+      if (m) { m.style.display = 'none'; }
+      return false;
+    }
+    function hasSelectedLines(){
+      try{
+        const d = JSON.parse(localStorage.getItem('devisDraft') || 'null');
+        if (d && Array.isArray(d.rows)) {
+          return d.rows.some(r => !!r?.checked || !!r?.pieceChecked);
+        }
+      }catch(_e){}
+      // fallback DOM scan
+      let any = false;
+      document.querySelectorAll('.prestation').forEach((row)=>{
+        const mo = row.querySelector('input.prest-check');
+        const pc = row.querySelector('input.piece-check');
+        if ((mo && mo.checked) || (pc && pc.checked)) any = true;
+      });
+      return any;
+    }
+    function submitDirectPdf(){
+      // Vérifier qu'au moins une ligne est sélectionnée
+      if (!hasSelectedLines()) { alert('Veuillez sélectionner au moins une prestation.'); return false; }
+      const form = document.querySelector('form[action="/devis/pdf/direct"]') || document.querySelector('form');
+      if (!form) return false;
+      // Nettoyer anciens inputs temporaires
+      ['name','phone','brand'].forEach((n)=>{ const old = form.querySelector('input[name="'+n+'"]'); if (old) old.remove(); });
+      // Ajouter les inputs depuis le modal
+      const add = (n,v)=>{ const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i); };
+      add('name', document.getElementById('m_name')?.value || '');
+      add('phone', document.getElementById('m_phone')?.value || '');
+      add('brand', document.getElementById('m_brand')?.value || '');
+      // Ouvrir dans un nouvel onglet
+      form.setAttribute('target','_blank');
+      form.submit();
+      // Reset page (/catalogue) : vider brouillon et décocher
+      try{ localStorage.removeItem('devisDraft'); }catch(_e){}
+      document.querySelectorAll('.prestation input.prest-check, .prestation input.piece-check').forEach(el=>{ el.checked=false; });
+      document.querySelectorAll("select[name='qty[]']").forEach(el=>{ el.value='1'; });
+      document.querySelectorAll("select[name='piece_qty[]']").forEach(el=>{ el.value='1'; });
+      document.querySelectorAll("input[name='price_override[]']").forEach(el=>{ el.value=''; });
+      document.querySelectorAll("input[name='piece_price_override[]']").forEach(el=>{ el.value=''; });
+      // Recalculer total
+      const e = new Event('input'); document.body.dispatchEvent(e);
+      closeDevisModal();
+      return false;
+    }
+  </script>
+{% endblock %}

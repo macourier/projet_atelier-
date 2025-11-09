@@ -11,29 +11,29 @@
       <select id="client_id" name="client_id" required>
         <option value="">-- Choisir --</option>
         {% for c in clients %}
-          <option value="{{ c.id }}" {% if velo and velo.client_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+          <option value="{{ c.id }}" {% if (velo and velo.client_id == c.id) or (selectedClientId is defined and selectedClientId == c.id) %}selected{% endif %}>{{ c.name }}</option>
         {% endfor %}
       </select>
     </div>
 
     <div class="form-field">
       <label for="brand">Marque</label>
-      <input id="brand" name="brand" type="text" value="{{ velo.brand if velo }}">
+      <input id="brand" name="brand" type="text" value="{{ velo.brand|default('') }}">
     </div>
 
     <div class="form-field">
       <label for="model">Modèle</label>
-      <input id="model" name="model" type="text" value="{{ velo.model if velo }}">
+      <input id="model" name="model" type="text" value="{{ velo.model|default('') }}">
     </div>
 
     <div class="form-field">
       <label for="serial">Numéro de série</label>
-      <input id="serial" name="serial" type="text" value="{{ velo.serial if velo }}">
+      <input id="serial" name="serial" type="text" value="{{ velo.serial|default('') }}">
     </div>
 
     <div class="form-field">
       <label for="notes">Notes</label>
-      <textarea id="notes" name="notes">{{ velo.notes if velo }}</textarea>
+      <textarea id="notes" name="notes">{{ velo.notes|default('') }}</textarea>
     </div>
 
     <button class="btn" type="submit">Enregistrer</button>

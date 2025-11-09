@@ -1,0 +1,94 @@
+{# Pavé numérique tactile réutilisable #}
+<style>
+  .pad-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 1000; }
+  .pad { background: #fff; border-radius: 12px; width: 320px; max-width: 90vw; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; }
+  .pad-header { padding: 10px 12px; font-weight: 600; border-bottom: 1px solid #eee; display:flex; align-items:center; justify-content:space-between; }
+  .pad-display { padding: 14px 12px; font-size: 24px; letter-spacing: 2px; text-align: right; border-bottom: 1px solid #f0f0f0; }
+  .pad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
+  .pad-btn { padding: 16px; border-radius: 8px; font-size: 18px; border: 1px solid #ddd; background:#f9f9f9; cursor: pointer; }
+  .pad-btn:active { background:#ececec; }
+  .pad-actions { display:flex; gap:8px; padding: 12px; border-top:1px solid #f0f0f0; }
+  .pad-btn-primary { background:#0366d6; color:#fff; border-color:#0366d6; }
+  .pad-btn-danger { background:#b00020; color:#fff; border-color:#b00020; }
+</style>
+
+<div id="pad-overlay" class="pad-overlay" data-target="">
+  <div class="pad" role="dialog" aria-modal="true" aria-labelledby="pad-title">
+    <div class="pad-header">
+      <div id="pad-title">Saisir un montant HT</div>
+      <button class="pad-btn pad-btn-danger" type="button" onclick="PaveNum.close()">×</button>
+    </div>
+    <div class="pad-display" id="pad-display">0</div>
+    <div class="pad-grid">
+      <button class="pad-btn" onclick="PaveNum.add('7')">7</button>
+      <button class="pad-btn" onclick="PaveNum.add('8')">8</button>
+      <button class="pad-btn" onclick="PaveNum.add('9')">9</button>
+      <button class="pad-btn" onclick="PaveNum.add('4')">4</button>
+      <button class="pad-btn" onclick="PaveNum.add('5')">5</button>
+      <button class="pad-btn" onclick="PaveNum.add('6')">6</button>
+      <button class="pad-btn" onclick="PaveNum.add('1')">1</button>
+      <button class="pad-btn" onclick="PaveNum.add('2')">2</button>
+      <button class="pad-btn" onclick="PaveNum.add('3')">3</button>
+      <button class="pad-btn" onclick="PaveNum.add('0')">0</button>
+      <button class="pad-btn" onclick="PaveNum.add('.')">,</button>
+      <button class="pad-btn" onclick="PaveNum.back()">⌫</button>
+    </div>
+    <div class="pad-actions">
+      <button class="pad-btn" style="flex:1" onclick="PaveNum.clear()">Effacer</button>
+      <button class="pad-btn pad-btn-primary" style="flex:1" onclick="PaveNum.apply()">Valider</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const PaveNum = {
+    open(targetInputId, initial='') {
+      const ov = document.getElementById('pad-overlay');
+      ov.style.display = 'flex';
+      ov.dataset.target = targetInputId;
+      document.getElementById('pad-display').textContent = (initial || '0');
+    },
+    close() {
+      const ov = document.getElementById('pad-overlay');
+      ov.style.display = 'none';
+      ov.dataset.target = '';
+    },
+    add(ch) {
+      const d = document.getElementById('pad-display');
+      let v = d.textContent;
+      if (v === '0' && ch !== '.') v = '';
+      if (ch === '.' && v.includes('.')) return;
+      d.textContent = (v + ch);
+    },
+    back() {
+      const d = document.getElementById('pad-display');
+      let v = d.textContent;
+      if (v.length <= 1) d.textContent = '0';
+      else d.textContent = v.slice(0,-1);
+    },
+    clear() {
+      document.getElementById('pad-display').textContent = '0';
+    },
+    apply() {
+      const target = document.getElementById('pad-overlay').dataset.target;
+      if (!target) return this.close();
+      const el = document.getElementById(target);
+      if (el) {
+        const v = document.getElementById('pad-display').textContent;
+        el.value = v.replace(',', '.');
+        el.dispatchEvent(new Event('input', { bubbles:true }));
+        el.dispatchEvent(new Event('change', { bubbles:true }));
+      }
+      this.close();
+    }
+  };
+  // Fermer en cliquant à l'extérieur
+  document.addEventListener('click', (e) => {
+    const ov = document.getElementById('pad-overlay');
+    if (!ov || ov.style.display !== 'flex') return;
+    const pad = ov.querySelector('.pad');
+    if (pad && !pad.contains(e.target)) {
+      PaveNum.close();
+    }
+  });
+</script>

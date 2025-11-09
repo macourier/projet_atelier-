@@ -1,9 +1,9 @@
 {% extends 'layout.twig' %}
 
-{% block title %}Facture — {{ facture.numero if facture else 'Inconnue' }}{% endblock %}
+{% block title %}Facture — {{ facture.numero|default('Inconnue') }}{% endblock %}
 
 {% block content %}
-  <h1>Facture {{ facture.numero if facture }}</h1>
+  <h1>Facture {{ facture.numero|default('—') }}</h1>
 
   {% if error %}
     <div style="color:#b00020">{{ error }}</div>

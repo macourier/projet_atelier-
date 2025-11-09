@@ -12,11 +12,11 @@ class AuthController
     private $pdo;
     private $twig;
 
-    public function __construct(array $container = [])
+    public function __construct(?array $container = null)
     {
-        $this->container = $container;
-        $this->pdo = $container['pdo'] ?? null;
-        $this->twig = $container['twig'] ?? null;
+        $this->container = $container ?? [];
+        $this->pdo = $this->container['pdo'] ?? null;
+        $this->twig = $this->container['twig'] ?? null;
     }
 
     public function showLogin(Request $request, Response $response): Response

@@ -27,7 +27,8 @@
     "scripts": {
         "start": "php -S localhost:8080 -t public",
         "migrate": "php bin/migrate.php",
-        "post-install-cmd": "php -r \"if (!file_exists('data/app.db')) echo 'Reminder: run \"composer migrate\" to initialize the database\\n';\"",
-        "post-update-cmd": "php -r \"if (!file_exists('data/app.db')) echo 'Reminder: run \"composer migrate\" to initialize the database\\n';\""
+        "check": "composer validate --no-check-publish",
+        "post-install-cmd": "php -r \"if (!file_exists('data/app.db')) echo 'Reminder: run \\\"composer migrate\\\" to initialize the database\\n';\"",
+        "post-update-cmd": "php -r \"if (!file_exists('data/app.db')) echo 'Reminder: run \\\"composer migrate\\\" to initialize the database\\n';\""
     }
 }

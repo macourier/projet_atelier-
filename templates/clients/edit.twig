@@ -5,22 +5,28 @@
 {% block content %}
   <h1>{{ client ? 'Éditer le client' : 'Nouveau client' }}</h1>
 
-  <form method="post" action="/clients/{{ client ? client.id : 0 }}/edit">
+  <form method="post" action="/clients/{{ client.id|default(0) }}/edit">
+    {% if return is defined and return %}
+      <input type="hidden" name="return" value="{{ return }}">
+    {% endif %}
+    {% if auto_create is defined and auto_create %}
+      <input type="hidden" name="auto_create" value="1">
+    {% endif %}
     <div class="form-field">
       <label for="name">Nom</label>
-      <input id="name" name="name" type="text" required value="{{ client.name if client }}">
+      <input id="name" name="name" type="text" required value="{{ client.name|default('') }}">
     </div>
     <div class="form-field">
-      <label for="address">Adresse</label>
-      <input id="address" name="address" type="text" value="{{ client.address if client }}">
+      <label for="bike_model">Modèle du vélo</label>
+      <input id="bike_model" name="bike_model" type="text" placeholder="Ex: VTT Rockrider 540">
     </div>
     <div class="form-field">
       <label for="email">Email</label>
-      <input id="email" name="email" type="email" value="{{ client.email if client }}">
+      <input id="email" name="email" type="email" value="{{ client.email|default('') }}">
     </div>
     <div class="form-field">
       <label for="phone">Téléphone</label>
-      <input id="phone" name="phone" type="text" value="{{ client.phone if client }}">
+      <input id="phone" name="phone" type="text" value="{{ client.phone|default('') }}">
     </div>
     <button class="btn" type="submit">Enregistrer</button>
   </form>

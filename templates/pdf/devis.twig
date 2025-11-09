@@ -29,24 +29,29 @@
     </div>
   </div>
 
+  {% if client.name or client.phone or client.address or client.email %}
   <div class="client">
     <strong>Client :</strong><br>
-    {{ client.name }}<br>
-    {{ client.address }}<br>
-    {{ client.email }}
+    {% if client.name %}{{ client.name }}<br>{% endif %}
+    {% if client.phone %}{{ client.phone }}<br>{% endif %}
+    {% if client.address %}{{ client.address }}<br>{% endif %}
+    {% if client.email %}{{ client.email }}{% endif %}
   </div>
+  {% endif %}
+  {% if meta is defined and meta.brand %}
+  <div class="small">Vélo: {{ meta.brand }}</div>
+  {% endif %}
 
   <table>
     <thead>
-      <tr><th>Libellé</th><th>Qté</th><th>Prix HT</th><th>TVA %</th><th>Total HT</th></tr>
+      <tr><th>Libellé</th><th>Qté</th><th>Prix</th><th>Total</th></tr>
     </thead>
     <tbody>
       {% for line in devis.lines|default([]) %}
         <tr>
           <td>{{ line.label }}</td>
           <td>{{ line.quantite }}</td>
-          <td>{{ line.prix_ht_snapshot }}</td>
-          <td>{{ line.tva_snapshot }}</td>
+          <td>{{ line.prix_ht_snapshot|number_format(2, ',', ' ') }}</td>
           <td>{{ (line.prix_ht_snapshot * line.quantite)|number_format(2, ',', ' ') }}</td>
         </tr>
       {% endfor %}
@@ -54,13 +59,8 @@
   </table>
 
   <div class="totals">
-    <div><strong>Montant HT:</strong> {{ devis.montant_ht|default('0') }} €</div>
-    <div><strong>Montant TVA:</strong> {{ devis.montant_tva|default('0') }} €</div>
-    <div style="font-size:1.1rem; margin-top:8px;"><strong>Total TTC:</strong> {{ devis.montant_ttc|default('0') }} €</div>
+    <div style="font-size:1.1rem; margin-top:8px;"><strong>TOTAL:</strong> {{ devis.montant_ttc|default('0') }} €</div>
   </div>
 
-  <div style="clear:both; margin-top:40px;" class="small">
-    TVA par défaut: {{ env.TVA_DEFAULT }}%. Conditions : devis valable 30 jours.
-  </div>
 </body>
 </html>
