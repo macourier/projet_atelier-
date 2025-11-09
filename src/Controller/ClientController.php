@@ -174,6 +174,7 @@ class ClientController
         $address = trim($data['address'] ?? '');
         $email = trim($data['email'] ?? '');
         $phone = trim($data['phone'] ?? '');
+        $note = trim($data['note'] ?? '');
 
         if (!$this->pdo) {
             $response->getBody()->write('Database not available');
@@ -182,22 +183,24 @@ class ClientController
 
         if ($id > 0) {
             // update
-            $stmt = $this->pdo->prepare('UPDATE clients SET name = :name, address = :address, email = :email, phone = :phone, updated_at = CURRENT_TIMESTAMP WHERE id = :id');
+            $stmt = $this->pdo->prepare('UPDATE clients SET name = :name, address = :address, email = :email, phone = :phone, note = :note, updated_at = CURRENT_TIMESTAMP WHERE id = :id');
             $stmt->execute([
                 'name' => $name,
                 'address' => $address,
                 'email' => $email,
                 'phone' => $phone,
+                'note' => $note,
                 'id' => $id
             ]);
         } else {
             // create
-            $stmt = $this->pdo->prepare('INSERT INTO clients (name, address, email, phone) VALUES (:name, :address, :email, :phone)');
+            $stmt = $this->pdo->prepare('INSERT INTO clients (name, address, email, phone, note) VALUES (:name, :address, :email, :phone, :note)');
             $stmt->execute([
                 'name' => $name,
                 'address' => $address,
                 'email' => $email,
-                'phone' => $phone
+                'phone' => $phone,
+                'note' => $note
             ]);
             $id = (int)$this->pdo->lastInsertId();
         }

@@ -219,6 +219,11 @@
       {% endif %}
     {% endif %}
 
+    {% if client and client.note %}
+      <h3 style="margin-top:16px;">Note</h3>
+      <div class="text-muted">{{ client.note }}</div>
+    {% endif %}
+
     <div x-show="pending.length > 0" style="margin-top:12px;">
       <h3>Nouveaux éléments</h3>
       <table>

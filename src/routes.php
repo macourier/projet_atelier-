@@ -144,6 +144,12 @@ return function (App $app, array $container) {
             $ctrl = new \App\Controller\AdminPrestationsController($container);
             return $ctrl->create($request, $response);
         });
+
+        // Ajouter catégorie (tuile simple) - créera une vraie entité categories
+        $group->post('/admin/categories', function (Request $request, Response $response) use ($container) {
+            $ctrl = new \App\Controller\AdminPrestationsController($container);
+            return $ctrl->createCategory($request, $response);
+        });
         // placer la route statique avant la route paramétrée pour éviter le shadowing
         $group->post('/admin/prestations/undo', function (Request $request, Response $response) use ($container) {
             $ctrl = new \App\Controller\AdminPrestationsController($container);

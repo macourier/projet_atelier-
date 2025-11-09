@@ -76,58 +76,14 @@
   <div class="acc-panel">
     <div class="card-add">
       <h3 class="card-add-title" style="margin-top:0">➕ Ajouter une categorie</h3>
-      <form id="form-add-prest" method="post" action="/admin/prestations" novalidate>
+      <form id="form-add-category" method="post" action="/admin/categories" novalidate>
         <div class="form-stack">
-          <!-- Catégorie: select + option Autre... (fallback input) -->
           <div class="form-field">
-            <label for="add_categorie_select">Catégorie</label>
-            <select id="add_categorie_select" class="input" aria-describedby="cat_hint">
-              <option value="">Sélectionner…</option>
-              <option value="__new__">Autre…</option>
-            </select>
-            <small id="cat_hint" class="hint">Ex: Transmission…</small>
-            <input type="text" id="add_categorie_new" class="input" placeholder="Transmission…" style="display:none; margin-top:6px;">
-            <!-- Champ réel soumis au backend -->
-            <input type="hidden" name="categorie" id="add_categorie_real" />
+            <label for="add_category_name">Nom de la catégorie</label>
+            <input type="text" id="add_category_name" name="name" class="input" placeholder="Ex : Transmission" required />
           </div>
-
-          <!-- Manœuvre -->
-          <div class="form-field">
-            <label for="add_libelle">Manœuvre</label>
-            <input type="text" class="input" id="add_libelle" name="libelle" placeholder="Ex : Réglage dérailleur" required>
-          </div>
-
-          <!-- Prix MO -->
-          <div class="form-field">
-            <label for="add_prix_mo">Prix main d’œuvre</label>
-            <div class="input-price">
-              
-              <input type="number" step="0.01" inputmode="decimal" class="input" id="add_prix_mo" name="prix_main_oeuvre_ht" placeholder="Main d’œuvre (€)" required>
-            </div>
-          </div>
-
-          {% if piece_supported|default(false) %}
-          <!-- Pièce + Prix pièce en grille -->
-          <div class="form-grid-2">
-            <div class="form-field">
-              <label for="add_piece_select">Pièce</label>
-              <select id="add_piece_select" class="input">
-                <option value="">Aucune / Libre</option>
-              </select>
-              <input type="text" class="input" id="add_piece_text" name="piece_libelle" placeholder="Pièce (optionnel)" style="margin-top:6px;">
-            </div>
-            <div class="form-field">
-              <label for="add_prix_piece">Prix pièce</label>
-              <div class="input-price">
-                
-                <input type="number" step="0.01" inputmode="decimal" class="input" id="add_prix_piece" name="piece_prix_ht" placeholder="Pièce (€)">
-              </div>
-            </div>
-          </div>
-          {% endif %}
-
           <div class="form-actions">
-            <button class="btn btn-accent" type="submit">Ajouter au catalogue</button>
+            <button class="btn btn-accent" type="submit">Ajouter la catégorie</button>
           </div>
         </div>
       </form>

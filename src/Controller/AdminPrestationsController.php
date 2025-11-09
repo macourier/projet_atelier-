@@ -116,14 +116,20 @@ class AdminPrestationsController
         if (!$this->pdo) return $response->withStatus(500);
         $d = (array)$request->getParsedBody();
 
-        // Champs saisis côté UI simplifiée
-        $cat = trim($d['categorie'] ?? '');
+        // Resolve category: accept category_id or categorie (name)
+        $categoryId = null;
+        if (isset($d['category_id']) && trim((string)$d['category_id']) !== '') {
+            $categoryId = (int)$d['category_id'];
+        } elseif (!empty($d['categorie'])) {
+            $categoryId = $this->resolveCategoryId(trim((string)$d['categorie']));
+        }
+
         $lib = trim($d['libelle'] ?? '');
         $prixStr = trim((string)($d['prix_main_oeuvre_ht'] ?? '0'));
         $prixStr = str_replace(',', '.', $prixStr);
         $prix = (float)$prixStr;
 
-        if ($cat === '' || $lib === '') {
+        if (($categoryId === null || $categoryId === 0) || $lib === '') {
             return $response->withStatus(400);
         }
 
@@ -143,11 +149,20 @@ class AdminPrestationsController
         $piecePrixStr = str_replace(',', '.', $piecePrixStr);
         $piecePrix = (float)$piecePrixStr;
 
-        $sql = "INSERT INTO prestations_catalogue (id, categorie, libelle, prix_main_oeuvre_ht, piece_libelle, piece_prix_ht, tva_pct, duree_min) 
-                VALUES (:id,:c,:l,:p,:pl,:pp,:t,:d)";
+        $sql = "INSERT INTO prestations_catalogue (id, categorie, category_id, libelle, prix_main_oeuvre_ht, piece_libelle, piece_prix_ht, tva_pct, duree_min) 
+                VALUES (:id,:c,:cid,:l,:p,:pl,:pp,:t,:d)";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute(['id'=>$id,'c'=>$cat,'l'=>$lib,'p'=>$prix,'pl'=>$pieceLib,'pp'=>$piecePrix,'t'=>$tva,'d'=>$dur]);
-
+        $stmt->execute([
+            'id' => $id,
+            'c' => $d['categorie'] ?? '',
+            'cid' => $categoryId,
+            'l' => $lib,
+            'p' => $prix,
+            'pl' => $pieceLib,
+            'pp' => $piecePrix,
+            't' => $tva,
+            'd' => $dur
+        ]);
 
         return $response->withHeader('Location','/admin/prestations')->withStatus(302);
     }
@@ -160,20 +175,34 @@ class AdminPrestationsController
 
         $d = (array)$request->getParsedBody();
         // On accepte uniquement ces champs malgré l'UI simplifiée
-        $fields = ['categorie','libelle','prix_main_oeuvre_ht','piece_libelle','piece_prix_ht','tva_pct','duree_min'];
+        $fields = ['categorie','category_id','libelle','prix_main_oeuvre_ht','piece_libelle','piece_prix_ht','tva_pct','duree_min'];
         $sets = [];
         $params = ['id' => $pid];
         foreach ($fields as $f) {
             if (array_key_exists($f, $d)) {
-                $sets[] = "$f = :$f";
-                if ($f === 'libelle' || $f === 'categorie' || $f === 'piece_libelle') {
-                    $params[$f] = trim((string)$d[$f]);
-                } elseif ($f === 'duree_min') {
-                    $params[$f] = (int)$d[$f];
+                if ($f === 'categorie') {
+                    // resolve category name to id and set both fields
+                    $catName = trim((string)$d[$f]);
+                    $catId = $this->resolveCategoryId($catName);
+                    $sets[] = "categorie = :categorie";
+                    $sets[] = "category_id = :category_id";
+                    $params['categorie'] = $catName;
+                    $params['category_id'] = $catId;
                 } else {
-                    $val = trim((string)$d[$f]);
-                    $val = str_replace(',', '.', $val);
-                    $params[$f] = (float)$val;
+                    $sets[] = "$f = :$f";
+                    if ($f === 'libelle' || $f === 'piece_libelle') {
+                        $params[$f] = trim((string)$d[$f]);
+                    } elseif ($f === 'duree_min') {
+                        $params[$f] = (int)$d[$f];
+                    } else {
+                        $val = trim((string)$d[$f]);
+                        $val = str_replace(',', '.', $val);
+                        if ($f === 'category_id') {
+                            $params[$f] = (int)$val;
+                        } else {
+                            $params[$f] = (float)$val;
+                        }
+                    }
                 }
             }
         }
@@ -182,7 +211,6 @@ class AdminPrestationsController
         $sql = "UPDATE prestations_catalogue SET ".implode(',', $sets).", deleted_at = deleted_at WHERE id = :id";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
-
 
         // Auto-save OK
         return $response->withStatus(204);
@@ -249,6 +277,41 @@ class AdminPrestationsController
             ->withHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
             ->withHeader('Content-Disposition', 'attachment; filename=\"prestations.xlsx\"')
             ->withStatus(200);
+    }
+
+    /**
+     * Résout l'id d'une catégorie en base en créant la catégorie si nécessaire.
+     */
+    private function resolveCategoryId(string $name): int
+    {
+        if (!$this->pdo) {
+            return 0;
+        }
+        $name = trim($name);
+        if ($name === '') return 0;
+        $stmt = $this->pdo->prepare("SELECT id FROM categories WHERE name = :n LIMIT 1");
+        $stmt->execute(['n' => $name]);
+        $id = $stmt->fetchColumn();
+        if ($id) return (int)$id;
+        $ins = $this->pdo->prepare("INSERT INTO categories (name) VALUES (:n)");
+        $ins->execute(['n' => $name]);
+        return (int)$this->pdo->lastInsertId();
+    }
+
+    /**
+     * Crée une catégorie via la tuile d'ajout (POST /admin/categories)
+     */
+    public function createCategory(Request $request, Response $response): Response
+    {
+        if (!$this->pdo) return $response->withStatus(500);
+        $d = (array)$request->getParsedBody();
+        $name = trim($d['name'] ?? '');
+        if ($name === '') {
+            return $response->withStatus(400);
+        }
+        $stmt = $this->pdo->prepare("INSERT OR IGNORE INTO categories (name) VALUES (:n)");
+        $stmt->execute(['n' => $name]);
+        return $response->withHeader('Location','/admin/prestations')->withStatus(302);
     }
 
     /**
