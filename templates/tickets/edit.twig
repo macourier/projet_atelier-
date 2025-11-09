@@ -5,6 +5,17 @@
 {% block content %}
   <h1>Ticket {{ ticket.id|default('—') }}</h1>
 
+  <style>
+    /* Recap tables shared layout to align numeric columns */
+    .recap-table { width:100%; border-collapse: collapse; margin-bottom:12px; }
+    .recap-table th, .recap-table td { padding:6px 8px; border-bottom:1px solid #e5e7eb; vertical-align:middle; }
+    .recap-table th { text-align:left; font-weight:700; background:transparent; }
+    .recap-table td { text-align:left; }
+    .recap-table th:nth-child(2), .recap-table td:nth-child(2) { text-align:center; width:80px; }
+    .recap-table th:nth-child(3), .recap-table td:nth-child(3) { text-align:right; width:120px; }
+    .recap-table th:nth-child(4), .recap-table td:nth-child(4) { text-align:right; width:120px; }
+  </style>
+
 
   <form method="post" action="/tickets/{{ ticket ? ticket.id : 0 }}/edit" x-data="ticketForm()" x-init="debouncedRecalc()" @change="debouncedRecalc()" @input="debouncedRecalc()">
 
@@ -22,16 +33,8 @@
     <fieldset class="form-field">
       <legend style="font-weight:600;">Vélo</legend>
       <div class="form-field">
-        <label for="bike_brand">Marque</label>
-        <input id="bike_brand" name="bike_brand" type="text" value="{{ ticket.bike_brand|default('') }}" placeholder="Ex: Trek">
-      </div>
-      <div class="form-field">
         <label for="bike_model">Modèle</label>
-        <input id="bike_model" name="bike_model" type="text" value="{{ ticket.bike_model|default('') }}" placeholder="Ex: Rockrider 540">
-      </div>
-      <div class="form-field">
-        <label for="bike_serial">N° de série</label>
-        <input id="bike_serial" name="bike_serial" type="text" value="{{ ticket.bike_serial|default('') }}" placeholder="Ex: SN1234567">
+        <input id="bike_model" name="bike_model" type="text" value="{{ ticket.bike_model|default(client.bike_model|default('')) }}" placeholder="Ex: Rockrider 540">
       </div>
       <div class="form-field">
         <label for="bike_notes">Notes</label>
@@ -39,6 +42,9 @@
       </div>
     </fieldset>
     {% else %}
+    <div class="form-field">
+      <strong>Vélo :</strong> {{ ticket.bike_model|default(client.bike_model|default('—')) }}
+    </div>
     {% endif %}
 
     <div id="catalogue" x-show="showCatalogue" x-transition.opacity x-transition.duration.250ms style="transform-origin: top;">
@@ -187,7 +193,13 @@
     {% if prestations is not empty or consommables is not empty %}
       <h3 style="margin-top:16px;">Récapitulatif</h3>
       {% if prestations is not empty %}
-        <table>
+        <table class="recap-table">
+          <colgroup>
+            <col style="width:auto">
+            <col style="width:80px">
+            <col style="width:120px">
+            <col style="width:120px">
+          </colgroup>
           <thead><tr><th>Prestation</th><th>Qté</th><th>Unitaire TTC</th><th>Sous-total TTC</th></tr></thead>
           <tbody>
           {% for p in prestations %}
@@ -203,7 +215,13 @@
       {% endif %}
 
       {% if consommables is not empty %}
-        <table>
+        <table class="recap-table">
+          <colgroup>
+            <col style="width:auto">
+            <col style="width:80px">
+            <col style="width:120px">
+            <col style="width:120px">
+          </colgroup>
           <thead><tr><th>Consommable</th><th>Qté</th><th>Unitaire TTC</th><th>Sous-total TTC</th></tr></thead>
           <tbody>
           {% for c in consommables %}

@@ -50,6 +50,16 @@ try {
         echo "  - {$d['name']} -> {$d['file']}\n";
     }
 
+    echo "[info] PRAGMA table_info(clients)\n";
+    $colsClients = $pdo->query('PRAGMA table_info(clients)')->fetchAll(PDO::FETCH_ASSOC);
+    if ($colsClients) {
+        foreach ($colsClients as $c) {
+            echo "  - {$c['cid']}: {$c['name']} {$c['type']}\n";
+        }
+    } else {
+        echo "  (no columns or table clients not found)\n";
+    }
+
     echo "[info] PRAGMA table_info(tickets)\n";
     $cols = $pdo->query('PRAGMA table_info(tickets)')->fetchAll(PDO::FETCH_ASSOC);
     if ($cols) {

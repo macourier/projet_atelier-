@@ -18,7 +18,7 @@
     </div>
     <div class="form-field">
       <label for="bike_model">Modèle du vélo</label>
-      <input id="bike_model" name="bike_model" type="text" placeholder="Ex: VTT Rockrider 540">
+      <input id="bike_model" name="bike_model" type="text" placeholder="Ex: VTT Rockrider 540" value="{{ client.bike_model|default('') }}">
     </div>
     <div class="form-field">
       <label for="email">Email</label>

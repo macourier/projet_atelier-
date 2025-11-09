@@ -1,0 +1,1 @@
+-- Migration 014: add note column to clients without wrapping transaction (fix for nested transaction issue)\nALTER TABLE clients ADD COLUMN note TEXT;

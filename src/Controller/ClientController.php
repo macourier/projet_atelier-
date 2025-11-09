@@ -126,12 +126,30 @@ class ClientController
             }
         }
 
+        // Récupérer le dernier vélo (marque/modèle) non vide pour ce client (fallback d'affichage)
+        $lastBikeBrand = '';
+        $lastBikeModel = '';
+        if ($this->pdo && $id > 0) {
+            try {
+                $st = $this->pdo->prepare("SELECT bike_brand, bike_model FROM tickets WHERE client_id = :cid AND (bike_model IS NOT NULL AND TRIM(bike_model) <> '') ORDER BY created_at DESC LIMIT 1");
+                $st->execute(['cid' => $id]);
+                $lb = $st->fetch();
+                if ($lb) {
+                    $lastBikeBrand = (string)($lb['bike_brand'] ?? '');
+                    $lastBikeModel = (string)($lb['bike_model'] ?? '');
+                }
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
         $response->getBody()->write($this->twig->render('clients/show.twig', [
             'client' => $client,
             'velos' => $velos,
             'tickets' => $tickets,
             'kpis' => $kpis,
-            'facturesByTicket' => $facturesByTicket
+            'facturesByTicket' => $facturesByTicket,
+            'last_bike' => ['brand' => $lastBikeBrand, 'model' => $lastBikeModel]
         ]));
         return $response;
     }
@@ -156,6 +174,27 @@ class ClientController
                 'email' => trim($query['email'] ?? ''),
                 'phone' => trim($query['phone'] ?? '')
             ];
+        }
+
+        // Pré-remplir le modèle (et marque) depuis le dernier ticket si disponible
+        if ($this->pdo && $id > 0) {
+            try {
+                $st = $this->pdo->prepare('SELECT bike_brand, bike_model FROM tickets WHERE client_id = :cid ORDER BY created_at DESC LIMIT 1');
+                $st->execute(['cid' => $id]);
+                $last = $st->fetch();
+                if ($last) {
+                    $bm = trim((string)($last['bike_model'] ?? ''));
+                    $bb = trim((string)($last['bike_brand'] ?? ''));
+                    if (($client['bike_model'] ?? '') === '' && $bm !== '') {
+                        $client['bike_model'] = $bm;
+                    }
+                    if (($client['bike_brand'] ?? '') === '' && $bb !== '') {
+                        $client['bike_brand'] = $bb;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // ignore, pré-remplissage facultatif
+            }
         }
 
         $response->getBody()->write($this->twig->render('clients/edit.twig', [
@@ -205,6 +244,16 @@ class ClientController
             $id = (int)$this->pdo->lastInsertId();
         }
 
+        // Propager le modèle de vélo saisi côté client vers les tickets du client où le modèle est vide
+        $bikeModel = trim($data['bike_model'] ?? '');
+        if ($bikeModel !== '' && $id > 0) {
+            try {
+                $stmt = $this->pdo->prepare("UPDATE tickets SET bike_model = :bm WHERE client_id = :cid AND (bike_model IS NULL OR TRIM(bike_model) = '')");
+                $stmt->execute(['bm' => $bikeModel, 'cid' => $id]);
+            } catch (\Throwable $e) {
+                // ne pas bloquer la sauvegarde client si la propagation échoue
+            }
+        }
 
         // Redirection: si "return" fourni (ex: /devis/new), y retourner avec client_id
         $ret = trim($data['return'] ?? '');
@@ -239,6 +288,10 @@ class ClientController
             if (preg_match('#^/(devis/new|catalogue)#', $ret) === 1) {
                 // Forcer l'autostart pour créer automatiquement un ticket depuis le brouillon
                 $params = '?from=devis&autostart=1' . ($autoCreate ? '&auto_create=1' : '');
+                // Passer le modèle saisi pour le récupérer côté clients/show (création ticket)
+                if (!empty($bikeModel)) {
+                    $params .= '&bike_model=' . rawurlencode($bikeModel);
+                }
                 $redir = '/clients/' . $id . $params;
                 return $response->withHeader('Location', $redir)->withStatus(302);
             }

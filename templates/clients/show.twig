@@ -90,14 +90,14 @@
       {% if openTickets is not empty %}
         <table>
           <thead>
-            <tr><th>ID</th><th>Vélo</th><th>Statut</th><th>Total HT</th><th>Facture</th><th></th></tr>
+            <tr><th>ID</th><th>Vélo</th><th>Date de réception</th><th>Total HT</th><th>Facture</th><th></th></tr>
           </thead>
           <tbody>
             {% for t in openTickets %}
               <tr id="row-ticket-{{ t.id }}">
                 <td>#{{ t.id }}</td>
                 <td>{{ t.bike_model|default('—') }}</td>
-                <td>{{ t.status }}</td>
+                <td>{{ t.received_at ? t.received_at|date('d/m/Y H:i') : (t.created_at ? t.created_at|date('d/m/Y H:i') : '—') }}</td>
                 <td>{{ t.total_ht|default(0) }}</td>
                 <td>
                   {% if facturesByTicket is defined and facturesByTicket[t.id]|default(null) and facturesByTicket[t.id].pdf_path %}
@@ -117,14 +117,14 @@
       {% if closedTickets is not empty %}
         <table>
           <thead>
-            <tr><th>ID</th><th>Vélo</th><th>Statut</th><th>Total HT</th><th>Facture</th><th></th></tr>
+            <tr><th>ID</th><th>Vélo</th><th>Date de réception</th><th>Total HT</th><th>Facture</th><th></th></tr>
           </thead>
           <tbody>
             {% for t in closedTickets %}
               <tr id="row-ticket-{{ t.id }}">
                 <td>#{{ t.id }}</td>
                 <td>{{ t.bike_model|default('—') }}</td>
-                <td>{{ t.status }}</td>
+                <td>{{ t.received_at ? t.received_at|date('d/m/Y H:i') : (t.created_at ? t.created_at|date('d/m/Y H:i') : '—') }}</td>
                 <td>{{ t.total_ht|default(0) }}</td>
                 <td>
                   {% if facturesByTicket is defined and facturesByTicket[t.id]|default(null) and facturesByTicket[t.id].pdf_path %}
@@ -189,6 +189,12 @@
         const add = (n,v) => { const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i); };
 
         add('client_id', String(clientId));
+        // Passer le modèle depuis l'URL si présent (ex: ?bike_model=Rockrider%20540)
+        try {
+          const u = new URL(window.location.href);
+          const bm = u.searchParams.get('bike_model');
+          if (bm) { add('bike_model', bm); }
+        } catch(_e){}
         if (Array.isArray(draft.rows)) {
           draft.rows.forEach(r=>{
             // On ne pousse que si coche MO ou Pièce
@@ -263,6 +269,12 @@
         const add = (n,v) => { const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i); };
 
         add('client_id', String(clientId));
+        // Passer le modèle depuis l'URL si présent (ex: ?bike_model=Rockrider%20540)
+        try {
+          const u = new URL(window.location.href);
+          const bm = u.searchParams.get('bike_model');
+          if (bm) { add('bike_model', bm); }
+        } catch(_e){}
         if (Array.isArray(draft.rows)) {
           draft.rows.forEach(r=>{
             // On ne pousse que si coche MO ou Pièce
