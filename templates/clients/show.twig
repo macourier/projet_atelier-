@@ -3,18 +3,17 @@
 {% block title %}Dashboard client — {{ client.name|default('Inconnu') }}{% endblock %}
 
 {% block content %}
-  <h1>Dashboard client</h1>
+  <h2 style="margin:16px 0 8px;">Dashboard client</h2>
 
   {% if error %}
     <div style="color:#b00020">{{ error }}</div>
   {% endif %}
 
   {% if client %}
-    <div>
-      <strong>Nom:</strong> {{ client.name }}<br>
-      <strong>Adresse:</strong> {{ client.address }}<br>
-      <strong>Email:</strong> {{ client.email }}<br>
-      <strong>Téléphone:</strong> {{ client.phone }}<br>
+    <div class="card client-card client-card-narrow" style="background:#fff; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:12px 14px; line-height:1.45; margin:8px 0; font-size:.95rem;">
+      <div class="client-row"><span class="client-label">Nom:</span> {{ client.name|default('') }}</div>
+      <div class="client-row"><span class="client-label">Email:</span> {{ client.email|default('') }}</div>
+      <div class="client-row"><span class="client-label">Téléphone:</span> {{ client.phone|default('') }}</div>
     </div>
 
     {% set fromDevis = app.request.getQueryParams().from|default('') %}
@@ -36,8 +35,8 @@
     {% endif %}
 
     <div style="display:flex; gap:8px; margin:12px 0;">
-      <a class="btn" href="/clients/{{ client.id|default(0) }}/edit">Éditer le client</a>
-      <a class="btn" href="/tickets/0/edit?client_id={{ client.id }}">Nouveau ticket</a>
+      <a class="btn btn-light-primary" href="/clients/{{ client.id|default(0) }}/edit">Éditer le client</a>
+      <a class="btn btn-light-primary" href="/tickets/0/edit?client_id={{ client.id }}">Nouveau ticket</a>
     </div>
 
     {# Vue 360° — KPIs #}
@@ -51,7 +50,7 @@
           <div style="font-size:1.2rem; font-weight:700;">{{ kpis.tickets_closed }}</div>
         </div>
         <div class="tile">
-          <div class="tile-title"><i class="fas fa-euro-sign"></i> Factures à payer</div>
+          <div class="tile-title"><i class="fas fa-euro-sign"></i> Factures en attente</div>
           <div class="text-muted">Nombre</div>
           <div style="font-size:1.4rem; font-weight:700;">{{ kpis.factures_unpaid }}</div>
           <div class="text-muted">Total TTC</div>
