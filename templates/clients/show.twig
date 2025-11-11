@@ -83,7 +83,7 @@
       {% if openTickets is not empty %}
         <table>
           <thead>
-            <tr><th>ID</th><th>Vélo</th><th>Date de réception</th><th>Total HT</th><th>Facture</th><th></th></tr>
+            <tr><th>ID</th><th>Vélo</th><th>Date de réception</th><th>Total TTC</th><th>Facture</th><th></th></tr>
           </thead>
           <tbody>
             {% for t in openTickets %}
@@ -91,7 +91,7 @@
                 <td>#{{ t.id }}</td>
                 <td>{{ t.bike_model|default('—') }}</td>
                 <td>{{ t.received_at ? t.received_at|date('d/m/Y H:i') : (t.created_at ? t.created_at|date('d/m/Y H:i') : '—') }}</td>
-                <td>{{ t.total_ht|default(0) }}</td>
+                <td>{{ '%.2f'|format(t.total_ttc|default(t.total_ht|default(0))) }}</td>
                 <td>
                   {% if facturesByTicket is defined and facturesByTicket[t.id]|default(null) and facturesByTicket[t.id].pdf_path %}
                     <a href="{{ facturesByTicket[t.id].pdf_path }}" target="_blank">Facture PDF</a>
@@ -110,7 +110,7 @@
       {% if closedTickets is not empty %}
         <table>
           <thead>
-            <tr><th>ID</th><th>Vélo</th><th>Date de réception</th><th>Total HT</th><th>Facture</th><th></th></tr>
+            <tr><th>ID</th><th>Vélo</th><th>Date de réception</th><th>Total TTC</th><th>Facture</th><th></th></tr>
           </thead>
           <tbody>
             {% for t in closedTickets %}
@@ -118,7 +118,7 @@
                 <td>#{{ t.id }}</td>
                 <td>{{ t.bike_model|default('—') }}</td>
                 <td>{{ t.received_at ? t.received_at|date('d/m/Y H:i') : (t.created_at ? t.created_at|date('d/m/Y H:i') : '—') }}</td>
-                <td>{{ t.total_ht|default(0) }}</td>
+                <td>{{ '%.2f'|format(t.total_ttc|default(t.total_ht|default(0))) }}</td>
                 <td>
                   {% if facturesByTicket is defined and facturesByTicket[t.id]|default(null) and facturesByTicket[t.id].pdf_path %}
                     <a href="{{ facturesByTicket[t.id].pdf_path }}" target="_blank">Facture PDF</a>

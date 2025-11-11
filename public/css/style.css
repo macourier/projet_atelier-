@@ -226,3 +226,15 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus{
 .btn-accent{ background:#0069d9; color:#fff; font-weight:700; min-height:50px; padding:.7rem 1.2rem; border-radius:12px; border:1px solid transparent; }
 .btn-accent:hover{ filter:brightness(.96); }
 .toolbar-inline{ display:flex; align-items:flex-end; gap:12px; justify-content:space-between; margin:8px 0; }
+
+/* UI tweak: lighter primary button for specific actions */
+.btn-light-primary{ background:#3B82F6; border-color:#3B82F6; }
+.btn-light-primary:hover{ filter:brightness(.97); }
+
+/* Client dashboard: narrow card width and label style */
+.client-card-narrow{ width:33%; max-width:420px; }
+@media (max-width: 720px){
+  .client-card-narrow{ width:100%; max-width:100%; }
+}
+.client-label{ color:#111827; font-weight:600; }
+.client-card-narrow .client-row + .client-row{ margin-top:10px; }

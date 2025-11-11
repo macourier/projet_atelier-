@@ -48,7 +48,7 @@
   .btn-add-prest { background:#3b82f6; color:#fff; border-radius:10px; padding:10px 14px; border:none; cursor:pointer; }
   .btn-add-prest:hover { filter:brightness(0.95); }
   .btn-cancel-new { background: transparent; border:1px solid #ef4444; color:#991b1b; border-radius:10px; padding:10px 12px; cursor:pointer; }
-  .card-new .row-actions { display:flex; gap:8px; margin-top:10px; }
+  .card-new .row-actions { display:flex; gap:8px; margin-top:10px; justify-content:center; }
 
   @media (max-width: 640px) {
     .grid-2 { grid-template-columns:1fr; }
@@ -113,8 +113,7 @@
             <label>Prix pièce</label>
             <input class="cell lg" name="new_piece_prix_ht" type="number" step="0.01" inputmode="decimal" placeholder="Pièce (€)" />
             <div class="row-actions">
-              <button class="btn btn-add-prest" type="button">➕ Ajouter prestation</button>
-              <button class="btn btn-danger btn-cancel-new" type="button">Supprimer</button>
+              <button class="btn btn-add-prest" type="button">➕ Ajouter une prestation</button>
             </div>
           </div>
         </div>
@@ -385,6 +384,37 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   });
 
+  // Supprimer prestation (carte existante) avec confirm + toast
+  document.addEventListener('click', async (e) => {
+    const delBtn = e.target.closest('form[action*="/admin/prestations/"][action$="/delete"] .btn-danger');
+    if (!delBtn) return;
+    e.preventDefault();
+    const form = delBtn.closest('form');
+    const card = delBtn.closest('.card');
+    const title = card?.querySelector('.card-title')?.textContent?.trim() || 'cette prestation';
+    if (!window.confirm(`Supprimer ${title} ?`)) return;
+    try {
+      const res = await fetch(form.action, { method: 'POST' });
+      if (res.status === 204 || res.status === 200 || res.status === 302) {
+        showToast('Prestation supprimée ✓');
+        const sec = card.closest('.acc-section');
+        card.remove();
+        // Masquer la section si plus aucune carte prestation (hors carte "nouvelle prestation")
+        if (sec && !sec.querySelector('.card[data-id]')) {
+          sec.style.display = 'none';
+        }
+      } else {
+        console.warn('Delete non 2xx', await res.text());
+        showToast('Erreur suppression', true);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Erreur réseau', true);
+      // Fallback: soumission classique si fetch indisponible
+      try { form.submit(); } catch(_e){}
+    }
+  });
+  
   // Recherche: filtre cartes et replie sections vides
   if (search) {
     search.addEventListener('input', () => {
