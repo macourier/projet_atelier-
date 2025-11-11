@@ -150,6 +150,11 @@ return function (App $app, array $container) {
             $ctrl = new \App\Controller\AdminPrestationsController($container);
             return $ctrl->createCategory($request, $response);
         });
+        // Supprimer une catégorie (et ses prestations)
+        $group->post('/admin/categories/{id}/delete', function (Request $request, Response $response, $args) use ($container) {
+            $ctrl = new \App\Controller\AdminPrestationsController($container);
+            return $ctrl->deleteCategory($request, $response, $args);
+        });
         // placer la route statique avant la route paramétrée pour éviter le shadowing
         $group->post('/admin/prestations/undo', function (Request $request, Response $response) use ($container) {
             $ctrl = new \App\Controller\AdminPrestationsController($container);

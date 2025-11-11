@@ -99,12 +99,24 @@ class AdminPrestationsController
             if (!isset($grouped[$cat])) { $grouped[$cat] = []; }
             $grouped[$cat][] = $r;
         }
+        // Charger la liste des catégories (pour suppression via select)
+        $cats = [];
+        if ($this->pdo) {
+            try {
+                $stc = $this->pdo->query("SELECT id, name FROM categories ORDER BY name");
+                $cats = $stc->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            } catch (\Throwable $e) {
+                $cats = [];
+            }
+        }
+
         $html = $this->twig->render('admin/prestations.twig', [
             'prestations' => $rows,
             'grouped_prestas' => $grouped,
             'piece_supported' => $pieceSupported,
             'debug_cols' => $debugCols,
             'db_list' => $dbList,
+            'categories' => $cats,
             'env' => ($this->container['env'] ?? $_ENV ?? [])
         ]);
         $response->getBody()->write($html);
@@ -337,6 +349,38 @@ class AdminPrestationsController
         return 'PREST_' . strtoupper(bin2hex(random_bytes(4)));
     }
 
+    /**
+     * Supprime une catégorie et toutes les prestations associées (définitif).
+     * Route: POST /admin/categories/{id}/delete
+     */
+    public function deleteCategory(Request $request, Response $response, array $args): Response
+    {
+        if (!$this->pdo) return $response->withStatus(500);
+        $id = (int)($args['id'] ?? 0);
+        if ($id <= 0) return $response->withStatus(400);
 
+        try {
+            $this->pdo->beginTransaction();
+            // Récupérer le nom de la catégorie (pour compat si certaines lignes n'ont pas category_id)
+            $name = '';
+            $st = $this->pdo->prepare("SELECT name FROM categories WHERE id = :id LIMIT 1");
+            $st->execute(['id' => $id]);
+            $name = (string)($st->fetchColumn() ?: '');
+
+            // Supprimer prestations associées (par id ou par nom)
+            $dp = $this->pdo->prepare("DELETE FROM prestations_catalogue WHERE category_id = :id OR categorie = :n");
+            $dp->execute(['id' => $id, 'n' => $name]);
+
+            // Supprimer la catégorie
+            $dc = $this->pdo->prepare("DELETE FROM categories WHERE id = :id");
+            $dc->execute(['id' => $id]);
+
+            $this->pdo->commit();
+            return $response->withHeader('Location','/admin/prestations')->withStatus(302);
+        } catch (\Throwable $e) {
+            try { $this->pdo->rollBack(); } catch (\Throwable $ignore) {}
+            return $response->withStatus(500);
+        }
+    }
 
 }

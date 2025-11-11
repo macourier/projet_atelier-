@@ -70,7 +70,7 @@
 <!-- Ajouter (hors acc-root pour ne pas être filtré) -->
 <section class="acc-section acc-add no-filter" data-cat="_ajouter">
   <header class="acc-header" tabindex="0" role="button">
-    <span class="acc-title"><i class="fas fa-plus"></i> Ajouter une categorie</span>
+    <span class="acc-title"><i class="fas fa-plus"></i> Gestions des catégories</span>
     <i class="fas fa-chevron-down acc-chevron"></i>
   </header>
   <div class="acc-panel">
@@ -87,6 +87,23 @@
           </div>
         </div>
       </form>
+    </div>
+
+    <!-- Suppression de catégorie (dropdown) -->
+    <div class="card" style="background:#F4F7FB; border:1px solid #dbe6f4; border-radius:14px; padding:16px; margin-top:12px;">
+      <h3 style="margin:0 0 8px;">Suppression de catégorie</h3>
+      <div style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+        <div style="min-width:240px; flex:1;">
+          <label style="font-size:14px; color:#6b7280; display:block; margin:0 0 4px;">Catégorie à supprimer</label>
+          <select id="cat-delete-select" class="input">
+            <option value="">— Sélectionner —</option>
+            {% for c in categories|default([]) %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="button" class="btn btn-ghost btn-ghost-sm btn-cat-bulk-delete" style="background:#fee2e2; color:#991b1b; border:1px solid #fecaca;">Supprimer la catégorie</button>
+      </div>
     </div>
   </div>
 </section>
@@ -344,6 +361,30 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   });
   
+  // Suppression par catégorie (select + confirmer)
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn-cat-bulk-delete');
+    if (!btn) return;
+    const sel = document.getElementById('cat-delete-select');
+    const id = sel && sel.value ? sel.value : '';
+    if (!id) { if (typeof showToast==='function') showToast('Choisir une catégorie', true); return; }
+    const ok = window.confirm("Supprimer cette catégorie supprimera aussi toutes les prestations associées.\nAction irréversible. Continuer ?");
+    if (!ok) return;
+    try {
+      const res = await fetch(`/admin/categories/${encodeURIComponent(id)}/delete`, { method:'POST' });
+      if (res.status === 302 || res.status === 204 || res.status === 200) {
+        if (typeof showToast==='function') showToast('Catégorie supprimée ✓');
+        setTimeout(()=>{ location.reload(); }, 500);
+      } else {
+        console.warn('Delete cat non 2xx', await res.text());
+        if (typeof showToast==='function') showToast('Erreur suppression', true);
+      }
+    } catch(err) {
+      console.error(err);
+      if (typeof showToast==='function') showToast('Erreur réseau', true);
+    }
+  });
+
   // Save par carte
   document.addEventListener('click', async (e) => {
     const btn = e.target.closest('.btn-save');
