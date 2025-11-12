@@ -10,7 +10,7 @@
   {% endif %}
 
   {% if client %}
-    <div class="card client-card client-card-narrow" style="background:#fff; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:12px 14px; line-height:1.45; margin:8px 0; font-size:.95rem;">
+    <div class="card client-card client-card-narrow" style="background:#f9fafb; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:12px 14px; line-height:1.45; margin:8px 0; font-size:.95rem;">
       <div class="client-row"><span class="client-label">Nom:</span> {{ client.name|default('') }}</div>
       <div class="client-row"><span class="client-label">Email:</span> {{ client.email|default('') }}</div>
       <div class="client-row"><span class="client-label">Téléphone:</span> {{ client.phone|default('') }}</div>
@@ -83,7 +83,7 @@
         <p>Aucun ticket ouvert.</p>
       {% endif %}
 
-      <h2 id="tickets-closed" style="margin-top:16px;">Tickets clos</h2>
+      <h2 id="tickets-closed" style="margin-top:16px;">Tickets terminés</h2>
       {% if closedTickets is not empty %}
         <table>
           <thead>

@@ -3,7 +3,15 @@
 {% block title %}Ticket — {{ ticket.id|default('Nouveau') }}{% endblock %}
 
 {% block content %}
-  <h1>Ticket {{ ticket.id|default('—') }}</h1>
+  <h2 style="margin:16px 0 8px;">Ticket {{ ticket.id|default('—') }}</h2>
+
+    {% if client %}
+    <div class="card client-card client-card-narrow" style="background:#f9fafb; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:12px 14px; line-height:1.45; margin:8px 0; font-size:.95rem;">
+      <div class="client-row"><span class="client-label">Nom:</span> {{ client.name|default('') }}</div>
+      <div class="client-row"><span class="client-label">Email:</span> {{ client.email|default('') }}</div>
+      <div class="client-row"><span class="client-label">Téléphone:</span> {{ client.phone|default('') }}</div>
+    </div>
+    {% endif %}
 
   <style>
     /* Recap tables shared layout to align numeric columns */
@@ -303,7 +311,7 @@
           {% if client %}
           <a class="btn btn-ghost btn-ghost-sm" href="/clients/{{ client.id }}">Dashboard client</a>
           {% endif %}
-          <button type="button" class="btn btn-secondary" @click="showCatalogue=true; $nextTick(()=>{ const c=document.getElementById('catalogue'); if(c){ c.scrollIntoView({behavior:'smooth', block:'start'});} });">
+          <button type="button" class="btn btn-secondary" @click="showCatalogue = !showCatalogue; $nextTick(()=>{ const c=document.getElementById('catalogue'); if(c && showCatalogue){ c.scrollIntoView({behavior:'smooth', block:'start'});} });">
             <i class="fas fa-plus" style="margin-right:6px;"></i>Ajouter prestation
           </button>
         </div>
