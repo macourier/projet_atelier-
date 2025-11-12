@@ -3,7 +3,7 @@
 {% block title %}Administration — Prestations{% endblock %}
 
 {% block content %}
-<h1>Catalogue des prestations</h1>
+<h2 class="page-title-inside">Catalogue des prestations</h2>
 {% if env.APP_DEBUG|default('false') == 'true' and (is_local|default(false)) %}
   <div class="text-muted" style="margin:6px 0; padding:6px; border:1px dashed #94a3b8; border-radius:8px; background:#f8fafc;">
     DEBUG — piece_supported: {{ piece_supported ? 'true' : 'false' }}, cols: {{ debug_cols|default([])|join(', ') }}, DB(env): {{ env.DB_PATH|default('') }}, DB(main): {{ (db_list|first).file|default('') }}
@@ -318,6 +318,32 @@ document.addEventListener('DOMContentLoaded', function(){
     // Init
     syncCategorieReal();
   }
+
+  // Ouverture automatique et toast après création de catégorie (?cat_added=1&cat_name=...)
+  (function(){
+    try{
+      const u = new URL(window.location.href);
+      if (u.searchParams.get('cat_added') === '1'){
+        const cname = (u.searchParams.get('cat_name') || u.searchParams.get('name') || '').trim();
+        if (typeof showToast==='function') showToast('Catégorie ajoutée ✓');
+        if (cname){
+          // Trouver la section correspondant à la catégorie ajoutée
+          const sections = Array.from(document.querySelectorAll('.acc-section'));
+          const sec = sections.find(s => (s.getAttribute('data-cat') || '').trim().toLowerCase() === cname.toLowerCase());
+          if (sec){
+            sec.classList.add('open');
+            const header = sec.querySelector('.acc-header');
+            if (header) header.setAttribute('aria-expanded','true');
+            // Scroll + mise en évidence visuelle
+            sec.scrollIntoView({behavior:'smooth', block:'start'});
+            sec.style.outline = '2px solid #3b82f6';
+            sec.style.outlineOffset = '2px';
+            setTimeout(()=>{ sec.style.outline=''; sec.style.outlineOffset=''; }, 2500);
+          }
+        }
+      }
+    }catch(_e){}
+  })();
 
   // Ajouter prestation (carte spéciale)
   document.addEventListener('click', async (e) => {

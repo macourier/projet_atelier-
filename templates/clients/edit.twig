@@ -3,7 +3,7 @@
 {% block title %}Éditer client{% endblock %}
 
 {% block content %}
-  <h1>{{ client ? 'Éditer le client' : 'Nouveau client' }}</h1>
+  <h2 class="page-title-inside">{{ client ? 'Éditer le client' : 'Nouveau client' }}</h2>
 
   <form method="post" action="/clients/{{ client.id|default(0) }}/edit">
     {% if return is defined and return %}
