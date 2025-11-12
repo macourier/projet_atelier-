@@ -24,6 +24,11 @@ return function (App $app, array $container) {
         return $response->withStatus(501);
     });
 
+    // Backward compat: /dashboard -> redirect to /catalogue
+    $app->get('/dashboard', function (Request $request, Response $response) {
+        return $response->withHeader('Location', '/catalogue')->withStatus(302);
+    });
+
     // Auth (use closures to inject the local $container)
     $app->get('/login', function (Request $request, Response $response) use ($container) {
         $ctrl = new \App\Controller\AuthController($container);

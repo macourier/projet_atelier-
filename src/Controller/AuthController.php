@@ -47,7 +47,7 @@ class AuthController
 
         if ($user && password_verify($password, $user['password_hash'])) {
             $_SESSION['user_id'] = $user['id'];
-            return $response->withHeader('Location', '/dashboard')->withStatus(302);
+            return $response->withHeader('Location', '/catalogue')->withStatus(302);
         }
 
         $_SESSION['auth_error'] = 'Identifiants invalides.';
