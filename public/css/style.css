@@ -27,6 +27,16 @@ header{display:flex; align-items:center; justify-content:space-between; padding:
 nav a{margin-left:10px; color:#0366d6; text-decoration:none}
 nav a:hover{opacity:.85}
 
+/* Page title alignment: shift visually to align with header/brand without changing document flow.
+   Use transform so elements below keep their position. */
+.page-title{
+  display:block;
+  transform:translateX(-16px); /* match .container padding */
+  margin:12px 0 12px; /* harmonious top/bottom spacing */
+  font-size:1.15rem; /* same as .brand and Dashboard client */
+  font-weight:700;
+}
+
 /* Card / main surface */
 main{
   background:#fff; border-radius:12px; padding:16px;

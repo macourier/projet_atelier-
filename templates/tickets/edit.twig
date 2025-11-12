@@ -3,7 +3,7 @@
 {% block title %}Ticket — {{ ticket.id|default('Nouveau') }}{% endblock %}
 
 {% block content %}
-  <h2 style="margin:16px 0 8px;">Ticket {{ ticket.id|default('—') }}</h2>
+  <h2 class="page-title">Ticket {{ ticket.id|default('—') }}</h2>
 
     {% if client %}
     <div class="card client-card client-card-narrow" style="background:#f9fafb; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:12px 14px; line-height:1.45; margin:8px 0; font-size:.95rem;">
