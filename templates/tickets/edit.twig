@@ -188,28 +188,34 @@
     {% endfor %}
 
     <!-- Tuile spéciale: Vente de vélo (toujours en dernier) -->
-    <div class="category open" data-cat="_bike_sale">
-      <div class="category-header" role="button" tabindex="0" aria-expanded="true">
+    <div class="category" x-data="{ id: '_bike_sale' }" :class="{ 'open': openCat === id }" data-cat="_bike_sale">
+      <div class="category-header"
+           role="button"
+           tabindex="0"
+           :aria-expanded="openCat === id ? 'true' : 'false'"
+           @click="openCat = (openCat === id ? null : id); $nextTick(() => { $el.scrollIntoView({ behavior: 'smooth', block: 'start' }); })"
+           @keydown.enter.prevent="openCat = (openCat === id ? null : id)"
+           @keydown.space.prevent="openCat = (openCat === id ? null : id)">
         <div style="font-weight:700; display:flex; align-items:center; gap:.5rem;">
           <i class="fas fa-bicycle"></i> Vente de vélo
         </div>
-        <div><i class="fas fa-chevron-up"></i></div>
+        <div><i class="fas" :class="openCat === id ? 'fa-chevron-up' : 'fa-chevron-down'"></i></div>
       </div>
-      <div class="prestations">
+      <template x-if="openCat === id"><div class="prestations">
         <div class="row-card" style="display:flex; flex-direction:column; gap:8px;">
           <div>
             <label>Modèle du vélo</label>
             <input id="bike-sale-model" type="text" class="input" placeholder="Ex: Rockrider 540">
           </div>
           <div>
-            <label>Prix du vélo (€ HT)</label>
+            <label>Prix du vélo</label>
             <input id="bike-sale-price" type="number" step="0.01" inputmode="decimal" class="input" placeholder="0.00">
           </div>
           <div>
             <button type="button" class="btn btn-secondary btn-add-bike-sale">Ajouter</button>
           </div>
         </div>
-      </div>
+      </div></template>
     </div>
 
     </div>
