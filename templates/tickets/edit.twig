@@ -186,6 +186,32 @@
     {% else %}
       <p class="text-muted">Le catalogue est vide. Allez dans Administration → Prestations pour le remplir.</p>
     {% endfor %}
+
+    <!-- Tuile spéciale: Vente de vélo (toujours en dernier) -->
+    <div class="category open" data-cat="_bike_sale">
+      <div class="category-header" role="button" tabindex="0" aria-expanded="true">
+        <div style="font-weight:700; display:flex; align-items:center; gap:.5rem;">
+          <i class="fas fa-bicycle"></i> Vente de vélo
+        </div>
+        <div><i class="fas fa-chevron-up"></i></div>
+      </div>
+      <div class="prestations">
+        <div class="row-card" style="display:flex; flex-direction:column; gap:8px;">
+          <div>
+            <label>Modèle du vélo</label>
+            <input id="bike-sale-model" type="text" class="input" placeholder="Ex: Rockrider 540">
+          </div>
+          <div>
+            <label>Prix du vélo (€ HT)</label>
+            <input id="bike-sale-price" type="number" step="0.01" inputmode="decimal" class="input" placeholder="0.00">
+          </div>
+          <div>
+            <button type="button" class="btn btn-secondary btn-add-bike-sale">Ajouter</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     </div>
     </div>
 
@@ -394,6 +420,42 @@
         }
       }
     }
+    // Ajout "Vente de vélo" (carte spéciale)
+    (function(){
+      document.addEventListener('click', function(e){
+        const btn = e.target && e.target.closest ? e.target.closest('.btn-add-bike-sale') : null;
+        if (!btn) return;
+        const modelEl = document.getElementById('bike-sale-model');
+        const priceEl = document.getElementById('bike-sale-price');
+        const model = (modelEl && modelEl.value ? String(modelEl.value).trim() : '');
+        let price = 0;
+        try { price = parseFloat(priceEl && priceEl.value ? String(priceEl.value).replace(',', '.') : '0'); } catch(_e) { price = 0; }
+        if (!model) { alert('Saisir le modèle du vélo'); if (modelEl) modelEl.focus(); return; }
+        if (!(Number.isFinite(price) && price >= 0)) { alert('Saisir un prix valide'); if (priceEl) priceEl.focus(); return; }
+        // Injecter inputs cachés pour persistance
+        const cont = document.getElementById('pending-hidden');
+        if (cont) {
+          const add = (n,v)=>{ const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=String(v); cont.appendChild(i); };
+          add('custom_bike_label[]', 'Vente de vélo — ' + model);
+          add('custom_bike_price[]', String(price));
+        }
+        // Essayer de mettre à jour le récap dynamique via l'instance Alpine
+        try {
+          const root = document.querySelector('form[x-data]');
+          const data = root && root.__x ? root.__x.$data : null;
+          if (data && Array.isArray(data.pending)) {
+            const ttc = (typeof data.ttc === 'function') ? data.ttc(0,0,1,price,0) : price;
+            data.pending.push({ label: 'Vente de vélo — ' + model, qty: 1, ttc: ttc });
+            if (typeof data.recalc === 'function') data.recalc();
+            if (typeof data.toast === 'function') data.toast('Vente de vélo ajoutée ✓');
+          }
+        } catch(_e){}
+        // Nettoyer les champs
+        if (modelEl) modelEl.value = '';
+        if (priceEl) priceEl.value = '';
+      });
+    })();
+
     // Affiche un toast simple si ?success=1
     (function(){
       const u = new URL(window.location.href);

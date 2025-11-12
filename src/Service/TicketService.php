@@ -242,5 +242,29 @@ class TicketService
                 ]);
             }
         }
+
+        // 4) Lignes custom "Vente de vélo" (depuis tuile spéciale)
+        $labels = $post['custom_bike_label'] ?? $post['custom_bike_label[]'] ?? [];
+        $prices = $post['custom_bike_price'] ?? $post['custom_bike_price[]'] ?? [];
+        if (!is_array($labels)) { $labels = []; }
+        if (!is_array($prices)) { $prices = []; }
+
+        $count = max(count($labels), count($prices));
+        for ($i = 0; $i < $count; $i++) {
+            $lab = isset($labels[$i]) ? trim((string)$labels[$i]) : '';
+            $prw = isset($prices[$i]) ? (string)$prices[$i] : '';
+            $prw = str_replace(',', '.', trim($prw));
+            $val = is_numeric($prw) ? (float)$prw : 0.0;
+            if ($lab === '' || $val < 0) {
+                continue;
+            }
+            $ins = $this->pdo->prepare("INSERT INTO ticket_consommables (ticket_id, consommable_id, label, quantite, prix_ht_snapshot, tva_snapshot, is_custom, created_at)
+                VALUES (:tid, NULL, :label, 1, :p, 0, 1, CURRENT_TIMESTAMP)");
+            $ins->execute([
+                'tid' => $ticketId,
+                'label' => $lab,
+                'p' => $val
+            ]);
+        }
     }
 }
