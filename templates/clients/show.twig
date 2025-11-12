@@ -39,29 +39,6 @@
       <a class="btn btn-light-primary" href="/tickets/0/edit?client_id={{ client.id }}">Nouveau ticket</a>
     </div>
 
-    {# Vue 360° — KPIs #}
-    {% if kpis is defined %}
-      <div class="tiles">
-        <div class="tile">
-          <div class="tile-title"><i class="fas fa-tools"></i> Tickets</div>
-          <div class="text-muted">Ouverts</div>
-          <div style="font-size:1.4rem; font-weight:700;">{{ kpis.tickets_open }}</div>
-          <div class="text-muted">Clos</div>
-          <div style="font-size:1.2rem; font-weight:700;">{{ kpis.tickets_closed }}</div>
-        </div>
-        <div class="tile">
-          <div class="tile-title"><i class="fas fa-euro-sign"></i> Factures en attente</div>
-          <div class="text-muted">Nombre</div>
-          <div style="font-size:1.4rem; font-weight:700;">{{ kpis.factures_unpaid }}</div>
-          <div class="text-muted">Total TTC</div>
-          <div style="font-size:1.2rem; font-weight:700;">{{ '%.2f'|format(kpis.impayes_ttc|default(0)) }} €</div>
-        </div>
-        <div class="tile">
-          <div class="tile-title"><i class="fas fa-history"></i> Dernière activité</div>
-          <div style="font-size:1.1rem; font-weight:700;">{{ kpis.last_activity|default('—') }}</div>
-        </div>
-      </div>
-    {% endif %}
 
     {# Section Vélos supprimée — informations vélo désormais sur le Ticket #}
 

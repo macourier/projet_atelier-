@@ -18,6 +18,7 @@
       <div class="brand">{{- (env.COMPANY_NAME ?? "L' Atelier Vélo") -}}</div>
       <nav class="flex" style="gap:8px; align-items:center;">
         <a href="/catalogue">Catalogue</a>
+        <a href="/tickets/queue">File d'attente</a>
         <a href="#" onclick="return adminAccess()" title="Accès administrateur">Administrateur</a>
         <a href="/logout">Déconnexion</a>
         <form action="/search" method="get" class="flex" style="gap:6px; margin-left:12px;">

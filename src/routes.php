@@ -62,6 +62,15 @@ return function (App $app, array $container) {
 
 
         // Tickets
+        // File d'attente (tickets ouverts, ordre: plus ancien -> plus récent)
+        $group->get('/tickets/queue', function (Request $request, Response $response) use ($container) {
+            $ctrl = new \App\Controller\TicketController($container);
+            if (method_exists($ctrl, 'queue')) {
+                return $ctrl->queue($request, $response);
+            }
+            $response->getBody()->write('Not implemented');
+            return $response->withStatus(501);
+        });
         $group->get('/tickets/{id}/edit', function (Request $request, Response $response, $args) use ($container) {
             $ctrl = new \App\Controller\TicketController($container);
             return $ctrl->edit($request, $response, $args);

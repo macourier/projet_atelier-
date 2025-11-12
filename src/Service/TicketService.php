@@ -39,9 +39,31 @@ class TicketService
             $grouped[$norm]['__items'][] = $r;
         }
         // Re-projeter en map "label => items" attendue par les templates
+        // Fusion avec la table categories pour inclure aussi les catégories vides
         $out = [];
-        foreach ($grouped as $g) {
-            $out[$g['__display']] = $g['__items'];
+        $seen = [];
+        try {
+            $stc = $this->pdo->query("SELECT TRIM(name) AS name FROM categories ORDER BY name");
+            $cats = $stc->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        } catch (\Throwable $e) {
+            $cats = [];
+        }
+        // 1) Catégories connues (table) dans l'ordre alpha
+        foreach ($cats as $cn) {
+            $norm = strtolower(trim((string)$cn));
+            if ($norm === '') { continue; }
+            $seen[$norm] = true;
+            if (isset($grouped[$norm])) {
+                $out[$grouped[$norm]['__display']] = $grouped[$norm]['__items'];
+            } else {
+                $out[$cn] = [];
+            }
+        }
+        // 2) Catégories présentes seulement dans prestations (héritage) non encore vues
+        foreach ($grouped as $norm => $g) {
+            if (!isset($seen[$norm])) {
+                $out[$g['__display']] = $g['__items'];
+            }
         }
         return $out;
     }

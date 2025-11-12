@@ -1,0 +1,44 @@
+{% extends 'layout.twig' %}
+
+{% block title %}File d'attente — Tickets ouverts{% endblock %}
+
+{% block content %}
+<h1>File d'attente — Tickets ouverts</h1>
+
+{% if tickets is empty %}
+  <p class="text-muted">Aucun ticket ouvert.</p>
+{% else %}
+  <div style="overflow:auto;">
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="border-bottom:1px solid #e5e7eb;">
+          <th style="text-align:left; padding:8px;">#</th>
+          <th style="text-align:left; padding:8px;">Client</th>
+          <th style="text-align:left; padding:8px;">Vélo</th>
+          <th style="text-align:left; padding:8px;">Reçu / Créé le</th>
+          <th style="text-align:left; padding:8px;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tickets %}
+        <tr style="border-bottom:1px solid #f3f4f6;">
+          <td style="padding:8px; font-weight:600;">{{ t.id }}</td>
+          <td style="padding:8px;">{{ t.client_name|default('—') }}</td>
+          <td style="padding:8px;">{{ t.bike_brand|default('') }} {{ t.bike_model|default('') }}</td>
+          <td style="padding:8px;">
+            {% if t.received_at %}
+              {{ t.received_at|date('Y-m-d H:i') }}
+            {% else %}
+              {{ t.created_at|date('Y-m-d H:i') }}
+            {% endif %}
+          </td>
+          <td style="padding:8px;">
+            <a class="btn btn-secondary" href="/tickets/{{ t.id }}/edit">Ouvrir</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}

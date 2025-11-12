@@ -383,4 +383,47 @@ class TicketController
 
         return $response->withHeader('Location', '/clients/' . $client['id'] . '?invoiced=1')->withStatus(302);
     }
+
+    public function queue(Request $request, Response $response): Response
+    {
+        if (!$this->pdo) {
+            $response->getBody()->write('Database not available');
+            return $response->withStatus(500);
+        }
+        // Tickets ouverts, tri du plus ancien au plus récent — compatibilité si la colonne received_at est absente
+        $hasReceived = false;
+        try {
+            $cols = $this->pdo->query("PRAGMA table_info(tickets)")->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+            foreach ($cols as $col) {
+                if (strtolower((string)($col['name'] ?? '')) === 'received_at') { $hasReceived = true; break; }
+            }
+        } catch (\Throwable $e) {}
+
+        if ($hasReceived) {
+            $sql = "SELECT t.id, t.client_id, t.bike_brand, t.bike_model, t.status,
+                           t.created_at, t.received_at,
+                           c.name AS client_name
+                    FROM tickets t
+                    LEFT JOIN clients c ON c.id = t.client_id
+                    WHERE t.status = 'open'
+                    ORDER BY COALESCE(t.received_at, t.created_at) ASC, t.id ASC";
+        } else {
+            $sql = "SELECT t.id, t.client_id, t.bike_brand, t.bike_model, t.status,
+                           t.created_at, NULL AS received_at,
+                           c.name AS client_name
+                    FROM tickets t
+                    LEFT JOIN clients c ON c.id = t.client_id
+                    WHERE t.status = 'open'
+                    ORDER BY t.created_at ASC, t.id ASC";
+        }
+        $stmt = $this->pdo->query($sql);
+        $rows = $stmt->fetchAll() ?: [];
+
+        $html = $this->twig->render('tickets/queue.twig', [
+            'tickets' => $rows,
+            'env' => $this->container['env'] ?? []
+        ]);
+        $response->getBody()->write($html);
+        return $response;
+    }
 }
