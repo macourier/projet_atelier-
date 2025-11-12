@@ -77,7 +77,7 @@
                  data-piece-price="{{ item.piece_prix_ht|default(0) }}"
                  data-piece-label="{{ item.piece_libelle|default('Pièce') }}">
               <input type="checkbox" class="round prest-check" style="width:20px;height:20px"
-                     x-model="checked" @change="$root.recalc()">
+                      x-model="checked" @change="if($el.checked){ pieceChecked = true; } $root.recalc()">
               <div class="label">
                 <div style="font-weight:600">{{ item.libelle }}</div>
               </div>
