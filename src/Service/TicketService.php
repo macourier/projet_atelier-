@@ -258,7 +258,7 @@ class TicketService
             if ($lab === '' || $val < 0) {
                 continue;
             }
-            $ins = $this->pdo->prepare("INSERT INTO ticket_consommables (ticket_id, consommable_id, label, quantite, prix_ht_snapshot, tva_snapshot, is_custom, created_at)
+            $ins = $this->pdo->prepare("INSERT INTO ticket_prestations (ticket_id, prestation_id, label, quantite, prix_ht_snapshot, tva_snapshot, is_custom, created_at)
                 VALUES (:tid, NULL, :label, 1, :p, 0, 1, CURRENT_TIMESTAMP)");
             $ins->execute([
                 'tid' => $ticketId,
