@@ -37,6 +37,14 @@ nav a:hover{opacity:.85}
   font-weight:700;
 }
 
+.page-title-inside{
+  display:block;
+  transform:none; /* align with container content (no left shift) */
+  margin:0 0 16px; /* ~1rem bottom spacing */
+  font-size:1.25rem;
+  font-weight:600;
+}
+
 /* Card / main surface */
 main{
   background:#fff; border-radius:12px; padding:16px;
