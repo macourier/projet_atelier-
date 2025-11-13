@@ -305,14 +305,16 @@
             total += (qty * price) + (pqty * pprice);
           });
           // Ajouter les lignes personnalisées "Prestation" et "Pièce"
+          let customSum = 0;
           document.querySelectorAll('input[name="custom_prest_price[]"]').forEach((el) => {
             const v = parseFloat(String(el.value).replace(',', '.'));
-            if (!isNaN(v) && v >= 0) total += v;
+            if (!isNaN(v) && v >= 0) { total += v; customSum += v; }
           });
           document.querySelectorAll('input[name="custom_piece_price[]"]').forEach((el) => {
             const v = parseFloat(String(el.value).replace(',', '.'));
-            if (!isNaN(v) && v >= 0) total += v;
+            if (!isNaN(v) && v >= 0) { total += v; customSum += v; }
           });
+          try { console.log('[Prestation] recalc customSum=', customSum.toFixed ? customSum.toFixed(2) : customSum, 'total=', total.toFixed ? total.toFixed(2) : total); } catch(_e){}
           const fmt = (n) => Number(n).toFixed(2);
           const totalEl = document.getElementById('t-total');
           if (totalEl) {
@@ -699,6 +701,7 @@
         if(priceEl) priceEl.value = '';
         // recalculer le total
         try {
+          try { console.log('[Prestation] addCustomLine', { kind, label, price, countPrest: document.querySelectorAll('input[name="custom_prest_price[]"]').length, countPiece: document.querySelectorAll('input[name="custom_piece_price[]"]').length }); } catch(_e){}
           // Déclencher d'abord sur l'input créé (meilleur support de @input)
           try { i2.dispatchEvent(new Event('input', { bubbles: true })); } catch(_e){}
           const form = document.querySelector('form[action="/devis/pdf/direct"]') || document.querySelector('form');
@@ -715,6 +718,7 @@
       try{
         document.querySelectorAll('input[data-key="'+key+'"]').forEach(el=>el.remove());
         try {
+          try { console.log('[Prestation] removeCustomLine', { key, countPrest: document.querySelectorAll('input[name="custom_prest_price[]"]').length, countPiece: document.querySelectorAll('input[name="custom_piece_price[]"]').length }); } catch(_e){}
           const form = document.querySelector('form[action="/devis/pdf/direct"]') || document.querySelector('form');
           if (form) {
             form.dispatchEvent(new Event('input', { bubbles: true }));
