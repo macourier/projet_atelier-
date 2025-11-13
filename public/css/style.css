@@ -115,12 +115,12 @@ input.cell:focus{outline:none; background:#fff3cd; transition:background .25s ea
 .tile-title{font-weight:700; display:flex; align-items:center; gap:.5rem}
 
 /* Accordéon catégories → prestations */
-.category{background:#fff; border-radius:var(--radius); border:1px solid #e9eef4; overflow:hidden; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.category{background:#f9fafb; border-radius:var(--radius); border:none; overflow:hidden; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .category-header{
   display:flex; align-items:center; justify-content:space-between; padding:12px 14px; cursor:pointer;
-  background:var(--tile); transition:background .25s ease
+  background:#f3f4f6; transition:background .25s ease
 }
-.category-header:hover{background:var(--tile-hover)}
+.category-header:hover{background:#e9ecef}
 .category .prestations{max-height:0; opacity:0; overflow:hidden}
 .category.open .prestations{max-height:1000px; opacity:1; transition:all .4s ease}
 
@@ -212,8 +212,8 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus{
 
 /* Cartes et structure de ligne (prestation) */
 .row-card{
-  background:#fff; border:1px solid #e9eef4; border-radius:12px; padding:12px 14px;
-  box-shadow:0 1px 3px rgba(0,0,0,.08); margin-bottom:10px;
+  background:#f9fafb; border:none; border-radius:12px; padding:16px;
+  box-shadow:0 1px 3px rgba(0,0,0,.08); margin-bottom:12px;
 }
 .row-header{ display:flex; flex-direction:column; gap:4px; }
 .row-body{ display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:flex-start; }
