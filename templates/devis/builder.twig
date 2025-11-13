@@ -220,10 +220,6 @@
           </div>
         </div>
 
-        <div class="row-card">
-          <div class="text-muted section-title" style="font-size:.8rem;">Lignes ajoutées</div>
-          <ul id="custom-lines-list" style="list-style:none; padding:0; margin:0;"></ul>
-        </div>
 
         <!-- Inputs hidden pour POST -->
         <div id="custom-lines-container" style="display:none;"></div>
@@ -241,7 +237,7 @@
       </div>
       <div class="flex gap-8">
         <button class="btn btn-secondary" type="button" onclick="saveDevisDraft(); return openDevisModal();"><i class="fas fa-file-invoice" style="margin-right:6px;"></i>Devis PDF</button>
-        <a class="btn btn-ghost btn-ghost-sm" href="javascript:void(0)" onclick="saveDevisDraft(); return goNewClient();">
+        <a class="btn btn-ghost btn-ghost-sm" href="/clients/0/edit?return=/catalogue" onclick="try{saveDevisDraft();}catch(e){} try{var r=goNewClient(); if(r===false){return false;}}catch(e){} window.location.href='/clients/0/edit?return=/catalogue'; return false;">
           <i class="fas fa-user-plus" style="margin-right:6px;"></i>Nouveau client
         </a>
       </div>
@@ -411,8 +407,12 @@
           const totalEl = document.getElementById('t-total');
           if (totalEl) {
             // fire input event to trigger recalc handler
-            const e = new Event('input');
-            document.body.dispatchEvent(e);
+            const form = document.querySelector('form[action="/devis/pdf/direct"]') || document.querySelector('form');
+            if (form) {
+              form.dispatchEvent(new Event('input', { bubbles: true }));
+              form.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            try { if (typeof ticketForm === 'function') { ticketForm().recalc(); } } catch(_e){}
           }
         }
       }catch(e){ console.warn('Devis draft restore error', e); }
@@ -663,7 +663,12 @@
       document.querySelectorAll("input[name='price_override[]']").forEach(el=>{ el.value=''; });
       document.querySelectorAll("input[name='piece_price_override[]']").forEach(el=>{ el.value=''; });
       // Recalculer total
-      const e = new Event('input'); document.body.dispatchEvent(e);
+      const form = document.querySelector('form[action="/devis/pdf/direct"]') || document.querySelector('form');
+      if (form) {
+        form.dispatchEvent(new Event('input', { bubbles: true }));
+        form.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      try { if (typeof ticketForm === 'function') { ticketForm().recalc(); } } catch(_e){}
       closeDevisModal();
       return false;
     }
@@ -690,40 +695,33 @@
         const i2 = document.createElement('input'); i2.type='hidden'; i2.name=namePrice; i2.value=String(price); i2.setAttribute('data-key', key);
         (hidWrap || form).appendChild(i1);
         (hidWrap || form).appendChild(i2);
-        // visible list
-        const list = document.getElementById('custom-lines-list');
-        if (list) {
-          const li = document.createElement('li');
-          li.setAttribute('data-key', key);
-          li.style.display='flex';
-          li.style.alignItems='center';
-          li.style.justifyContent='space-between';
-          li.style.gap='8px';
-          li.style.padding='6px 0';
-          const left = document.createElement('div');
-          left.textContent = label + ' — ' + Number(price).toFixed(2) + ' €';
-          const btn = document.createElement('button');
-          btn.type='button';
-          btn.className='btn btn-ghost btn-ghost-sm';
-          btn.textContent='Supprimer';
-          btn.addEventListener('click', function(){ removeCustomLine(key); });
-          li.appendChild(left);
-          li.appendChild(btn);
-          list.appendChild(li);
-        }
         if(labEl) labEl.value = '';
         if(priceEl) priceEl.value = '';
         // recalculer le total
-        try { const e = new Event('input'); document.body.dispatchEvent(e); } catch(_e){}
+        try {
+          // Déclencher d'abord sur l'input créé (meilleur support de @input)
+          try { i2.dispatchEvent(new Event('input', { bubbles: true })); } catch(_e){}
+          const form = document.querySelector('form[action="/devis/pdf/direct"]') || document.querySelector('form');
+          if (form) {
+            form.dispatchEvent(new Event('input', { bubbles: true }));
+            form.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          try { if (typeof ticketForm === 'function') { ticketForm().recalc(); } } catch(_e){}
+        } catch(_e){}
         return false;
       }catch(_e){ return false; }
     }
     function removeCustomLine(key){
       try{
         document.querySelectorAll('input[data-key="'+key+'"]').forEach(el=>el.remove());
-        const li = document.querySelector('#custom-lines-list li[data-key="'+key+'"]');
-        if (li) li.remove();
-        try { const e = new Event('input'); document.body.dispatchEvent(e); } catch(_e){}
+        try {
+          const form = document.querySelector('form[action="/devis/pdf/direct"]') || document.querySelector('form');
+          if (form) {
+            form.dispatchEvent(new Event('input', { bubbles: true }));
+            form.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          try { if (typeof ticketForm === 'function') { ticketForm().recalc(); } } catch(_e){}
+        } catch(_e){}
         return false;
       }catch(_e){ return false; }
     }
