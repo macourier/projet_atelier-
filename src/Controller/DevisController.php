@@ -154,6 +154,32 @@ class DevisController
             }
         }
 
+        // Lignes personnalisées (depuis la tuile du Catalogue)
+        $cPrestLabels = is_array($data['custom_prest_label'] ?? null) ? $data['custom_prest_label'] : [];
+        $cPrestPrices = is_array($data['custom_prest_price'] ?? null) ? $data['custom_prest_price'] : [];
+        $maxp = max(count($cPrestLabels), count($cPrestPrices));
+        for ($i = 0; $i < $maxp; $i++) {
+            $lab = isset($cPrestLabels[$i]) ? trim((string)$cPrestLabels[$i]) : '';
+            $prw = isset($cPrestPrices[$i]) ? (string)$cPrestPrices[$i] : '';
+            $prw = str_replace(',', '.', trim($prw));
+            $val = is_numeric($prw) ? (float)$prw : 0.0;
+            if ($lab === '' || $val < 0) { continue; }
+            $lines[] = ['label' => $lab, 'quantite' => 1, 'prix_ht_snapshot' => $val, 'tva_snapshot' => 0.0];
+            $totalHt += $val;
+        }
+        $cPieceLabels = is_array($data['custom_piece_label'] ?? null) ? $data['custom_piece_label'] : [];
+        $cPiecePrices = is_array($data['custom_piece_price'] ?? null) ? $data['custom_piece_price'] : [];
+        $maxc = max(count($cPieceLabels), count($cPiecePrices));
+        for ($i = 0; $i < $maxc; $i++) {
+            $lab = isset($cPieceLabels[$i]) ? trim((string)$cPieceLabels[$i]) : '';
+            $prw = isset($cPiecePrices[$i]) ? (string)$cPiecePrices[$i] : '';
+            $prw = str_replace(',', '.', trim($prw));
+            $val = is_numeric($prw) ? (float)$prw : 0.0;
+            if ($lab === '' || $val < 0) { continue; }
+            $lines[] = ['label' => $lab, 'quantite' => 1, 'prix_ht_snapshot' => $val, 'tva_snapshot' => 0.0];
+            $totalHt += $val;
+        }
+
         // Construire l'objet devis éphémère
         $numero = 'DIRECT-' . date('Ymd-His');
         $devis = [

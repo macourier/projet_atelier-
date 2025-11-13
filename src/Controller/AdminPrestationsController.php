@@ -109,6 +109,15 @@ class AdminPrestationsController
                 $cats = [];
             }
         }
+        // Fusionner catégories en sections vides si absentes des prestations
+        if ($cats) {
+            foreach ($cats as $c) {
+                $n = (string)($c['name'] ?? '');
+                if ($n !== '' && !isset($grouped[$n])) {
+                    $grouped[$n] = [];
+                }
+            }
+        }
 
         $html = $this->twig->render('admin/prestations.twig', [
             'prestations' => $rows,
@@ -323,7 +332,7 @@ class AdminPrestationsController
         }
         $stmt = $this->pdo->prepare("INSERT OR IGNORE INTO categories (name) VALUES (:n)");
         $stmt->execute(['n' => $name]);
-        return $response->withHeader('Location','/admin/prestations')->withStatus(302);
+        return $response->withHeader('Location','/admin/prestations?cat_added=1&cat_name=' . rawurlencode($name))->withStatus(302);
     }
 
     /**
