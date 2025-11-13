@@ -177,6 +177,31 @@
             }
           });
         }
+        // Lignes personnalisées "Prestation"/"Pièce" depuis la tuile Prestation
+        if (draft && draft.custom) {
+          try {
+            if (Array.isArray(draft.custom.prest)) {
+              draft.custom.prest.forEach(l => {
+                const lab = (l?.label || '').trim();
+                const pr = Number(String(l?.price ?? '').replace(',', '.'));
+                if (lab !== '' && Number.isFinite(pr) && pr >= 0) {
+                  add('custom_prest_label[]', lab);
+                  add('custom_prest_price[]', String(pr));
+                }
+              });
+            }
+            if (Array.isArray(draft.custom.piece)) {
+              draft.custom.piece.forEach(l => {
+                const lab = (l?.label || '').trim();
+                const pr = Number(String(l?.price ?? '').replace(',', '.'));
+                if (lab !== '' && Number.isFinite(pr) && pr >= 0) {
+                  add('custom_piece_label[]', lab);
+                  add('custom_piece_price[]', String(pr));
+                }
+              });
+            }
+          } catch(_e){}
+        }
         document.body.appendChild(form);
         // Nettoyer le brouillon pour éviter de re-proposer
         localStorage.removeItem('devisDraft');
@@ -195,7 +220,11 @@
           const raw = localStorage.getItem('devisDraft');
           if (raw) {
             const d = JSON.parse(raw);
-            const hasLines = Array.isArray(d?.rows) && d.rows.some(r=>!!r?.checked || !!r?.pieceChecked);
+            let hasLines = Array.isArray(d?.rows) && d.rows.some(r=>!!r?.checked || !!r?.pieceChecked);
+            if (!hasLines && d && d.custom) {
+              const validCustom = (arr) => Array.isArray(arr) && arr.some(x => ((x?.label || '').trim() !== '') && Number.isFinite(Number(String(x?.price ?? '').replace(',', '.'))) && Number(String(x?.price ?? '').replace(',', '.')) >= 0);
+              if (validCustom(d.custom.prest) || validCustom(d.custom.piece)) { hasLines = true; }
+            }
             if (hasLines) {
               createTicketFromDraft({{ client.id }});
             }
@@ -257,6 +286,31 @@
             }
           });
         }
+        // Lignes personnalisées "Prestation"/"Pièce" depuis la tuile Prestation
+        if (draft && draft.custom) {
+          try {
+            if (Array.isArray(draft.custom.prest)) {
+              draft.custom.prest.forEach(l => {
+                const lab = (l?.label || '').trim();
+                const pr = Number(String(l?.price ?? '').replace(',', '.'));
+                if (lab !== '' && Number.isFinite(pr) && pr >= 0) {
+                  add('custom_prest_label[]', lab);
+                  add('custom_prest_price[]', String(pr));
+                }
+              });
+            }
+            if (Array.isArray(draft.custom.piece)) {
+              draft.custom.piece.forEach(l => {
+                const lab = (l?.label || '').trim();
+                const pr = Number(String(l?.price ?? '').replace(',', '.'));
+                if (lab !== '' && Number.isFinite(pr) && pr >= 0) {
+                  add('custom_piece_label[]', lab);
+                  add('custom_piece_price[]', String(pr));
+                }
+              });
+            }
+          } catch(_e){}
+        }
         document.body.appendChild(form);
         // Nettoyer le brouillon pour éviter de re-proposer
         localStorage.removeItem('devisDraft');
@@ -276,7 +330,11 @@
           const raw = localStorage.getItem('devisDraft');
           if (raw) {
             const d = JSON.parse(raw);
-            const hasLines = Array.isArray(d?.rows) && d.rows.some(r=>!!r?.checked || !!r?.pieceChecked);
+            let hasLines = Array.isArray(d?.rows) && d.rows.some(r=>!!r?.checked || !!r?.pieceChecked);
+            if (!hasLines && d && d.custom) {
+              const validCustom = (arr) => Array.isArray(arr) && arr.some(x => ((x?.label || '').trim() !== '') && Number.isFinite(Number(String(x?.price ?? '').replace(',', '.'))) && Number(String(x?.price ?? '').replace(',', '.')) >= 0);
+              if (validCustom(d.custom.prest) || validCustom(d.custom.piece)) { hasLines = true; }
+            }
             if (hasLines) {
               createTicketFromDraft({{ client.id }});
             }
