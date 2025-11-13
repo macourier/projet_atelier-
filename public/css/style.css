@@ -45,6 +45,17 @@ nav a:hover{opacity:.85}
   font-weight:600;
 }
 
+/* Emphasis for key section titles (e.g., Catalogue) */
+.title-emph{
+  display:block;
+  margin:0 0 18px;
+  font-size:1.35rem;
+  font-weight:700;
+  color:#1f2937; /* neutral dark for good contrast */
+  padding-bottom:8px;
+  border-bottom:1px solid #e5e7eb; /* subtle separator */
+}
+
 /* Card / main surface */
 main{
   background:#fff; border-radius:12px; padding:16px;
