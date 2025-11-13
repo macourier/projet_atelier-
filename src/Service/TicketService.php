@@ -266,5 +266,39 @@ class TicketService
                 'p' => $val
             ]);
         }
+
+        // 5) Lignes custom "Prestation" (depuis tuile Prestation du Catalogue)
+        $cPrestLabels = $post['custom_prest_label'] ?? $post['custom_prest_label[]'] ?? [];
+        $cPrestPrices = $post['custom_prest_price'] ?? $post['custom_prest_price[]'] ?? [];
+        if (!is_array($cPrestLabels)) { $cPrestLabels = []; }
+        if (!is_array($cPrestPrices)) { $cPrestPrices = []; }
+        $maxp = max(count($cPrestLabels), count($cPrestPrices));
+        for ($i = 0; $i < $maxp; $i++) {
+            $lab = isset($cPrestLabels[$i]) ? trim((string)$cPrestLabels[$i]) : '';
+            $prw = isset($cPrestPrices[$i]) ? (string)$cPrestPrices[$i] : '';
+            $prw = str_replace(',', '.', trim($prw));
+            $val = is_numeric($prw) ? (float)$prw : 0.0;
+            if ($lab === '' || $val < 0) { continue; }
+            $ins = $this->pdo->prepare("INSERT INTO ticket_prestations (ticket_id, prestation_id, label, quantite, prix_ht_snapshot, tva_snapshot, is_custom, created_at)
+                VALUES (:tid, NULL, :label, 1, :p, 0, 1, CURRENT_TIMESTAMP)");
+            $ins->execute(['tid' => $ticketId, 'label' => $lab, 'p' => $val]);
+        }
+
+        // 6) Lignes custom "Pièce" (depuis tuile Prestation du Catalogue)
+        $cPieceLabels = $post['custom_piece_label'] ?? $post['custom_piece_label[]'] ?? [];
+        $cPiecePrices = $post['custom_piece_price'] ?? $post['custom_piece_price[]'] ?? [];
+        if (!is_array($cPieceLabels)) { $cPieceLabels = []; }
+        if (!is_array($cPiecePrices)) { $cPiecePrices = []; }
+        $maxc = max(count($cPieceLabels), count($cPiecePrices));
+        for ($i = 0; $i < $maxc; $i++) {
+            $lab = isset($cPieceLabels[$i]) ? trim((string)$cPieceLabels[$i]) : '';
+            $prw = isset($cPiecePrices[$i]) ? (string)$cPiecePrices[$i] : '';
+            $prw = str_replace(',', '.', trim($prw));
+            $val = is_numeric($prw) ? (float)$prw : 0.0;
+            if ($lab === '' || $val < 0) { continue; }
+            $insC = $this->pdo->prepare("INSERT INTO ticket_consommables (ticket_id, consommable_id, label, quantite, prix_ht_snapshot, tva_snapshot, is_custom, created_at)
+                VALUES (:tid, NULL, :label, 1, :p, 0, 1, CURRENT_TIMESTAMP)");
+            $insC->execute(['tid' => $ticketId, 'label' => $lab, 'p' => $val]);
+        }
     }
 }
