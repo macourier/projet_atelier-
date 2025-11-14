@@ -14,7 +14,10 @@
 
     {# Champ description supprimé sur la page d'accueil /catalogue #}
 
-    <h2 class="title-emph">Catalogue</h2>
+<h2 class="title-emph">Catalogue</h2>
+<div style="margin-bottom:8px;">
+  <a href="#prestation-custom" class="btn btn-ghost btn-ghost-sm" onclick="try{const root=document.querySelector('div[x-data]'); if(root && root.__x && root.__x.$data){ root.__x.$data.openCat='PRESTATION_CUSTOM'; }}catch(_e){}">Aller à la tuile “Prestation”</a>
+</div>
 
     <div id="piece-help-banner" role="status" aria-live="polite" style="margin:10px 0 12px; background:#FFFBEB; border:1px solid #FBC02D; color:#1C1C1C; padding:10px 12px; border-radius:12px; display:none;">
       <div style="font-weight:700; margin-bottom:4px;">Aide — Prix de base Pièce non visible</div>
@@ -41,7 +44,7 @@
     </script>
 
     {% set tvadef = env.TVA_DEFAULT|default(20) %}
-    <div x-data="{ openCat: null }">
+<div x-data="{ openCat: 'PRESTATION_CUSTOM' }">
     {% for cat, items in catalogue|default({}) %}
       <div class="category" x-data="{ id: '{{ cat|e('js') }}' }" :class="{ 'open': openCat === id }">
         <div class="category-header"
@@ -178,7 +181,7 @@
     {% endfor %}
 
     {# Tuile personnalisée "Prestation" — toujours en bas #}
-    <div class="category" x-data="{ id: 'PRESTATION_CUSTOM' }" :class="{ 'open': openCat === id }">
+<div id="prestation-custom" class="category" x-data="{ id: 'PRESTATION_CUSTOM' }" :class="{ 'open': openCat === id }">
       <div class="category-header"
            role="button"
            tabindex="0"
