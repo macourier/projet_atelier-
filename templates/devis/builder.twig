@@ -77,7 +77,7 @@
                  data-piece-price="{{ item.piece_prix_ht|default(0) }}"
                  data-piece-label="{{ item.piece_libelle|default('Pièce') }}">
               <input type="checkbox" class="round prest-check" style="width:20px;height:20px"
-                      x-model="checked" @change="if($el.checked){ pieceChecked = true; } $root.recalc(); try{ const form=document.querySelector('form[action="/devis/pdf/direct"]')||document.querySelector('form'); if(form){ form.dispatchEvent(new Event('input',{bubbles:true})); form.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_e){}">
+                      x-model="checked" @change="if($el.checked){ pieceChecked = true; } $root.recalc()">
               <div class="label">
                 <div style="font-weight:600">{{ item.libelle }}</div>
               </div>
@@ -178,54 +178,6 @@
     {% else %}
       <p class="text-muted">Le catalogue est vide. Allez dans Administration → Prestations pour le remplir.</p>
     {% endfor %}
-
-    {# Tuile personnalisée "Prestation" — toujours en bas #}
-    <div class="category" x-data="{ id: 'PRESTATION_CUSTOM' }" :class="{ 'open': openCat === id }">
-      <div class="category-header"
-           role="button"
-           tabindex="0"
-           :aria-expanded="openCat === id ? 'true' : 'false'"
-           @click="openCat = (openCat === id ? null : id); $nextTick(() => { $el.scrollIntoView({ behavior: 'smooth', block: 'start' }); })"
-           @keydown.enter.prevent="openCat = (openCat === id ? null : id)"
-           @keydown.space.prevent="openCat = (openCat === id ? null : id)">
-        <div style="font-weight:700; display:flex; align-items:center; gap:.5rem;">
-          <i class="fas fa-clipboard-list"></i> Prestation
-        </div>
-        <div><i class="fas" :class="openCat === id ? 'fa-chevron-up' : 'fa-chevron-down'"></i></div>
-      </div>
-      <div class="prestations">
-        <div class="row-card">
-          <div class="text-muted section-title" style="font-size:.8rem; display:flex; align-items:center; gap:8px;">
-            <i class="fas fa-wrench"></i><span>Ajouter une prestation</span>
-          </div>
-          <div class="flex gap-8" style="align-items:center; flex-wrap:wrap;">
-            <input id="c_prest_label" type="text" placeholder="Nom de la prestation" style="min-width:220px;">
-            <input id="c_prest_price" type="number" step="0.01" placeholder="Prix" style="width:140px;">
-            <button type="button" class="btn btn-secondary" onclick="addCustomLine('prest')">
-              <i class="fas fa-plus" style="margin-right:6px;"></i>Ajouter
-            </button>
-          </div>
-        </div>
-
-        <div class="row-card">
-          <div class="text-muted section-title" style="font-size:.8rem; display:flex; align-items:center; gap:8px;">
-            <i class="fas fa-puzzle-piece"></i><span>Ajouter une pièce</span>
-          </div>
-          <div class="flex gap-8" style="align-items:center; flex-wrap:wrap;">
-            <input id="c_piece_label" type="text" placeholder="Nom de la pièce" style="min-width:220px;">
-            <input id="c_piece_price" type="number" step="0.01" placeholder="Prix" style="width:140px;">
-            <button type="button" class="btn btn-secondary" onclick="addCustomLine('piece')">
-              <i class="fas fa-plus" style="margin-right:6px;"></i>Ajouter
-            </button>
-          </div>
-        </div>
-
-
-        <!-- Inputs hidden pour POST -->
-        <div id="custom-lines-container" style="display:none;"></div>
-      </div>
-    </div>
-
     </div>
 
     <div class="footer-sticky">
@@ -237,7 +189,7 @@
       </div>
       <div class="flex gap-8">
         <button class="btn btn-secondary" type="button" onclick="saveDevisDraft(); return openDevisModal();"><i class="fas fa-file-invoice" style="margin-right:6px;"></i>Devis PDF</button>
-        <a class="btn btn-ghost btn-ghost-sm" href="/clients/0/edit?return=/catalogue" onclick="try{saveDevisDraft();}catch(e){} try{var r=goNewClient(); if(r===false){return false;}}catch(e){} window.location.href='/clients/0/edit?return=/catalogue'; return false;">
+        <a class="btn btn-ghost btn-ghost-sm" href="javascript:void(0)" onclick="saveDevisDraft(); return goNewClient();">
           <i class="fas fa-user-plus" style="margin-right:6px;"></i>Nouveau client
         </a>
       </div>
@@ -276,10 +228,6 @@
         fmt(n){ const v = Number(n); return Number.isFinite(v) ? v.toFixed(2) : '0.00'; },
         recalc(){
           let total = 0;
-          const toNum = (s) => {
-            const v = parseFloat(String(s ?? '').replace(',', '.'));
-            return Number.isFinite(v) ? v : NaN;
-          };
           document.querySelectorAll('.prestation').forEach((row)=>{
             const moCb = row.querySelector('input.prest-check');
             const pieceCb = row.querySelector('input.piece-check');
@@ -291,10 +239,9 @@
             if (moCb && moCb.checked) {
               const qtyEl = row.querySelector("select[name='qty[]']") || row.querySelector("input[name='qty[]']");
               const ovEl  = row.querySelector("input[name='price_override[]']");
-              qty = toNum(qtyEl?.value); if (!Number.isFinite(qty) || qty < 0) qty = 0;
-              price = toNum(ovEl?.value);
-              if (!Number.isFinite(price)) price = toNum(row.dataset.price);
-              if (!Number.isFinite(price)) price = 0;
+              qty = parseFloat(qtyEl?.value || '0'); if (isNaN(qty) || qty < 0) qty = 0;
+              price = parseFloat(ovEl?.value || '');
+              if (isNaN(price)) price = parseFloat(row.dataset.price || '0');
             }
 
             // Pièce
@@ -302,30 +249,13 @@
             if (pieceCb && pieceCb.checked) {
               const pQtyEl = row.querySelector("select[name='piece_qty[]']");
               const pOvEl  = row.querySelector("input[name='piece_price_override[]']");
-              pqty = toNum(pQtyEl?.value); if (!Number.isFinite(pqty) || pqty < 0) pqty = 0;
-              pprice = toNum(pOvEl?.value);
-              if (!Number.isFinite(pprice)) pprice = toNum(row.dataset.piecePrice);
-              if (!Number.isFinite(pprice)) pprice = 0;
+              pqty = parseFloat(pQtyEl?.value || '0'); if (isNaN(pqty) || pqty < 0) pqty = 0;
+              pprice = parseFloat(pOvEl?.value || '');
+              if (isNaN(pprice)) pprice = parseFloat(row.dataset.piecePrice || '0');
             }
 
-            const sub = (qty * price) + (pqty * pprice);
-            try {
-              const lbl = (row.querySelector('.label')?.innerText || '').trim();
-              console.log('[Catalogue] recalc line', { label: lbl, qty, price, pqty, pprice, sub: (sub.toFixed ? sub.toFixed(2) : sub) });
-            } catch(_e){}
-            total += sub;
+            total += (qty * price) + (pqty * pprice);
           });
-          // Ajouter les lignes personnalisées "Prestation" et "Pièce"
-          let customSum = 0;
-          document.querySelectorAll('input[name="custom_prest_price[]"]').forEach((el) => {
-            const v = parseFloat(String(el.value).replace(',', '.'));
-            if (!isNaN(v) && v >= 0) { total += v; customSum += v; }
-          });
-          document.querySelectorAll('input[name="custom_piece_price[]"]').forEach((el) => {
-            const v = parseFloat(String(el.value).replace(',', '.'));
-            if (!isNaN(v) && v >= 0) { total += v; customSum += v; }
-          });
-          try { console.log('[Prestation] recalc customSum=', customSum.toFixed ? customSum.toFixed(2) : customSum, 'total=', total.toFixed ? total.toFixed(2) : total); } catch(_e){}
           const fmt = (n) => Number(n).toFixed(2);
           const totalEl = document.getElementById('t-total');
           if (totalEl) {
@@ -349,7 +279,9 @@
     }
     // Sauvegarde locale du brouillon avant navigation (pour "Nouveau client")
     function saveDevisDraft(){
-      const draft = { rows: [], custom: { prest: [], piece: [] } };
+      const draft = {
+        rows: []
+      };
       document.querySelectorAll('.prestation').forEach((row)=>{
         const id = row.getAttribute('data-id');
         const moCb = row.querySelector('input.prest-check');
@@ -363,31 +295,6 @@
           pieceChecked: !!pieceCb?.checked, pieceQty, pieceInput
         });
       });
-      // Lignes personnalisées depuis la tuile "Prestation"
-      try{
-        const cpl = Array.from(document.querySelectorAll('input[name="custom_prest_label[]"]'));
-        const cpp = Array.from(document.querySelectorAll('input[name="custom_prest_price[]"]'));
-        const maxp = Math.max(cpl.length, cpp.length);
-        for(let i=0;i<maxp;i++){
-          const lab = (cpl[i]?.value || '').trim();
-          const prw = String(cpp[i]?.value || '').trim().replace(',', '.');
-          const val = parseFloat(prw);
-          if (lab !== '' && !isNaN(val) && val >= 0) {
-            draft.custom.prest.push({ label: lab, price: val });
-          }
-        }
-        const ccl = Array.from(document.querySelectorAll('input[name="custom_piece_label[]"]'));
-        const ccp = Array.from(document.querySelectorAll('input[name="custom_piece_price[]"]'));
-        const maxc = Math.max(ccl.length, ccp.length);
-        for(let i=0;i<maxc;i++){
-          const lab = (ccl[i]?.value || '').trim();
-          const prw = String(ccp[i]?.value || '').trim().replace(',', '.');
-          const val = parseFloat(prw);
-          if (lab !== '' && !isNaN(val) && val >= 0) {
-            draft.custom.piece.push({ label: lab, price: val });
-          }
-        }
-      }catch(_e){}
       localStorage.setItem('devisDraft', JSON.stringify(draft));
     }
     function loadDevisDraft(){
@@ -420,12 +327,8 @@
           const totalEl = document.getElementById('t-total');
           if (totalEl) {
             // fire input event to trigger recalc handler
-            const form = document.querySelector('form[action="/devis/pdf/direct"]') || document.querySelector('form');
-            if (form) {
-              form.dispatchEvent(new Event('input', { bubbles: true }));
-              form.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-            try { if (typeof ticketForm === 'function') { ticketForm().recalc(); } } catch(_e){}
+            const e = new Event('input');
+            document.body.dispatchEvent(e);
           }
         }
       }catch(e){ console.warn('Devis draft restore error', e); }
@@ -470,28 +373,18 @@
     // - sinon: aller sur création client pré-remplie puis auto-création du ticket après save
     function hasSelectedLines(){
       try{
-        // Brouillon (cases cochées)
         const d = JSON.parse(localStorage.getItem('devisDraft') || 'null');
         if (d && Array.isArray(d.rows)) {
-          if (d.rows.some(r => !!r?.checked || !!r?.pieceChecked)) return true;
+          return d.rows.some(r => !!r?.checked || !!r?.pieceChecked);
         }
       }catch(_e){}
-      // Scan DOM des lignes de prestations/pièces
+      // fallback DOM scan
       let any = false;
       document.querySelectorAll('.prestation').forEach((row)=>{
         const mo = row.querySelector('input.prest-check');
         const pc = row.querySelector('input.piece-check');
         if ((mo && mo.checked) || (pc && pc.checked)) any = true;
       });
-      // Inclure les lignes personnalisées "Prestation" / "Pièce"
-      if (!any) {
-        const hasCustom = Array.from(document.querySelectorAll('input[name="custom_prest_price[]"], input[name="custom_piece_price[]"]'))
-          .some(el => {
-            const v = parseFloat(String(el.value).replace(',', '.'));
-            return !isNaN(v) && v >= 0;
-          });
-        if (hasCustom) return true;
-      }
       return any;
     }
     function goNewClient(){
@@ -534,21 +427,6 @@
                   add('piece_price_override[]', r.pieceInput || '');
                 }
               });
-            }
-            // Lignes personnalisées "Prestation" / "Pièce"
-            if (draft && draft.custom) {
-              if (Array.isArray(draft.custom.prest)) {
-                draft.custom.prest.forEach(l => {
-                  add('custom_prest_label[]', l?.label || '');
-                  add('custom_prest_price[]', String(l?.price ?? ''));
-                });
-              }
-              if (Array.isArray(draft.custom.piece)) {
-                draft.custom.piece.forEach(l => {
-                  add('custom_piece_label[]', l?.label || '');
-                  add('custom_piece_price[]', String(l?.price ?? ''));
-                });
-              }
             }
             // Indicateur pour le serveur
             add('_create_ticket_from_builder','1');
@@ -629,28 +507,18 @@
     }
     function hasSelectedLines(){
       try{
-        // Brouillon (cases cochées)
         const d = JSON.parse(localStorage.getItem('devisDraft') || 'null');
         if (d && Array.isArray(d.rows)) {
-          if (d.rows.some(r => !!r?.checked || !!r?.pieceChecked)) return true;
+          return d.rows.some(r => !!r?.checked || !!r?.pieceChecked);
         }
       }catch(_e){}
-      // Scan DOM des lignes de prestations/pièces
+      // fallback DOM scan
       let any = false;
       document.querySelectorAll('.prestation').forEach((row)=>{
         const mo = row.querySelector('input.prest-check');
         const pc = row.querySelector('input.piece-check');
         if ((mo && mo.checked) || (pc && pc.checked)) any = true;
       });
-      // Inclure les lignes personnalisées "Prestation" / "Pièce"
-      if (!any) {
-        const hasCustom = Array.from(document.querySelectorAll('input[name="custom_prest_price[]"], input[name="custom_piece_price[]"]'))
-          .some(el => {
-            const v = parseFloat(String(el.value).replace(',', '.'));
-            return !isNaN(v) && v >= 0;
-          });
-        if (hasCustom) return true;
-      }
       return any;
     }
     function submitDirectPdf(){
@@ -676,69 +544,9 @@
       document.querySelectorAll("input[name='price_override[]']").forEach(el=>{ el.value=''; });
       document.querySelectorAll("input[name='piece_price_override[]']").forEach(el=>{ el.value=''; });
       // Recalculer total
-      const form = document.querySelector('form[action="/devis/pdf/direct"]') || document.querySelector('form');
-      if (form) {
-        form.dispatchEvent(new Event('input', { bubbles: true }));
-        form.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      try { if (typeof ticketForm === 'function') { ticketForm().recalc(); } } catch(_e){}
+      const e = new Event('input'); document.body.dispatchEvent(e);
       closeDevisModal();
       return false;
-    }
-    // Gestion des lignes personnalisées (tuile "Prestation")
-    function addCustomLine(kind){
-      try{
-        const form = document.querySelector('form[action="/devis/pdf/direct"]') || document.querySelector('form');
-        if(!form) return false;
-        const labEl = document.getElementById(kind==='prest' ? 'c_prest_label' : 'c_piece_label');
-        const priceEl = document.getElementById(kind==='prest' ? 'c_prest_price' : 'c_piece_price');
-        const label = (labEl?.value || '').trim();
-        let priceRaw = (priceEl?.value || '').trim();
-        priceRaw = priceRaw.replace(',', '.');
-        const price = parseFloat(priceRaw);
-        if(label === '' || isNaN(price) || price < 0){
-          alert('Veuillez saisir un nom et un prix valides.');
-          return false;
-        }
-        const hidWrap = document.getElementById('custom-lines-container');
-        const key = 'c_' + kind + '_' + Date.now() + '_' + Math.random().toString(16).slice(2);
-        const nameLabel = (kind==='prest') ? 'custom_prest_label[]' : 'custom_piece_label[]';
-        const namePrice = (kind==='prest') ? 'custom_prest_price[]' : 'custom_piece_price[]';
-        const i1 = document.createElement('input'); i1.type='hidden'; i1.name=nameLabel; i1.value=label; i1.setAttribute('data-key', key);
-        const i2 = document.createElement('input'); i2.type='hidden'; i2.name=namePrice; i2.value=String(price); i2.setAttribute('data-key', key);
-        (hidWrap || form).appendChild(i1);
-        (hidWrap || form).appendChild(i2);
-        if(labEl) labEl.value = '';
-        if(priceEl) priceEl.value = '';
-        // recalculer le total
-        try {
-          try { console.log('[Prestation] addCustomLine', { kind, label, price, countPrest: document.querySelectorAll('input[name="custom_prest_price[]"]').length, countPiece: document.querySelectorAll('input[name="custom_piece_price[]"]').length }); } catch(_e){}
-          // Déclencher d'abord sur l'input créé (meilleur support de @input)
-          try { i2.dispatchEvent(new Event('input', { bubbles: true })); } catch(_e){}
-          const form = document.querySelector('form[action="/devis/pdf/direct"]') || document.querySelector('form');
-          if (form) {
-            form.dispatchEvent(new Event('input', { bubbles: true }));
-            form.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-          try { if (typeof ticketForm === 'function') { ticketForm().recalc(); } } catch(_e){}
-        } catch(_e){}
-        return false;
-      }catch(_e){ return false; }
-    }
-    function removeCustomLine(key){
-      try{
-        document.querySelectorAll('input[data-key="'+key+'"]').forEach(el=>el.remove());
-        try {
-          try { console.log('[Prestation] removeCustomLine', { key, countPrest: document.querySelectorAll('input[name="custom_prest_price[]"]').length, countPiece: document.querySelectorAll('input[name="custom_piece_price[]"]').length }); } catch(_e){}
-          const form = document.querySelector('form[action="/devis/pdf/direct"]') || document.querySelector('form');
-          if (form) {
-            form.dispatchEvent(new Event('input', { bubbles: true }));
-            form.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-          try { if (typeof ticketForm === 'function') { ticketForm().recalc(); } } catch(_e){}
-        } catch(_e){}
-        return false;
-      }catch(_e){ return false; }
     }
   </script>
 {% endblock %}
