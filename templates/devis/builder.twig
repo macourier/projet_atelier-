@@ -77,7 +77,7 @@
                  data-piece-price="{{ item.piece_prix_ht|default(0) }}"
                  data-piece-label="{{ item.piece_libelle|default('Pièce') }}">
               <input type="checkbox" class="round prest-check" style="width:20px;height:20px"
-                      x-model="checked" @change="if($el.checked){ pieceChecked = true; } $root.recalc()">
+                      x-model="checked" @change="if($el.checked){ pieceChecked = true; } $root.recalc(); try{ const form=document.querySelector('form[action="/devis/pdf/direct"]')||document.querySelector('form'); if(form){ form.dispatchEvent(new Event('input',{bubbles:true})); form.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_e){}">
               <div class="label">
                 <div style="font-weight:600">{{ item.libelle }}</div>
               </div>
@@ -276,6 +276,10 @@
         fmt(n){ const v = Number(n); return Number.isFinite(v) ? v.toFixed(2) : '0.00'; },
         recalc(){
           let total = 0;
+          const toNum = (s) => {
+            const v = parseFloat(String(s ?? '').replace(',', '.'));
+            return Number.isFinite(v) ? v : NaN;
+          };
           document.querySelectorAll('.prestation').forEach((row)=>{
             const moCb = row.querySelector('input.prest-check');
             const pieceCb = row.querySelector('input.piece-check');
@@ -287,9 +291,10 @@
             if (moCb && moCb.checked) {
               const qtyEl = row.querySelector("select[name='qty[]']") || row.querySelector("input[name='qty[]']");
               const ovEl  = row.querySelector("input[name='price_override[]']");
-              qty = parseFloat(qtyEl?.value || '0'); if (isNaN(qty) || qty < 0) qty = 0;
-              price = parseFloat(ovEl?.value || '');
-              if (isNaN(price)) price = parseFloat(row.dataset.price || '0');
+              qty = toNum(qtyEl?.value); if (!Number.isFinite(qty) || qty < 0) qty = 0;
+              price = toNum(ovEl?.value);
+              if (!Number.isFinite(price)) price = toNum(row.dataset.price);
+              if (!Number.isFinite(price)) price = 0;
             }
 
             // Pièce
@@ -297,12 +302,18 @@
             if (pieceCb && pieceCb.checked) {
               const pQtyEl = row.querySelector("select[name='piece_qty[]']");
               const pOvEl  = row.querySelector("input[name='piece_price_override[]']");
-              pqty = parseFloat(pQtyEl?.value || '0'); if (isNaN(pqty) || pqty < 0) pqty = 0;
-              pprice = parseFloat(pOvEl?.value || '');
-              if (isNaN(pprice)) pprice = parseFloat(row.dataset.piecePrice || '0');
+              pqty = toNum(pQtyEl?.value); if (!Number.isFinite(pqty) || pqty < 0) pqty = 0;
+              pprice = toNum(pOvEl?.value);
+              if (!Number.isFinite(pprice)) pprice = toNum(row.dataset.piecePrice);
+              if (!Number.isFinite(pprice)) pprice = 0;
             }
 
-            total += (qty * price) + (pqty * pprice);
+            const sub = (qty * price) + (pqty * pprice);
+            try {
+              const lbl = (row.querySelector('.label')?.innerText || '').trim();
+              console.log('[Catalogue] recalc line', { label: lbl, qty, price, pqty, pprice, sub: (sub.toFixed ? sub.toFixed(2) : sub) });
+            } catch(_e){}
+            total += sub;
           });
           // Ajouter les lignes personnalisées "Prestation" et "Pièce"
           let customSum = 0;
