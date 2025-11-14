@@ -173,6 +173,10 @@
               </div>
             </div>
     {% endfor %}
+    {% else %}
+      <p class="text-muted">Le catalogue est vide. Allez dans Administration → Prestations pour le remplir.</p>
+    {% endfor %}
+
     {# Tuile personnalisée "Prestation" — toujours en bas #}
     <div class="category" x-data="{ id: 'PRESTATION_CUSTOM' }" :class="{ 'open': openCat === id }">
       <div class="category-header"
@@ -218,11 +222,6 @@
         <div id="custom-lines-container" style="display:none;"></div>
       </div>
     </div>
-    </div>
-      </div>
-    {% else %}
-      <p class="text-muted">Le catalogue est vide. Allez dans Administration → Prestations pour le remplir.</p>
-    {% endfor %}
     </div>
 
     <div class="footer-sticky">
