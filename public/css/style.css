@@ -216,6 +216,11 @@ input.cell:focus{outline:none; background:#fff3cd; transition:background .25s ea
 a:focus, button:focus, input:focus, select:focus, textarea:focus{
   outline: 2px solid #80bdff; outline-offset:2px;
 }
+/* Exception: ne pas afficher l'anneau bleu sur les liens du menu header */
+.header-nav .nav-link:focus,
+.header-nav .nav-link:focus-visible{
+  outline: none;
+}
 
 /* Responsif */
 @media (max-width: 640px){
