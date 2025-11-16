@@ -20,14 +20,19 @@
     {% if clients %}
       <div>
         <div class="title-emph" style="border-bottom:none; padding-bottom:0; margin-bottom:8px;">Clients</div>
-        <ul style="margin:8px 0 0 16px; padding:0;">
+        <div class="card client-card client-card-narrow" style="background:#f9fafb; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:12px 14px; line-height:1.45; margin:8px 0; font-size:.95rem;">
           {% for c in clients %}
-            <li style="margin-bottom:4px;">
-              <a href="/clients/{{ c.id }}">{{ c.name }}</a>
-              {% if c.email %}<span class="text-muted"> — {{ c.email }}</span>{% endif %}
-            </li>
+            <div class="client-row" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #f1f5f9;">
+              <div>
+                <a href="/clients/{{ c.id }}">{{ c.name }}</a>
+                {% if c.email %}<span class="text-muted"> — {{ c.email }}</span>{% endif %}
+              </div>
+              <div>
+                <a class="btn-ghost btn-ghost-sm" href="/clients/{{ c.id }}">Ouvrir</a>
+              </div>
+            </div>
           {% endfor %}
-        </ul>
+        </div>
       </div>
     {% else %}
       <div class="text-muted">Aucun client</div>
