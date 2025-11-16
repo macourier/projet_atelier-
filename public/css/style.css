@@ -35,13 +35,13 @@ header{display:flex; align-items:center; justify-content:space-between; padding:
   position:relative;
 }
 .nav-link:hover{ color:#1D4ED8; transition: color 0.15s ease; }  /* hover doux */
-.nav-link.active{ color:#3B82F6; } /* lien actif */
+.nav-link.active{ color:#3B82F6; position:relative; } /* lien actif */
 .nav-link.active::after{
   content:"";
   position:absolute;
   left:0; right:0; bottom:-4px;
-  height:2px; border-radius:999px;
-  background:#3B82F6;
+  height:1px; border-radius:2px;
+  background: rgba(59, 130, 246, 0.7);
 }
 /* Déconnexion en pseudo-bouton discret */
 .nav-link-logout{
