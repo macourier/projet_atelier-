@@ -428,6 +428,7 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus{
   letter-spacing: 0.3px;
   margin-top: 3px;
   display: block;
+  margin-left: 14px; /* léger décalage à droite sous le O de VELO */
 }
 
 /* Ligne décorative premium sous le sous-titre */
@@ -438,7 +439,7 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus{
   background-color: #E5E7EB;
   margin-top: 4px;
   border-radius: 2px;
-  align-self: center; /* centré dans le contexte flex de .brand-logo */
+  margin-left: 14px; /* aligné avec le décalage du sous-titre */
 }
 
 /* Groupe label (l’atelier + sous-titre) centré sur l’axe vertical de l’intitulé */
