@@ -420,6 +420,32 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus{
   margin-left: 28px; /* décalage léger vers la gauche */
 }
 
+/* Sous-titre discret sous le logo */
+.logo-subtitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: #9CA3AF; /* gris clair */
+  margin-top: -6px;
+  display: block;
+  letter-spacing: 0.3px;
+}
+
+/* Groupe label (l’atelier + sous-titre) centré sur l’axe vertical de l’intitulé */
+.brand-label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center; /* centre “Espace pro” sous “l’atelier” */
+  line-height: 1.1;
+}
+
+/* Groupe VELO + sous-titre centré */
+.brand-group-velo {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center; /* centre “Espace pro” sous “VELO” */
+  line-height: 1.1;
+}
+
 /* Arc supprimé */
 .brand-logo::after {
   content: none;
