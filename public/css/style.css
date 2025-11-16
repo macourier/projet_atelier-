@@ -112,7 +112,10 @@ footer{
 }
 .btn:hover{filter:brightness(.95)}
 .btn:active{transform:scale(.98)}
-.btn-secondary{background:var(--secondary); color:#2c2c2c; border-color:#d7a906}
+.btn-secondary{background:#F3F4F6; border:1px solid #E5E7EB; color:#111827; border-radius:10px; padding:.55rem 1.2rem; font-weight:500; cursor:pointer; transition: background .15s ease, border-color .15s ease;}
+.btn-secondary:hover{ background:#E5E7EB; border-color:#D1D5DB; }
+.btn-primary{ background:#3B82F6; color:#FFFFFF; border:none; border-radius:10px; padding:.55rem 1.2rem; font-weight:500; cursor:pointer; transition: background .15s ease, box-shadow .15s ease; }
+.btn-primary:hover{ background:#2563EB; box-shadow:0 2px 6px rgba(37,99,235,0.25); }
 .btn-danger{background:var(--danger)}
 .btn-round{
   width:48px; height:48px; border-radius:999px; display:inline-flex; justify-content:center; align-items:center;
