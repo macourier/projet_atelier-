@@ -430,6 +430,17 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus{
   display: block;
 }
 
+/* Ligne décorative premium sous le sous-titre */
+.logo-divider {
+  display: block;
+  width: 40%;
+  height: 1px;
+  background-color: #E5E7EB;
+  margin-top: 4px;
+  border-radius: 2px;
+  align-self: center; /* centré dans le contexte flex de .brand-logo */
+}
+
 /* Groupe label (l’atelier + sous-titre) centré sur l’axe vertical de l’intitulé */
 .brand-label {
   display: inline-flex;
