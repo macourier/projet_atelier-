@@ -30,18 +30,18 @@ header{display:flex; align-items:center; justify-content:space-between; padding:
   padding:6px 10px;
   font-size:15px;
   font-weight:500;
-  color:#2563eb;                /* bleu normal */
+  color:#3B82F6;                /* bleu 'atelier' */
   text-decoration:none;
   position:relative;
 }
-.nav-link:hover{ color:#1d4ed8; }  /* hover doux */
-.nav-link.active{ color:#1d4ed8; } /* lien actif */
+.nav-link:hover{ color:#1D4ED8; transition: color 0.15s ease; }  /* hover doux */
+.nav-link.active{ color:#3B82F6; } /* lien actif */
 .nav-link.active::after{
   content:"";
   position:absolute;
   left:0; right:0; bottom:-4px;
   height:2px; border-radius:999px;
-  background:#1d4ed8;
+  background:#3B82F6;
 }
 /* Déconnexion en pseudo-bouton discret */
 .nav-link-logout{
