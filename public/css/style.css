@@ -26,6 +26,7 @@ header{display:flex; align-items:center; justify-content:space-between; padding:
 .brand{font-weight:700; font-size:1.15rem}
 /* Modern SaaS nav */
 .header-nav{ display:flex; align-items:center; gap:18px; }
+nav a{ transition: color 0.15s ease; } /* animation douce globale */
 .nav-link{
   padding:6px 10px;
   font-size:15px;
@@ -41,7 +42,7 @@ header{display:flex; align-items:center; justify-content:space-between; padding:
   position:absolute;
   left:0; right:0; bottom:-4px;
   height:1px; border-radius:2px;
-  background: rgba(59, 130, 246, 0.7);
+  background: rgba(59, 130, 246, 0.45); /* bleu avec opacité premium */
 }
 /* Déconnexion en pseudo-bouton discret */
 .nav-link-logout{
@@ -52,9 +53,9 @@ header{display:flex; align-items:center; justify-content:space-between; padding:
   color:#6b7280;
 }
 .nav-link-logout:hover{
-  background:#fee2e2;
-  border-color:#fecaca;
-  color:#b91c1c;
+  background:#e9ecef;        /* gris aligné sur le bouton "Nouveau ..." */
+  border-color:#e5e7eb;       /* même gris de bordure discret */
+  color:#6b7280;              /* texte gris cohérent */
 }
 
 /* Page title alignment: shift visually to align with header/brand without changing document flow.
