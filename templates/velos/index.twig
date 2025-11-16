@@ -2,30 +2,47 @@
 
 {% block title %}Vélos — Atelier Vélo{% endblock %}
 
+{% block head %}
+  {{ parent() }}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.body.classList.add('catalog-dark');
+    });
+  </script>
+{% endblock %}
+
 {% block content %}
-  <h1>Vélos</h1>
-  <div style="margin-bottom:12px;">
-    <a class="btn" href="/velos/0/edit">Nouveau vélo</a>
-  </div>
+  <section class="hero-dark">
+    <div class="hero-inner">
+      <div class="eyebrow">Catalogue</div>
+      <h1 class="hero-title">Vélos</h1>
+      <p class="hero-sub">Gestion et édition des fiches vélo.</p>
+      <div class="hero-cta">
+        <a class="btn btn-accent" href="/velos/0/edit">Nouveau vélo</a>
+      </div>
+    </div>
+  </section>
 
   {% if velos is empty %}
-    <p>Aucun vélo enregistré.</p>
+    <p class="muted">Aucun vélo enregistré.</p>
   {% else %}
-    <table>
-      <thead>
-        <tr><th>Client</th><th>Marque</th><th>Modèle</th><th>Série</th><th></th></tr>
-      </thead>
-      <tbody>
+    <section class="catalog-section">
+      <div class="catalog-grid">
         {% for v in velos %}
-          <tr>
-            <td>{{ v.client_name }}</td>
-            <td>{{ v.brand }}</td>
-            <td>{{ v.model }}</td>
-            <td>{{ v.serial }}</td>
-            <td><a href="/velos/{{ v.id }}/edit">Éditer</a></td>
-          </tr>
+          <article class="card-dark card-hover">
+            <div class="card-body">
+              <h3 class="card-title">{{ v.brand|default('Marque') }} {{ v.model|default('Modèle') }}</h3>
+              <div class="card-meta">
+                <span class="meta">Client: {{ v.client_name }}</span>
+                {% if v.serial %}<span class="meta">Série: {{ v.serial }}</span>{% endif %}
+              </div>
+              <div class="card-actions">
+                <a class="btn btn-soft" href="/velos/{{ v.id }}/edit">Éditer</a>
+              </div>
+            </div>
+          </article>
         {% endfor %}
-      </tbody>
-    </table>
+      </div>
+    </section>
   {% endif %}
 {% endblock %}
