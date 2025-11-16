@@ -3,82 +3,34 @@
 {% block title %}Recherche — {{ q|default('') }}{% endblock %}
 
 {% block content %}
-  <h1>Recherche</h1>
+  <section class="hero-dark">
+    <div class="hero-inner">
+      <h1 class="hero-title">Recherche</h1>
+    </div>
+  </section>
 
-  <form action="/search" method="get" class="flex gap-8" style="margin-bottom:12px;">
-    <input type="text" name="q" value="{{ q|default('') }}" placeholder="Rechercher clients, tickets, devis, factures…" style="min-width:320px">
-    <button class="btn btn-secondary" type="submit">Rechercher</button>
+  <form action="/search" method="get" class="flex" style="gap:6px; margin-bottom:12px; align-items:center;">
+    <input type="text" name="q" value="{{ q|default('') }}" placeholder="Rechercher…" style="min-width:220px; height:32px; padding:6px 10px; border:1px solid #ddd; border-radius:8px;">
+    <button class="search-btn" type="submit" aria-label="Rechercher"><img src="/img/search.png" alt="" aria-hidden="true" /><span class="sr-only">Rechercher</span></button>
   </form>
 
   {% if q is empty %}
     <p class="text-muted">Tapez un terme dans la barre de recherche.</p>
   {% else %}
-    <div class="tiles">
-      <div class="tile">
-        <div class="tile-title"><i class="fas fa-user"></i> Clients</div>
-        {% if clients %}
-          <ul style="margin:8px 0 0 16px; padding:0;">
-            {% for c in clients %}
-              <li style="margin-bottom:4px;">
-                <a href="/clients/{{ c.id }}">{{ c.name }}</a>
-                {% if c.email %}<span class="text-muted"> — {{ c.email }}</span>{% endif %}
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <div class="text-muted">Aucun client</div>
-        {% endif %}
+    {% if clients %}
+      <div>
+        <div class="title-emph" style="border-bottom:none; padding-bottom:0; margin-bottom:8px;">Clients</div>
+        <ul style="margin:8px 0 0 16px; padding:0;">
+          {% for c in clients %}
+            <li style="margin-bottom:4px;">
+              <a href="/clients/{{ c.id }}">{{ c.name }}</a>
+              {% if c.email %}<span class="text-muted"> — {{ c.email }}</span>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
       </div>
-
-      <div class="tile">
-        <div class="tile-title"><i class="fas fa-tools"></i> Tickets</div>
-        {% if tickets %}
-          <ul style="margin:8px 0 0 16px; padding:0;">
-            {% for t in tickets %}
-              <li style="margin-bottom:4px;">
-                <a href="/tickets/{{ t.id }}/edit">#{{ t.id }}</a>
-                <span class="text-muted"> — {{ t.status }}</span>
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <div class="text-muted">Aucun ticket</div>
-        {% endif %}
-      </div>
-
-      <div class="tile">
-        <div class="tile-title"><i class="fas fa-file-invoice"></i> Devis</div>
-        {% if devis %}
-          <ul style="margin:8px 0 0 16px; padding:0;">
-            {% for d in devis %}
-              <li style="margin-bottom:4px;">
-                <a href="/devis/{{ d.id }}/show">#{{ d.numero }}</a>
-                <span class="text-muted"> — {{ d.status }}</span>
-                {% if d.pdf_path %} • <a href="{{ d.pdf_path }}">PDF</a>{% endif %}
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <div class="text-muted">Aucun devis</div>
-        {% endif %}
-      </div>
-
-      <div class="tile">
-        <div class="tile-title"><i class="fas fa-file-invoice-dollar"></i> Factures</div>
-        {% if factures %}
-          <ul style="margin:8px 0 0 16px; padding:0;">
-            {% for f in factures %}
-              <li style="margin-bottom:4px;">
-                <a href="/factures/{{ f.id }}/show">#{{ f.numero }}</a>
-                <span class="text-muted"> — {{ f.status }}</span>
-                {% if f.pdf_path %} • <a href="{{ f.pdf_path }}">PDF</a>{% endif %}
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <div class="text-muted">Aucune facture</div>
-        {% endif %}
-      </div>
-    </div>
+    {% else %}
+      <div class="text-muted">Aucun client</div>
+    {% endif %}
   {% endif %}
 {% endblock %}
