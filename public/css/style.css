@@ -422,12 +422,12 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus{
 
 /* Sous-titre discret sous le logo */
 .logo-subtitle {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  color: #9CA3AF; /* gris clair */
-  margin-top: -4px;
-  display: block;
+  color: #6B7280; /* gris premium */
   letter-spacing: 0.3px;
+  margin-top: 3px;
+  display: block;
 }
 
 /* Groupe label (l’atelier + sous-titre) centré sur l’axe vertical de l’intitulé */
