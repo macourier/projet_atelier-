@@ -54,6 +54,12 @@
 
   <div class="totals">
     <div style="font-size:1.1rem; margin-top:8px;"><strong>TOTAL:</strong> {{ facture.montant_ttc|default('0') }} €</div>
+    {% if payment %}
+      {% set pm = payment.method == 'CB' ? 'Carte bancaire' : 'Espèces' %}
+      <div class="small" style="margin-top:6px;">
+        Règlement: <strong>{{ pm }}</strong>{% if payment.paid_at %} — Payé le {{ payment.paid_at }}{% endif %}
+      </div>
+    {% endif %}
   </div>
 
 </body>

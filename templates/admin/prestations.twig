@@ -63,7 +63,13 @@
 <div class="toolbar-inline">
   <div class="form-field" style="margin:10px 0;">
     <label for="prest-search">Recherche</label>
-    <input type="text" id="prest-search" class="input" placeholder="mot clé (catégorie, manoeuvre)" style="min-width:260px;" />
+    <div style="display:flex; align-items:center; gap:6px;">
+      <input type="text" id="prest-search" class="input" placeholder="mot clé (catégorie, manoeuvre)" style="min-width:260px;" />
+      <button id="prest-clear" type="button" class="search-btn" aria-label="Effacer la recherche" title="Effacer" style="visibility:hidden;" aria-hidden="true">
+        <img src="/img/annuler.png" alt="" aria-hidden="true" />
+        <span class="sr-only">Effacer</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -482,10 +488,24 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   });
   
-  // Recherche: filtre cartes et replie sections vides
+  // Recherche: filtre cartes, replie sections vides et gère le bouton d'effacement
+  const clearBtn = document.getElementById('prest-clear');
+
+  function resetFilters() {
+    // Réafficher toutes les sections et cartes, et replier les sections
+    document.querySelectorAll('#acc-root .acc-section').forEach(sec => {
+      sec.style.display = '';
+      sec.classList.remove('open');
+      const header = sec.querySelector('.acc-header');
+      if (header) header.setAttribute('aria-expanded','false');
+      sec.querySelectorAll('.card').forEach(card => { card.style.display=''; });
+    });
+  }
+
   if (search) {
-    search.addEventListener('input', () => {
+    const onInput = () => {
       const q = search.value.trim().toLowerCase();
+      if (clearBtn) { clearBtn.style.visibility = q ? 'visible' : 'hidden'; clearBtn.style.pointerEvents = q ? 'auto' : 'none'; clearBtn.setAttribute('aria-hidden', q ? 'false' : 'true'); }
       document.querySelectorAll('#acc-root .acc-section:not(.no-filter)').forEach(sec => {
         let anyVisible = false;
         sec.querySelectorAll('.card').forEach(card => {
@@ -497,7 +517,21 @@ document.addEventListener('DOMContentLoaded', function(){
         // Masquer la section si aucune carte visible
         sec.style.display = anyVisible ? '' : 'none';
       });
-    });
+      if (q === '') resetFilters();
+    };
+    search.addEventListener('input', onInput);
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        search.value = '';
+        resetFilters();
+        clearBtn.style.visibility = 'hidden';
+        clearBtn.style.pointerEvents = 'none';
+        clearBtn.setAttribute('aria-hidden','true');
+        // Déclencher l'événement input pour rafraîchir tout filtre dépendant
+        search.dispatchEvent(new Event('input', { bubbles:true }));
+      });
+    }
   }
 
   function showToast(text, err) {

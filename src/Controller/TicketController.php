@@ -315,6 +315,7 @@ class TicketController
     public function facturerConfirm(Request $request, Response $response, array $args): Response
     {
         $id = (int)($args['id'] ?? 0);
+        $data = (array)$request->getParsedBody();
         if (!$this->pdo || $id <= 0) {
             $response->getBody()->write('Ticket introuvable');
             return $response->withStatus(404);
@@ -343,6 +344,22 @@ class TicketController
         ]);
         $factureId = (int)$this->pdo->lastInsertId();
 
+        // Enregistrer le règlement si un mode de paiement est fourni (CB / ESPECE)
+        $payment = null;
+        $methodRaw = strtoupper(trim((string)($data['payment_method'] ?? '')));
+        if ($methodRaw === 'CB' || $methodRaw === 'ESPECE' || $methodRaw === 'ESPÈCE') {
+            $method = ($methodRaw === 'CB') ? 'CB' : 'ESPECE';
+            $stmtReg = $this->pdo->prepare('INSERT INTO reglements (facture_id, amount, method) VALUES (:fid, :amount, :method)');
+            $stmtReg->execute(['fid' => $factureId, 'amount' => $totaux['ttc'], 'method' => $method]);
+            // Marquer la facture comme payée
+            $this->pdo->prepare('UPDATE factures SET status = :s WHERE id = :id')->execute(['s' => 'paid', 'id' => $factureId]);
+            $payment = [
+                'method' => $method,
+                'amount' => $totaux['ttc'],
+                'paid_at' => date('Y-m-d H:i')
+            ];
+        }
+
         // Générer PDF et enregistrer sous public/pdfs
         $webDir = '/pdfs/factures';
         $absDir = dirname(__DIR__, 2) . '/public' . $webDir;
@@ -362,6 +379,7 @@ class TicketController
                 'lines' => $lines
             ],
             'client' => $client,
+            'payment' => $payment,
             'env' => $this->container['env'] ?? []
         ], $absPath, ['paper' => 'a4', 'orientation' => 'portrait']);
 

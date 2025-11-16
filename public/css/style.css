@@ -19,7 +19,7 @@ body{
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
-.container{max-width:1100px; margin:0 auto; padding:16px}
+.container{max-width:1100px; margin:0 auto; padding:16px; padding-top:30px}
 
 /* Header / nav */
 header{display:flex; align-items:center; justify-content:space-between; padding:12px 0}
@@ -60,6 +60,16 @@ nav a:hover{opacity:.85}
 main{
   background:#fff; border-radius:12px; padding:16px;
   box-shadow:0 2px 8px rgba(0,0,0,.06);
+  margin-top:36px;
+}
+
+/* Footer styling */
+footer{
+  margin-top:32px; /* espace entre le contenu et le footer */
+  padding:16px 0;
+  text-align:center;          /* centrer le texte */
+  color:#6b7280;              /* gris doux */
+  border-top:1px solid #e5e7eb; /* séparation légère */
 }
 
 /* Boutons tactiles */
@@ -268,3 +278,173 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus{
 }
 .client-label{ color:#111827; font-weight:600; }
 .client-card-narrow .client-row + .client-row{ margin-top:10px; }
+
+/* ===== Search bar icon button (monochrome) ===== */
+.search-btn{
+  min-height:32px;
+  height:32px;
+  width:40px;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  line-height:0; /* supprime le line-box pour un centrage vertical parfait */
+  border:none;
+  background:transparent;
+  color:var(--text); /* monochrome, suit theme text */
+  border-radius:8px;
+  cursor:pointer;
+}
+.search-btn:hover{ background:#f1f3f5; }
+.search-btn i{ font-size:16px; line-height:1; }
+.search-btn img{ width:20px; height:20px; display:block; transform:translateY(-0.5px); }
+
+/* Visually hidden text for accessibility */
+.sr-only{
+  position:absolute;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
+}
+
+/* Flat, rounded, pale sky blue button for "Ouvrir" */
+.btn-soft-sky{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:32px;
+  padding:.35rem .75rem;
+  border-radius:.75rem;
+  background:#eaf5ff;        /* pale sky blue */
+  border:1px solid #d7ecff;   /* subtle border */
+  color:#0f4c81;              /* calm dark blue text */
+  font-weight:600;
+  text-decoration:none;
+  transition: background .2s ease, transform .15s ease, filter .2s ease;
+}
+.btn-soft-sky:hover{ background:#e6f5ff; filter:brightness(.99); }
+.btn-soft-sky:active{ transform:scale(.98); }
+.btn-soft-sky:focus{ outline:2px solid #80bdff; outline-offset:2px; }
+
+/* Pale red button for "Facture PDF" */
+.btn-soft-red{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:32px;
+  padding:.35rem .75rem;
+  border-radius:.75rem;        /* même arrondi que .btn et .btn-soft-sky */
+  background:#fff1f2;          /* rouge très pâle */
+  border:1px solid #f8d7da;    /* bordure subtile rouge pâle (style Bootstrap danger-100/200) */
+  color:#842029;               /* rouge sobre (Bootstrap danger text) */
+  font-weight:600;
+  text-decoration:none;
+  transition: background .2s ease, transform .15s ease, filter .2s ease;
+}
+.btn-soft-red:hover{ background:#ffe5e7; filter:brightness(.99); }
+.btn-soft-red:active{ transform:scale(.98); }
+.btn-soft-red:focus{ outline:2px solid #80bdff; outline-offset:2px; }
+
+/* Client tickets: center align Total TTC and Facture columns (headers and cells) */
+#tickets-open + table th:nth-child(4),
+#tickets-open + table td:nth-child(4),
+#tickets-closed + table th:nth-child(4),
+#tickets-closed + table td:nth-child(4),
+#tickets-open + table th:nth-child(5),
+#tickets-open + table td:nth-child(5),
+#tickets-closed + table th:nth-child(5),
+#tickets-closed + table td:nth-child(5){
+  text-align:center;
+  vertical-align:middle; /* aligner sur la ligne médiane verticale (prix & boutons/dash) */
+}
+
+/* Client tickets: prevent wrap + numeric alignment for Total TTC column */
+#tickets-open + table th:nth-child(4),
+#tickets-closed + table th:nth-child(4),
+#tickets-open + table td:nth-child(4),
+#tickets-closed + table td:nth-child(4){
+  white-space: nowrap;                /* évite les retours à la ligne du prix */
+  font-variant-numeric: tabular-nums; /* chiffres à chasse fixe pour un axe médian stable */
+}
+
+/* ====== Branding: L'Atelier Vélo (logo + arc) ====== */
+/* Bloc global du logo */
+.brand-logo {
+  display: inline-flex;
+  flex-direction: column;
+  text-decoration: none;
+  line-height: 1.1;
+  cursor: pointer;
+  position: relative;
+  padding-right: 16px; /* retrait: plus d'élément graphique à droite */
+}
+
+/* Police et couleur proches du kakemono */
+.brand-line1,
+.brand-line2 {
+  font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+/* 'l' en gris plus foncé constant */
+.brand-line1::first-letter{
+  color:#6b7280; /* gris plus foncé */
+}
+
+/* “l’atelier” (réduit) */
+.brand-line1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #228bdc; /* bleu */
+  position: relative;
+  padding-right: 0; /* plus de pastille */
+  letter-spacing: 0;
+}
+
+/* Pastille supprimée */
+.brand-line1::after {
+  content: none;
+}
+
+/* “VELO” (réduit, gris foncé, décalé sous le 't') */
+.brand-line2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: rgb(73, 80, 87); /* gris foncé personnalisé */
+  letter-spacing: 0;
+  margin-top: 0;
+  text-transform: uppercase;
+  margin-left: 28px; /* décalage léger vers la gauche */
+}
+
+/* Arc supprimé */
+.brand-logo::after {
+  content: none;
+}
+
+/* Version mobile : un peu plus compact */
+@media (max-width: 480px) {
+.brand-line1,
+.brand-line2 {
+  font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+/* Mettre uniquement le 'l' de l’atelier en gris (même couleur en responsive) */
+.brand-line1::first-letter{
+  color:#6b7280; /* même couleur en responsive (ne change pas) */
+}
+  .brand-line1::after {
+    width: 8px;
+    height: 8px;
+  }
+  .brand-logo::after {
+    width: 90px;
+    height: 55px;
+    right: -8px;
+    top: 3px;
+    border-top-width: 3px;
+    border-right-width: 3px;
+  }
+}

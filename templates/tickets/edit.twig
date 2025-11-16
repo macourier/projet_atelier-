@@ -3,7 +3,10 @@
 {% block title %}Ticket — {{ ticket.id|default('Nouveau') }}{% endblock %}
 
 {% block content %}
-  <h2 class="page-title-inside">Ticket {{ ticket.id|default('—') }}</h2>
+  <div class="flex" style="justify-content:space-between; align-items:center; margin:0 0 8px;">
+    <h2 class="page-title-inside" style="margin:0;">Ticket {{ ticket.id|default('—') }}</h2>
+    <div class="received-at" style="font-weight:600;">Date de réception&nbsp;: {{ (ticket.received_at|default('now'))|date('d/m/Y H:i') }}</div>
+  </div>
 
     {% if client %}
     <div class="card client-card client-card-narrow" style="background:#f9fafb; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:12px 14px; line-height:1.45; margin:8px 0; font-size:.95rem;">
@@ -32,10 +35,7 @@
     {% endif %}
     <div id="pending-hidden" style="display:none"></div>
 
-    <div class="form-field">
-      <label for="received_at">Date de réception</label>
-      <input id="received_at" type="datetime-local" name="received_at" value="{{ (ticket.received_at|default('now'))|date('Y-m-d\\TH:i') }}" readonly>
-    </div>
+    <input type="hidden" name="received_at" value="{{ (ticket.received_at|default('now'))|date('Y-m-d\\TH:i') }}">
 
     {% if not ticket %}
     <fieldset class="form-field">
@@ -316,10 +316,17 @@
           </button>
         </div>
         <button class="btn" type="submit"><i class="fas fa-save" style="margin-right:6px;"></i>Enregistrer</button>
-        <button class="btn btn-danger" type="submit" @click.prevent="handleFacturer($el)"
+        <button class="btn" type="submit" @click.prevent="handleFacturer($el)"
                 {% if not ticket %}disabled{% endif %}
+                name="payment_method" value="ESPECE"
                 formaction="/tickets/{{ ticket ? ticket.id : 0 }}/facturer/confirm">
-          <i class="fas fa-file-invoice-dollar" style="margin-right:6px;"></i>Facturer
+          <i class="fas fa-money-bill-wave" style="margin-right:6px;"></i>Espèce
+        </button>
+        <button class="btn btn-light-primary" type="submit" @click.prevent="handleFacturer($el)"
+                {% if not ticket %}disabled{% endif %}
+                name="payment_method" value="CB"
+                formaction="/tickets/{{ ticket ? ticket.id : 0 }}/facturer/confirm">
+          <i class="fas fa-credit-card" style="margin-right:6px;"></i>CB
         </button>
       </div>
     </div>
@@ -430,6 +437,18 @@
           if (fa) form.setAttribute('action', fa);
           const fm = btn.getAttribute('formmethod');
           if (fm) form.setAttribute('method', fm);
+
+          // Injecter le mode de paiement (le submit() programmatique ne soumet pas le name/value du bouton)
+          const existing = form.querySelector('input[name="payment_method"]');
+          if (existing) existing.remove();
+          const pm = btn.getAttribute('value') || btn.getAttribute('data-payment') || '';
+          if (pm) {
+            const i = document.createElement('input');
+            i.type = 'hidden';
+            i.name = 'payment_method';
+            i.value = pm;
+            form.appendChild(i);
+          }
           form.submit();
         }
       }

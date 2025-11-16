@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{% block title %}Atelier Vélo — Facturation{% endblock %}</title>
   <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
   <!-- FontAwesome (icônes) -->
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
   <!-- Alpine.js (interactivité tactile légère) -->
@@ -15,15 +16,18 @@
 <body>
   <div class="container">
     <header>
-      <div class="brand">{{- (env.COMPANY_NAME ?? "L' Atelier Vélo") -}}</div>
+      <a href="/" class="brand-logo" aria-label="L'Atelier Vélo">
+        <span class="brand-line1">l’atelier</span>
+        <span class="brand-line2">VELO</span>
+      </a>
       <nav class="flex" style="gap:8px; align-items:center;">
         <a href="/catalogue">Catalogue</a>
         <a href="/tickets/queue">File d'attente</a>
         <a href="#" onclick="return adminAccess()" title="Accès administrateur">Administrateur</a>
         <a href="/logout">Déconnexion</a>
-        <form action="/search" method="get" class="flex" style="gap:6px; margin-left:12px;">
+        <form action="/search" method="get" class="flex" style="gap:6px; margin-left:12px; align-items:center;">
           <input type="text" name="q" placeholder="Recherche…" style="min-width:220px; height:32px; padding:6px 10px; border:1px solid #ddd; border-radius:8px;">
-          <button class="btn btn-secondary" type="submit" style="min-height:32px; padding:6px 10px;">OK</button>
+          <button class="search-btn" type="submit" aria-label="Rechercher"><img src="/img/search.png" alt="" aria-hidden="true" /><span class="sr-only">Rechercher</span></button>
         </form>
       </nav>
     </header>
@@ -33,7 +37,7 @@
     </main>
 
     <footer>
-      © {{ "now"|date("Y") }} {{ env.COMPANY_NAME ?? "L' Atelier Vélo" }}
+      © {{ "now"|date("Y") }} L’Atelier Vélo — v1.0
     </footer>
   </div>
   <script>

@@ -34,7 +34,7 @@
       </div>
     {% endif %}
 
-    <div style="display:flex; gap:8px; margin:12px 0;">
+    <div style="display:flex; gap:8px; margin:36px 0;">
       <a class="btn btn-light-primary" href="/clients/{{ client.id|default(0) }}/edit">Éditer le client</a>
       <a class="btn btn-light-primary" href="/tickets/0/edit?client_id={{ client.id }}">Nouveau ticket</a>
     </div>
@@ -71,10 +71,10 @@
                 <td>{{ '%.2f'|format(t.total_ttc|default(t.total_ht|default(0))) }}</td>
                 <td>
                   {% if facturesByTicket is defined and facturesByTicket[t.id]|default(null) and facturesByTicket[t.id].pdf_path %}
-                    <a href="{{ facturesByTicket[t.id].pdf_path }}" target="_blank">Facture PDF</a>
+                    <a class="btn-soft-red" href="{{ facturesByTicket[t.id].pdf_path }}" target="_blank">Facture PDF</a>
                   {% else %}—{% endif %}
                 </td>
-                <td><a href="/tickets/{{ t.id }}/edit">Ouvrir</a></td>
+                <td><a class="btn-soft-sky" href="/tickets/{{ t.id }}/edit">Ouvrir</a></td>
               </tr>
             {% endfor %}
           </tbody>
@@ -98,10 +98,10 @@
                 <td>{{ '%.2f'|format(t.total_ttc|default(t.total_ht|default(0))) }}</td>
                 <td>
                   {% if facturesByTicket is defined and facturesByTicket[t.id]|default(null) and facturesByTicket[t.id].pdf_path %}
-                    <a href="{{ facturesByTicket[t.id].pdf_path }}" target="_blank">Facture PDF</a>
+                    <a class="btn-soft-red" href="{{ facturesByTicket[t.id].pdf_path }}" target="_blank">Facture PDF</a>
                   {% else %}—{% endif %}
                 </td>
-                <td><a href="/tickets/{{ t.id }}/edit">Ouvrir</a></td>
+                <td><a class="btn-soft-sky" href="/tickets/{{ t.id }}/edit">Ouvrir</a></td>
               </tr>
             {% endfor %}
           </tbody>
