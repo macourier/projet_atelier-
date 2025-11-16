@@ -24,8 +24,38 @@ body{
 /* Header / nav */
 header{display:flex; align-items:center; justify-content:space-between; padding:12px 0}
 .brand{font-weight:700; font-size:1.15rem}
-nav a{margin-left:10px; color:#0366d6; text-decoration:none}
-nav a:hover{opacity:.85}
+/* Modern SaaS nav */
+.header-nav{ display:flex; align-items:center; gap:18px; }
+.nav-link{
+  padding:6px 10px;
+  font-size:15px;
+  font-weight:500;
+  color:#2563eb;                /* bleu normal */
+  text-decoration:none;
+  position:relative;
+}
+.nav-link:hover{ color:#1d4ed8; }  /* hover doux */
+.nav-link.active{ color:#1d4ed8; } /* lien actif */
+.nav-link.active::after{
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:-4px;
+  height:2px; border-radius:999px;
+  background:#1d4ed8;
+}
+/* Déconnexion en pseudo-bouton discret */
+.nav-link-logout{
+  margin-left:10px;
+  padding:6px 12px;
+  border-radius:999px;
+  border:1px solid #e5e7eb;
+  color:#6b7280;
+}
+.nav-link-logout:hover{
+  background:#fee2e2;
+  border-color:#fecaca;
+  color:#b91c1c;
+}
 
 /* Page title alignment: shift visually to align with header/brand without changing document flow.
    Use transform so elements below keep their position. */

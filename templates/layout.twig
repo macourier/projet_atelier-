@@ -26,11 +26,11 @@
         <span class="logo-subtitle">BikeOffice</span>
         <span class="logo-divider"></span>
       </a>
-      <nav class="flex" style="gap:8px; align-items:center;">
-        <a href="/catalogue">Catalogue</a>
-        <a href="/tickets/queue">File d'attente</a>
-        <a href="#" onclick="return adminAccess()" title="Accès administrateur">Administrateur</a>
-        <a href="/logout">Déconnexion</a>
+      <nav class="flex header-nav">
+        <a href="/catalogue" class="nav-link">Catalogue</a>
+        <a href="/tickets/queue" class="nav-link">File d'attente</a>
+        <a href="#" onclick="return adminAccess()" title="Accès administrateur" class="nav-link">Administrateur</a>
+        <a href="/logout" class="nav-link nav-link-logout">Déconnexion</a>
         <form action="/search" method="get" class="flex" style="gap:6px; margin-left:12px; align-items:center;">
           <input type="text" name="q" placeholder="Recherche…" style="min-width:220px; height:32px; padding:6px 10px; border:1px solid #ddd; border-radius:8px;">
           <button class="search-btn" type="submit" aria-label="Rechercher"><img src="/img/search.png" alt="" aria-hidden="true" /><span class="sr-only">Rechercher</span></button>
@@ -56,6 +56,25 @@
       }
       return false;
     }
+
+    // Mise en évidence du lien actif (SaaS-like) côté client
+    document.addEventListener('DOMContentLoaded', function(){
+      try {
+        var nav = document.querySelector('nav.header-nav');
+        if (!nav) return;
+        var path = (location.pathname || '').toLowerCase();
+
+        nav.querySelectorAll('a.nav-link').forEach(function(a){
+          var label = (a.textContent || '').trim().toLowerCase();
+          var href  = (a.getAttribute('href') || '').toLowerCase();
+
+          // Règles simples par sections
+          if (path.indexOf('/catalogue') === 0 && label.indexOf('catalogue') >= 0) a.classList.add('active');
+          if (path.indexOf('/tickets') === 0 && (label.indexOf("file d'attente") >= 0 || label.indexOf('file') >= 0)) a.classList.add('active');
+          if (path.indexOf('/admin') === 0 && (label.indexOf('administrateur') >= 0 || href === '/admin')) a.classList.add('active');
+        });
+      } catch (_e) {}
+    });
   </script>
 </body>
 </html>
