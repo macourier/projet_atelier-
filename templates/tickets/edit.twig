@@ -29,7 +29,7 @@
             <p class="note-placeholder" style="margin:0; color:#9CA3AF; font-style:italic;">Aucune note pour l’instant.</p>
           {% endif %}
         </div>
-        <form class="note-form" method="post" action="/clients/{{ client.id }}/edit" style="display:none; position:absolute; bottom:calc(100% + 8px); left:0; right:0; background:#fff; border:1px solid #E5E7EB; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.12); padding:12px; z-index:30;">
+        <form class="note-form" method="post" action="/clients/{{ client.id }}/edit" style="display:none; position:absolute; top:0; left:0; right:0; background:#fff; border:1px solid #E5E7EB; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.12); padding:12px; z-index:30;">
           <input type="hidden" name="return" value="/tickets/{{ ticket ? ticket.id : 0 }}/edit">
           {# Préserver les champs client pour éviter d'écraser les données lors de l'update #}
           <input type="hidden" name="name" value="{{ client.name|default('') }}">
