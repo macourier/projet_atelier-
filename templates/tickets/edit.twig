@@ -263,7 +263,12 @@
 
     {# Lignes déjà enregistrées (lecture seule) #}
     {% if prestations is not empty or consommables is not empty %}
-      <h3 style="margin-top:16px;">Récapitulatif</h3>
+      <div class="flex" style="margin-top:16px; justify-content:space-between; align-items:baseline;">
+        <h3 style="margin:0;">Récapitulatif</h3>
+        <div class="bike-inline" style="font-size:1.25rem; font-weight:600; color:#111827;">
+          Vélo : {{ ticket.bike_model|default(client.bike_model|default('—')) }}
+        </div>
+      </div>
       {% if prestations is not empty %}
         <table class="recap-table">
           <colgroup>
