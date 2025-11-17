@@ -112,38 +112,38 @@ footer{
 }
 .btn:hover{filter:brightness(.95)}
 .btn:active{transform:scale(.98)}
+/* Harmonisation boutons (catalogue) */
+.btn-primary,
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
 .btn-secondary {
   background: #F3F4F6;
   border: 1px solid #E5E7EB;
-  color: #1F2937;
-  border-radius: 12px;
-  padding: 0.6rem 1.3rem;
-  font-weight: 500;
-  font-size: 0.95rem;
-  cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  color: #111827;
 }
 .btn-secondary:hover {
   background: #E5E7EB;
   border-color: #D1D5DB;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
 }
 .btn-primary {
   background: #3B82F6;
   color: #FFFFFF;
   border: none;
-  border-radius: 12px;
-  padding: 0.6rem 1.3rem;   /* plus confortable */
-  font-weight: 500;
-  font-size: 0.95rem;
-  cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-  transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 .btn-primary:hover {
   background: #2563EB;
-  box-shadow: 0 2px 6px rgba(37,99,235,0.20);
 }
 .btn-danger{background:var(--danger)}
 .btn-round{
@@ -216,6 +216,8 @@ input.cell:focus{outline:none; background:#fff3cd; transition:background .25s ea
   position:sticky; bottom:0; background:linear-gradient(180deg, rgba(255,255,255,0.0), #fff);
   padding:10px 10px; border-top:1px solid #eee; display:flex; align-items:center; gap:10px; justify-content:space-between;
 }
+/* Catalog footer buttons: hide icons for an elegant, text-only look */
+.footer-sticky .btn i{ display:none; }
 
 /* Mise en évidence élégante du TOTAL */
 .total-pill{
