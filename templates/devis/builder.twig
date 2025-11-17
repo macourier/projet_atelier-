@@ -188,8 +188,12 @@
         <span class="text-muted" style="font-size:.9rem;">€</span>
       </div>
       <div class="flex gap-8">
-        <button class="btn btn-secondary" type="button" onclick="saveDevisDraft(); return openDevisModal();"><i class="fas fa-file-invoice" style="margin-right:6px;"></i>Devis PDF</button>
-        <button class="btn btn-secondary" type="button" onclick="saveDevisDraft(); return openClientSelectModal();"><i class="fas fa-user" style="margin-right:6px;"></i>Client…</button>
+        <button class="btn btn-secondary" type="button" onclick="saveDevisDraft(); return openDevisModal();">
+          <i class="fas fa-file-invoice" style="margin-right:6px;"></i>Devis PDF
+        </button>
+        <button class="btn btn-secondary" type="button" onclick="saveDevisDraft(); return openClientSelectModal();">
+          <i class="fas fa-user" style="margin-right:6px;"></i><span>Client</span><img src="/img/dossier-ouvert.png" alt="" aria-hidden="true" width="16" height="16" style="margin-left:6px; vertical-align:middle; position:relative; top:-1px; opacity:.9;">
+        </button>
         <a class="btn btn-primary" href="javascript:void(0)" onclick="saveDevisDraft(); return goNewClient();">
           <i class="fas fa-user-plus" style="margin-right:6px;"></i>Nouveau client
         </a>
