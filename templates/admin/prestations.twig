@@ -75,10 +75,9 @@
 
 <!-- Ajouter (hors acc-root pour ne pas être filtré) -->
 <section class="acc-section acc-add no-filter" data-cat="_ajouter">
-  <header class="acc-header" tabindex="0" role="button">
-    <span class="acc-title"><i class="fas fa-plus"></i> Gestions des catégories</span>
-    <i class="fas fa-chevron-down acc-chevron"></i>
-  </header>
+    <header class="acc-header" tabindex="0" role="button">
+      <span class="acc-title">Gestions des catégories</span>
+    </header>
   <div class="acc-panel">
     <div class="card-add">
       <h3 class="card-add-title" style="margin-top:0">➕ Ajouter une categorie</h3>
@@ -118,8 +117,7 @@
   {% for cat, items in grouped_prestas|default({ 'Autre' : prestations|default([]) }) %}
   <section class="acc-section" data-cat="{{ cat }}">
     <header class="acc-header" tabindex="0" role="button">
-      <span class="acc-title"><i class="fas fa-cog"></i> {{ cat }}</span>
-      <i class="fas fa-chevron-down acc-chevron"></i>
+      <span class="acc-title">{{ cat }}</span>
     </header>
     <div class="acc-panel">
       <div class="cards">

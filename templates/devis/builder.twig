@@ -14,7 +14,21 @@
 
     {# Champ description supprimé sur la page d'accueil /catalogue #}
 
-    <h2 class="title-emph">Catalogue</h2>
+<h2 class="title-emph">Catalogue</h2>
+<style>
+  /* Masquer les flèches des inputs numériques (seulement pour .price-input) */
+  input.price-input[type=number]::-webkit-outer-spin-button,
+  input.price-input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input.price-input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+    height: 20px;
+    min-height: 20px;
+    line-height: 20px;
+    font-size: .8rem;
+    padding: 0 .35rem;
+  }
+</style>
 
     <div id="piece-help-banner" role="status" aria-live="polite" style="margin:10px 0 12px; background:#FFFBEB; border:1px solid #FBC02D; color:#1C1C1C; padding:10px 12px; border-radius:12px; display:none;">
       <div style="font-weight:700; margin-bottom:4px;">Aide — Prix de base Pièce non visible</div>
@@ -52,9 +66,8 @@
              @keydown.enter.prevent="openCat = (openCat === id ? null : id)"
              @keydown.space.prevent="openCat = (openCat === id ? null : id)">
           <div style="font-weight:700; display:flex; align-items:center; gap:.5rem;">
-            <i class="fas fa-cog"></i> {{ cat }}
+            {{ cat }}
           </div>
-          <div><i class="fas" :class="openCat === id ? 'fa-chevron-up' : 'fa-chevron-down'"></i></div>
         </div>
         <div class="prestations">
           {% for item in items %}
@@ -84,7 +97,7 @@
 
               <input type="hidden" name="prest_id[]" value="{{ item.id }}" :disabled="!checked">
 
-              <div class="row-body">
+              <div class="row-body" style="gap:24px;">
                 <!-- Main d’œuvre -->
                 <div>
                   <div class="text-muted section-title" style="font-size:.8rem; display:flex; align-items:center; gap:8px;"><i class="fas fa-wrench"></i><span>Main d’œuvre</span></div>
@@ -101,12 +114,12 @@
                     <div class="flex gap-8" style="align-items:center;">
                       <button type="button" class="btn btn-ghost btn-ghost-sm price-soft" :disabled="!checked" 
                               x-show="!moEdit && moInput===''" 
-                              @click="moEdit=true" x-transition>
+@click="moEdit=true" x-transition>
                         Prix
                       </button>
                       <div x-show="moEdit" x-transition style="display:flex; align-items:center; gap:8px;">
-                        <input type="number" step="0.01" placeholder="0.00" :disabled="!checked"
-                               x-model="moInput" style="width:120px" @input="$root.recalc()">
+<input type="number" step="0.01" placeholder="0.00" :disabled="!checked" class="price-input"
+                               x-model="moInput" style="width:70px; padding:0 .35rem; text-align:center" @input="$root.recalc()">
                         <button type="button" class="btn" :class="moValid() ? 'btn-success' : 'btn-ghost btn-ghost-sm'"
                                 @click="if(moValid()){ moEdit=false; $root.recalc(); }" x-transition>
                           Valider
@@ -130,7 +143,7 @@
                       <span>Prix de base Pièce: <strong>{{ (item.piece_prix_ht|default(0))|number_format(2, '.', '') }}</strong> €</span>
                     </template>
                     <template x-if="pieceInput!==''">
-                      <span>Prix <span style="padding:0 6px; border-radius:6px; background:#fffbeb; color:#92400e; font-weight:600;">modifié</span>: <strong x-text="$root.fmt(pieceFinal())"></strong> €</span>
+                      <span>Prix <span style="padding:0 4px; border-radius:6px; background:#fffbeb; color:#92400e; font-weight:600; font-size:.75rem;">modifié</span>: <strong x-text="$root.fmt(pieceFinal())"></strong> €</span>
                       <span class="text-muted" style="margin-left:6px;">(Prix de base Pièce: <span x-text="$root.fmt(pieceBase)"></span> €)</span>
                     </template>
                   </div>
@@ -149,12 +162,12 @@
                     <div class="flex gap-8" style="align-items:center;">
                       <button type="button" class="btn btn-ghost btn-ghost-sm price-soft" :disabled="!pieceChecked" 
                               x-show="!pieceEdit && pieceInput===''" 
-                              @click="pieceEdit=true" x-transition>
+@click="pieceEdit=true" x-transition>
                         Prix
                       </button>
                       <div x-show="pieceEdit" x-transition style="display:flex; align-items:center; gap:8px;">
-                        <input type="number" step="0.01" placeholder="0.00" :disabled="!pieceChecked"
-                               x-model="pieceInput" style="width:120px" @input="$root.recalc()">
+<input type="number" step="0.01" placeholder="0.00" :disabled="!pieceChecked" class="price-input"
+                               x-model="pieceInput" style="width:70px; padding:0 .35rem; text-align:center" @input="$root.recalc()">
                         <button type="button" class="btn" :class="pieceValid() ? 'btn-success' : 'btn-ghost btn-ghost-sm'"
                                 @click="if(pieceValid()){ pieceEdit=false; $root.recalc(); }" x-transition>
                           Valider
@@ -182,7 +195,7 @@
 
     <div class="footer-sticky">
       <div class="total-pill">
-        <i class="fas fa-receipt icon"></i>
+
         <span class="total-label">Total</span>
         <span class="total-amount" id="t-total">0.00</span>
         <span class="text-muted" style="font-size:.9rem;">€</span>

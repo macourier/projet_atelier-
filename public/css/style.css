@@ -733,7 +733,7 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus{
 .note-edit-btn:hover{ background:rgba(15,23,42,.04); transform:translateY(-.5px); }
 .note-display{ font-size:13px; line-height:1.5; color:#374151; min-height:48px; word-break:break-word; }
 .note-placeholder{ color:#9CA3AF; font-style:italic; }
-.note-form{ display:none; margin-top:8px; }
+.note-form{ margin-top:8px; }
 .note-textarea{ width:100%; min-height:80px; border-radius:8px; border:1px solid #D1D5DB; padding:8px 10px; font-size:13px; resize:vertical; }
 .note-form-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
 
