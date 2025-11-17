@@ -189,6 +189,7 @@
       </div>
       <div class="flex gap-8">
         <button class="btn btn-secondary" type="button" onclick="saveDevisDraft(); return openDevisModal();"><i class="fas fa-file-invoice" style="margin-right:6px;"></i>Devis PDF</button>
+        <button class="btn btn-secondary" type="button" onclick="saveDevisDraft(); return openClientSelectModal();"><i class="fas fa-user" style="margin-right:6px;"></i>Client…</button>
         <a class="btn btn-primary" href="javascript:void(0)" onclick="saveDevisDraft(); return goNewClient();">
           <i class="fas fa-user-plus" style="margin-right:6px;"></i>Nouveau client
         </a>
@@ -215,6 +216,19 @@
       <div class="flex gap-8" style="justify-content:flex-end;">
         <button type="button" class="btn btn-ghost btn-ghost-sm" onclick="closeDevisModal()">Annuler</button>
         <button type="button" class="btn btn-secondary" onclick="submitDirectPdf()">Continuer</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="client-select-modal" style="position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:2000;">
+    <div style="background:#fff; padding:16px; border-radius:12px; width:92%; max-width:520px;">
+      <h3 style="margin-top:0;">Sélectionner un client</h3>
+      <div class="form-field">
+        <input id="client-search-input" type="text" placeholder="Rechercher un client…" oninput="debouncedClientSearch()" style="width:100%;">
+      </div>
+      <div id="client-search-results" style="max-height:300px; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; padding:6px;"></div>
+      <div class="flex gap-8" style="justify-content:flex-end; margin-top:10px;">
+        <button type="button" class="btn btn-ghost btn-ghost-sm" onclick="closeClientSelectModal()">Fermer</button>
       </div>
     </div>
   </div>
@@ -548,5 +562,68 @@
       closeDevisModal();
       return false;
     }
-  </script>
+</script>
+<script>
+  function openClientSelectModal(){
+    const m = document.getElementById('client-select-modal');
+    if(m){ m.style.display='flex'; const i=document.getElementById('client-search-input'); if(i){ i.value=''; i.focus(); } const r=document.getElementById('client-search-results'); if(r){ r.innerHTML=''; } }
+    return false;
+  }
+  function closeClientSelectModal(){ const m=document.getElementById('client-select-modal'); if(m){ m.style.display='none'; } return false; }
+  function clientSearch(q){
+    q=(q||'').trim();
+    const box=document.getElementById('client-search-results');
+    if(!box) return;
+    if(q.length<2){ box.innerHTML='<div class="text-muted">Tapez au moins 2 caractères…</div>'; return; }
+    fetch('/search?q='+encodeURIComponent(q), {headers:{'X-Requested-With':'fetch'}})
+      .then(r=>r.text())
+      .then(html=>{
+        const parser=new DOMParser();
+        const doc=parser.parseFromString(html,'text/html');
+        const links=[...doc.querySelectorAll('a[href^="/clients/"]')];
+        const items=[];
+        links.forEach(a=>{ const m=a.getAttribute('href').match(/^\/clients\/(\d+)/); if(m){ const id=m[1]; const name=(a.textContent||'').trim(); items.push({id,name}); }});
+        if(items.length===0){ box.innerHTML='<div class="text-muted">Aucun client</div>'; return; }
+        box.innerHTML='';
+        items.forEach(it=>{ const row=document.createElement('div'); row.style.cssText='padding:8px; border-bottom:1px solid #f1f5f9; cursor:pointer;'; row.textContent=it.name; row.onclick=()=>selectExistingClient(it.id); box.appendChild(row); });
+      })
+      .catch(()=>{ box.innerHTML='<div style="color:#b00020">Erreur de recherche</div>'; });
+  }
+  let _clientSearchTimer=null;
+  function debouncedClientSearch(){ clearTimeout(_clientSearchTimer); _clientSearchTimer = setTimeout(()=>{ const i=document.getElementById('client-search-input'); clientSearch(i?i.value:''); }, 250); }
+  function selectExistingClient(clientId){
+    try{
+      if(!localStorage.getItem('devisDraft')){ if(typeof saveDevisDraft==='function'){ saveDevisDraft(); } }
+      const raw = localStorage.getItem('devisDraft');
+      const draft = raw ? JSON.parse(raw) : null;
+      if(!draft){ alert('Aucun brouillon de devis trouvé.'); return; }
+      const form = document.createElement('form'); form.method='post'; form.action='/clients/'+String(clientId)+'/select';
+      const add=(n,v)=>{ const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i); };
+      if(Array.isArray(draft.rows)){
+        draft.rows.forEach(r=>{
+          if(r.checked || r.pieceChecked){
+            add('prest_id[]', r.id || '');
+            add('qty[]', r.moQty || '1');
+            add('price_override[]', r.moInput || '');
+            add('piece_qty[]', r.pieceQty || '0');
+            add('piece_price_override[]', r.pieceInput || '');
+          }
+        });
+      }
+      if(draft && draft.custom){
+        try{
+          if(Array.isArray(draft.custom.prest)){
+            draft.custom.prest.forEach(l=>{ const lab=(l?.label||'').trim(); const pr=Number(String(l?.price??'').replace(',','.')); if(lab!=='' && Number.isFinite(pr) && pr>=0){ add('custom_prest_label[]', lab); add('custom_prest_price[]', String(pr)); } });
+          }
+          if(Array.isArray(draft.custom.piece)){
+            draft.custom.piece.forEach(l=>{ const lab=(l?.label||'').trim(); const pr=Number(String(l?.price??'').replace(',','.')); if(lab!=='' && Number.isFinite(pr) && pr>=0){ add('custom_piece_label[]', lab); add('custom_piece_price[]', String(pr)); } });
+          }
+        }catch(_e){}
+      }
+      document.body.appendChild(form);
+      form.submit();
+      closeClientSelectModal();
+    }catch(e){ console.error(e); alert('Impossible de créer le ticket pour ce client.'); }
+  }
+</script>
 {% endblock %}
