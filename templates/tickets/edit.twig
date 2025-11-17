@@ -9,10 +9,37 @@
   </div>
 
     {% if client %}
-    <div class="card client-card client-card-narrow" style="background:#f9fafb; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:12px 14px; line-height:1.45; margin:8px 0; font-size:.95rem;">
-      <div class="client-row"><span class="client-label">Nom:</span> {{ client.name|default('') }}</div>
-      <div class="client-row"><span class="client-label">Email:</span> {{ client.email|default('') }}</div>
-      <div class="client-row"><span class="client-label">Téléphone:</span> {{ client.phone|default('') }}</div>
+    <div class="ticket-header-grid">
+      <div class="ticket-card ticket-card-coord">
+        <div class="client-row"><span class="client-label">Nom:</span> {{ client.name|default('') }}</div>
+        <div class="client-row"><span class="client-label">Email:</span> {{ client.email|default('') }}</div>
+        <div class="client-row"><span class="client-label">Téléphone:</span> {{ client.phone|default('') }}</div>
+      </div>
+      <div class="ticket-card ticket-card-note">
+        <div class="note-card-header">
+          <span class="note-title">Note</span>
+          <button type="button" class="note-edit-btn" aria-label="Modifier la note">
+            <img src="/img/crayon-de-couleur.png" alt="" style="width:14px;height:14px; display:block; filter:grayscale(100%); opacity:.8;">
+          </button>
+        </div>
+        <div class="note-display" {% if client.note is empty %}data-empty="true"{% endif %}>
+          {% if client.note %}
+            <p class="note-text">{{ client.note }}</p>
+          {% else %}
+            <p class="note-placeholder">Aucune note pour l’instant.</p>
+          {% endif %}
+        </div>
+        <form class="note-form" method="post" action="/clients/{{ client.id }}/edit">
+          <input type="hidden" name="return" value="/tickets/{{ ticket ? ticket.id : 0 }}/edit">
+          <div>
+            <textarea name="note" class="note-textarea">{{ client.note }}</textarea>
+          </div>
+          <div class="note-form-actions">
+            <button type="submit" class="btn-primary btn-note-save">Enregistrer</button>
+            <button type="button" class="btn-secondary btn-note-cancel">Annuler</button>
+          </div>
+        </form>
+      </div>
     </div>
     {% endif %}
 
@@ -277,19 +304,7 @@
       {% endif %}
     {% endif %}
 
-    {% if client and client.note %}
-      <h3 style="margin-top:16px;">Note</h3>
-      <div class="note-container">
-        {% set isLong = (client.note|length > 120) %}
-        <div class="note-preview" data-full-note="{{ client.note|e('html_attr') }}">
-          {{ client.note|slice(0, 120) }}{% if isLong %}…{% endif %}
-        </div>
-        {% if isLong %}
-          <button class="note-more" type="button">… Voir plus</button>
-        {% endif %}
-        <a href="/clients/{{ client.id }}/edit#note" class="note-edit">Modifier la note</a>
-      </div>
-    {% endif %}
+
 
     <div x-show="pending.length > 0" style="margin-top:12px;">
       <h3>Nouveaux éléments</h3>
@@ -511,18 +526,25 @@
     })();
   </script>
   <script>
-  document.addEventListener('DOMContentLoaded', function(){
-    var moreBtn = document.querySelector('.note-more');
-    if (moreBtn) {
-      moreBtn.addEventListener('click', function(){
-        var cont = moreBtn.closest('.note-container');
-        var preview = cont ? cont.querySelector('.note-preview') : null;
-        if (!preview) return;
-        var full = preview.getAttribute('data-full-note') || '';
-        preview.textContent = full;
-        moreBtn.style.display = 'none';
-      });
+  document.addEventListener('DOMContentLoaded', function () {
+    var noteCard = document.querySelector('.ticket-card-note');
+    if (!noteCard) return;
+    var editBtn = noteCard.querySelector('.note-edit-btn');
+    var displayBlock = noteCard.querySelector('.note-display');
+    var form = noteCard.querySelector('.note-form');
+    var cancelBtn = noteCard.querySelector('.btn-note-cancel');
+    var textarea = noteCard.querySelector('.note-textarea');
+    function enterEditMode() {
+      if (form) form.style.display = 'block';
+      if (displayBlock) displayBlock.style.display = 'none';
+      if (textarea) textarea.focus();
     }
+    function exitEditMode() {
+      if (form) form.style.display = 'none';
+      if (displayBlock) displayBlock.style.display = 'block';
+    }
+    if (editBtn) editBtn.addEventListener('click', enterEditMode);
+    if (cancelBtn) cancelBtn.addEventListener('click', function (e) { e.preventDefault(); exitEditMode(); });
   });
   </script>
 {% endblock %}

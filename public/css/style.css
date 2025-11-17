@@ -709,7 +709,25 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus{
 }
 .catalog-dark .btn-accent:hover{ filter:brightness(1.05); }
 
-/* === Ticket note (encadré + voir plus) === */
+/* === Ticket header: coords + note grid === */
+.ticket-header-grid{
+  display:grid; grid-template-columns:1.1fr 0.9fr; gap:16px; align-items:stretch; margin-bottom:24px;
+}
+.ticket-card{
+  background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(15,23,42,.04); border:1px solid #E5E7EB; padding:16px 18px;
+}
+.ticket-card-note{ background:#F7F8FA; }
+.note-card-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.note-title{ font-weight:600; font-size:14px; color:#111827; }
+.note-edit-btn{ border:none; background:transparent; padding:4px; border-radius:999px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .15s ease, transform .15s ease; }
+.note-edit-btn:hover{ background:rgba(15,23,42,.04); transform:translateY(-.5px); }
+.note-display{ font-size:13px; line-height:1.5; color:#374151; min-height:48px; word-break:break-word; }
+.note-placeholder{ color:#9CA3AF; font-style:italic; }
+.note-form{ display:none; margin-top:8px; }
+.note-textarea{ width:100%; min-height:80px; border-radius:8px; border:1px solid #D1D5DB; padding:8px 10px; font-size:13px; resize:vertical; }
+.note-form-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
+
+/* === Ticket note (legacy preview style, may be kept for other pages) === */
 .note-container {
   background: #F3F4F6;
   padding: 12px 16px;
