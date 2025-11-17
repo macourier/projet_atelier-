@@ -182,6 +182,16 @@ footer{
 .btn-primary:hover {
   background: #2563EB;
 }
+/* Outline bleu pour boutons secondaires (ex: Devis PDF, Client) */
+.btn-outline-primary{
+  border: 1px solid #3B82F6 !important;
+  color: #1D4ED8; /* bleu un peu plus foncé pour le texte */
+}
+.btn-outline-primary:hover{
+  border-color: #2563EB !important;
+  background: #EFF6FF; /* très léger fond bleu au survol */
+  color: #1D4ED8;
+}
 .btn-danger{background:var(--danger)}
 .btn-round{
   width:48px; height:48px; border-radius:999px; display:inline-flex; justify-content:center; align-items:center;
