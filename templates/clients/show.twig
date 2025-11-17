@@ -16,23 +16,43 @@
       <div class="client-row"><span class="client-label">Téléphone:</span> {{ client.phone|default('') }}</div>
     </div>
 
-    {% set fromDevis = app.request.getQueryParams().from|default('') %}
-    {% if fromDevis == 'devis' %}
-      <div class="bg-white border shadow" style="padding:10px; border-radius:.75rem; margin:12px 0; display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <strong>Brouillon devis détecté</strong><br>
-          Vous pouvez créer un ticket à partir des éléments saisis.
-        </div>
-        <div class="flex gap-8">
-          <button class="btn btn-secondary" type="button" onclick="createTicketFromDraft({{ client.id }})">
-            <i class="fas fa-file-invoice" style="margin-right:6px;"></i>Créer le ticket depuis devis
-          </button>
-          <button class="btn btn-ghost btn-ghost-sm" type="button" onclick="localStorage.removeItem('devisDraft'); localStorage.removeItem('clientDraft'); this.closest('div.bg-white').remove();">
-            Ignorer
-          </button>
-        </div>
+    <div id="draft-banner" class="bg-white border shadow" style="padding:10px; border-radius:.75rem; margin:12px 0; display:none; justify-content:space-between; align-items:center;">
+      <div>
+        <strong>Brouillon devis détecté</strong><br>
+        Vous pouvez créer un ticket à partir des éléments saisis.
       </div>
-    {% endif %}
+      <div class="flex gap-8">
+        <button class="btn btn-secondary" type="button" onclick="createTicketFromDraft({{ client.id }})">
+          <i class="fas fa-file-invoice" style="margin-right:6px;"></i>Créer le ticket depuis devis
+        </button>
+        <button class="btn btn-ghost btn-ghost-sm" type="button" onclick="localStorage.removeItem('devisDraft'); localStorage.removeItem('clientDraft'); var b=document.getElementById('draft-banner'); if(b) b.style.display='none';">
+          Ignorer
+        </button>
+      </div>
+    </div>
+    <script>
+      (function(){
+        try{
+          var b = document.getElementById('draft-banner');
+          if(!b) return;
+          var raw = localStorage.getItem('devisDraft');
+          if(!raw){ return; }
+          var d = JSON.parse(raw);
+          var hasLines = Array.isArray(d?.rows) && d.rows.some(function(r){ return !!(r && (r.checked || r.pieceChecked)); });
+          if(!hasLines && d && d.custom){
+            var valid = function(arr){
+              return Array.isArray(arr) && arr.some(function(x){
+                var lab = (x?.label || '').trim();
+                var pr = Number(String(x?.price ?? '').replace(',', '.'));
+                return lab !== '' && Number.isFinite(pr) && pr >= 0;
+              });
+            };
+            if (valid(d.custom.prest) || valid(d.custom.piece)) { hasLines = true; }
+          }
+          if (hasLines) { b.style.display = 'flex'; }
+        }catch(_e){}
+      })();
+    </script>
 
     <div style="display:flex; gap:8px; margin:36px 0;">
       <a class="btn btn-light-primary" href="/clients/{{ client.id|default(0) }}/edit">Éditer le client</a>
