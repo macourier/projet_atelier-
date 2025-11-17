@@ -31,6 +31,11 @@
         </div>
         <form class="note-form" method="post" action="/clients/{{ client.id }}/edit" style="display:none; margin-top:8px;">
           <input type="hidden" name="return" value="/tickets/{{ ticket ? ticket.id : 0 }}/edit">
+          {# Préserver les champs client pour éviter d'écraser les données lors de l'update #}
+          <input type="hidden" name="name" value="{{ client.name|default('') }}">
+          <input type="hidden" name="address" value="{{ client.address|default('') }}">
+          <input type="hidden" name="email" value="{{ client.email|default('') }}">
+          <input type="hidden" name="phone" value="{{ client.phone|default('') }}">
           <div>
             <textarea name="note" class="note-textarea" style="width:100%; min-height:80px; border-radius:8px; border:1px solid #D1D5DB; padding:8px 10px; font-size:13px; resize:vertical;">{{ client.note }}</textarea>
           </div>
