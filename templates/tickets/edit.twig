@@ -10,7 +10,7 @@
 
     {% if client %}
     <div class="flex" style="gap:8px; align-items:stretch; margin:8px 0;">
-      <div class="card client-card client-card-narrow" style="background:#f9fafb; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:12px 14px; line-height:1.45; font-size:.95rem; position:relative; overflow:visible;">
+      <div class="card client-card client-card-narrow" x-data="{ openNote: false }" style="background:#f9fafb; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:12px 14px; line-height:1.45; font-size:.95rem; position:relative; overflow:visible;">
         <div class="client-row"><span class="client-label">Nom:</span> {{ client.name|default('') }}</div>
         <div class="client-row"><span class="client-label">Email:</span> {{ client.email|default('') }}</div>
         <div class="client-row"><span class="client-label">Téléphone:</span> {{ client.phone|default('') }}</div>
@@ -18,18 +18,18 @@
       <div class="card client-card client-card-narrow" style="background:#f9fafb; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:12px 14px; line-height:1.45; font-size:.95rem; position:relative; overflow:visible;">
         <div class="note-card-header" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
           <span class="note-title" style="font-weight:600; font-size:14px; color:#111827;">Note</span>
-          <button type="button" class="note-edit-btn" aria-label="Modifier la note" style="border:none; background:transparent; padding:4px; border-radius:999px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+          <button type="button" class="note-edit-btn" aria-label="Modifier la note" @click="openNote = true" style="border:none; background:transparent; padding:4px; border-radius:999px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
             <img src="/img/crayon-de-couleur.png" alt="" style="width:14px;height:14px; display:block; filter:grayscale(100%); opacity:.8;">
           </button>
         </div>
-        <div class="note-display" {% if client.note is empty %}data-empty="true"{% endif %} style="font-size:13px; line-height:1.5; color:#374151; word-break:break-word;">
+        <div class="note-display" x-show="!openNote" {% if client.note is empty %}data-empty="true"{% endif %} style="font-size:13px; line-height:1.5; color:#374151; word-break:break-word;">
           {% if client.note %}
             <p class="note-text" style="margin:0;">{{ client.note }}</p>
           {% else %}
             <p class="note-placeholder" style="margin:0; color:#9CA3AF; font-style:italic;">Aucune note pour l’instant.</p>
           {% endif %}
         </div>
-        <form class="note-form" method="post" action="/clients/{{ client.id }}/edit" style="display:none; position:absolute; top:0; left:0; right:0; background:#fff; border:1px solid #E5E7EB; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.12); padding:12px; z-index:30;">
+        <form class="note-form" method="post" action="/clients/{{ client.id }}/edit" x-show="openNote" x-transition.opacity @keydown.escape.window="openNote=false" style="position:absolute; top:0; left:0; right:0; background:#fff; border:1px solid #E5E7EB; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.12); padding:12px; z-index:30;">
           <input type="hidden" name="return" value="/tickets/{{ ticket ? ticket.id : 0 }}/edit">
           {# Préserver les champs client pour éviter d'écraser les données lors de l'update #}
           <input type="hidden" name="name" value="{{ client.name|default('') }}">
@@ -41,7 +41,7 @@
           </div>
           <div class="note-form-actions" style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
             <button type="submit" class="btn-primary btn-note-save">Enregistrer</button>
-            <button type="button" class="btn-secondary btn-note-cancel">Annuler</button>
+            <button type="button" class="btn-secondary btn-note-cancel" @click.prevent="openNote=false">Annuler</button>
           </div>
         </form>
       </div>
@@ -529,31 +529,5 @@
         setTimeout(()=>{ t.remove(); }, 5000);
       }
     })();
-  </script>
-  <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.note-edit-btn').forEach(function(btn){
-      var card = btn.closest('.client-card') || btn.closest('.card') || btn.parentElement;
-      if (!card) return;
-      var displayBlock = card.querySelector('.note-display');
-      var form = card.querySelector('.note-form');
-      var cancelBtn = card.querySelector('.btn-note-cancel');
-      var textarea = card.querySelector('.note-textarea');
-      function enterEditMode() {
-        if (form) form.style.display = 'block';
-        if (displayBlock) displayBlock.style.display = 'none';
-        if (textarea) {
-          textarea.focus();
-          try { var len = textarea.value.length; textarea.setSelectionRange(len, len); } catch(_e){}
-        }
-      }
-      function exitEditMode() {
-        if (form) form.style.display = 'none';
-        if (displayBlock) displayBlock.style.display = 'block';
-      }
-      btn.addEventListener('click', enterEditMode);
-      if (cancelBtn) cancelBtn.addEventListener('click', function (e) { e.preventDefault(); exitEditMode(); });
-    });
-  });
   </script>
 {% endblock %}
