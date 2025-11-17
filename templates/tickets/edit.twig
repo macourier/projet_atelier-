@@ -527,24 +527,28 @@
   </script>
   <script>
   document.addEventListener('DOMContentLoaded', function () {
-    var noteCard = document.querySelector('.ticket-card-note');
-    if (!noteCard) return;
-    var editBtn = noteCard.querySelector('.note-edit-btn');
-    var displayBlock = noteCard.querySelector('.note-display');
-    var form = noteCard.querySelector('.note-form');
-    var cancelBtn = noteCard.querySelector('.btn-note-cancel');
-    var textarea = noteCard.querySelector('.note-textarea');
-    function enterEditMode() {
-      if (form) form.style.display = 'block';
-      if (displayBlock) displayBlock.style.display = 'none';
-      if (textarea) textarea.focus();
-    }
-    function exitEditMode() {
-      if (form) form.style.display = 'none';
-      if (displayBlock) displayBlock.style.display = 'block';
-    }
-    if (editBtn) editBtn.addEventListener('click', enterEditMode);
-    if (cancelBtn) cancelBtn.addEventListener('click', function (e) { e.preventDefault(); exitEditMode(); });
+    document.querySelectorAll('.note-edit-btn').forEach(function(btn){
+      var card = btn.closest('.client-card') || btn.closest('.card') || btn.parentElement;
+      if (!card) return;
+      var displayBlock = card.querySelector('.note-display');
+      var form = card.querySelector('.note-form');
+      var cancelBtn = card.querySelector('.btn-note-cancel');
+      var textarea = card.querySelector('.note-textarea');
+      function enterEditMode() {
+        if (form) form.style.display = 'block';
+        if (displayBlock) displayBlock.style.display = 'none';
+        if (textarea) {
+          textarea.focus();
+          try { var len = textarea.value.length; textarea.setSelectionRange(len, len); } catch(_e){}
+        }
+      }
+      function exitEditMode() {
+        if (form) form.style.display = 'none';
+        if (displayBlock) displayBlock.style.display = 'block';
+      }
+      btn.addEventListener('click', enterEditMode);
+      if (cancelBtn) cancelBtn.addEventListener('click', function (e) { e.preventDefault(); exitEditMode(); });
+    });
   });
   </script>
 {% endblock %}
