@@ -9,32 +9,32 @@
   </div>
 
     {% if client %}
-    <div class="ticket-header-grid">
-      <div class="ticket-card ticket-card-coord">
+    <div class="flex" style="gap:8px; align-items:stretch; margin:8px 0;">
+      <div class="card client-card client-card-narrow" style="background:#f9fafb; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:12px 14px; line-height:1.45; font-size:.95rem;">
         <div class="client-row"><span class="client-label">Nom:</span> {{ client.name|default('') }}</div>
         <div class="client-row"><span class="client-label">Email:</span> {{ client.email|default('') }}</div>
         <div class="client-row"><span class="client-label">Téléphone:</span> {{ client.phone|default('') }}</div>
       </div>
-      <div class="ticket-card ticket-card-note">
-        <div class="note-card-header">
-          <span class="note-title">Note</span>
-          <button type="button" class="note-edit-btn" aria-label="Modifier la note">
+      <div class="card client-card client-card-narrow" style="background:#f9fafb; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:12px 14px; line-height:1.45; font-size:.95rem;">
+        <div class="note-card-header" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+          <span class="note-title" style="font-weight:600; font-size:14px; color:#111827;">Note</span>
+          <button type="button" class="note-edit-btn" aria-label="Modifier la note" style="border:none; background:transparent; padding:4px; border-radius:999px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
             <img src="/img/crayon-de-couleur.png" alt="" style="width:14px;height:14px; display:block; filter:grayscale(100%); opacity:.8;">
           </button>
         </div>
-        <div class="note-display" {% if client.note is empty %}data-empty="true"{% endif %}>
+        <div class="note-display" {% if client.note is empty %}data-empty="true"{% endif %} style="font-size:13px; line-height:1.5; color:#374151; word-break:break-word;">
           {% if client.note %}
-            <p class="note-text">{{ client.note }}</p>
+            <p class="note-text" style="margin:0;">{{ client.note }}</p>
           {% else %}
-            <p class="note-placeholder">Aucune note pour l’instant.</p>
+            <p class="note-placeholder" style="margin:0; color:#9CA3AF; font-style:italic;">Aucune note pour l’instant.</p>
           {% endif %}
         </div>
-        <form class="note-form" method="post" action="/clients/{{ client.id }}/edit">
+        <form class="note-form" method="post" action="/clients/{{ client.id }}/edit" style="display:none; margin-top:8px;">
           <input type="hidden" name="return" value="/tickets/{{ ticket ? ticket.id : 0 }}/edit">
           <div>
-            <textarea name="note" class="note-textarea">{{ client.note }}</textarea>
+            <textarea name="note" class="note-textarea" style="width:100%; min-height:80px; border-radius:8px; border:1px solid #D1D5DB; padding:8px 10px; font-size:13px; resize:vertical;">{{ client.note }}</textarea>
           </div>
-          <div class="note-form-actions">
+          <div class="note-form-actions" style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
             <button type="submit" class="btn-primary btn-note-save">Enregistrer</button>
             <button type="button" class="btn-secondary btn-note-cancel">Annuler</button>
           </div>
