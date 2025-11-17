@@ -19,56 +19,6 @@ class ClientController
         $this->twig = $container['twig'] ?? null;
     }
 
-    /**
-     * Sélection d'un client existant depuis le catalogue: crée un ticket et y insère les lignes postées.
-     * POST /clients/{id}/select
-     */
-    public function select(Request $request, Response $response, array $args): Response
-    {
-        $clientId = (int)($args['id'] ?? 0);
-        if (!$this->pdo || $clientId <= 0) {
-            $response->getBody()->write('Client introuvable');
-            return $response->withStatus(404);
-        }
-        // Vérifier l'existence du client
-        $st = $this->pdo->prepare('SELECT id FROM clients WHERE id = :id LIMIT 1');
-        $st->execute(['id' => $clientId]);
-        $cli = $st->fetch();
-        if (!$cli) {
-            $response->getBody()->write('Client introuvable');
-            return $response->withStatus(404);
-        }
-
-        $data = (array)$request->getParsedBody();
-        // Créer le ticket pour ce client
-        $stmt = $this->pdo->prepare('INSERT INTO tickets (client_id, status) VALUES (:client_id, :status)');
-        $stmt->execute(['client_id' => $clientId, 'status' => 'open']);
-        $ticketId = (int)$this->pdo->lastInsertId();
-        try {
-            $this->pdo->prepare('UPDATE tickets SET received_at = CURRENT_TIMESTAMP WHERE id = :id')
-                ->execute(['id' => $ticketId]);
-        } catch (\Throwable $e) {
-            // colonne absente — ignorer
-        }
-        // Optionnel: enregistrer infos vélo si fournies
-        $bikeBrand = trim((string)($data['bike_brand'] ?? ''));
-        $bikeModel = trim((string)($data['bike_model'] ?? ''));
-        $bikeSerial = trim((string)($data['bike_serial'] ?? ''));
-        $bikeNotes  = trim((string)($data['bike_notes'] ?? ''));
-        if ($bikeBrand !== '' || $bikeModel !== '' || $bikeSerial !== '' || $bikeNotes !== '') {
-            $updBike = $this->pdo->prepare('UPDATE tickets SET bike_brand = :bb, bike_model = :bm, bike_serial = :bs, bike_notes = :bn WHERE id = :tid');
-            $updBike->execute(['bb'=>$bikeBrand,'bm'=>$bikeModel,'bs'=>$bikeSerial,'bn'=>$bikeNotes,'tid'=>$ticketId]);
-        }
-
-        // Insérer les lignes depuis le panier/catalogue
-        $svc = new \App\Service\TicketService($this->pdo);
-        $svc->replacePrestationsFromPost($ticketId, $data);
-        $svc->computeTotals($ticketId);
-
-        // Redirection vers dashboard client, avec ancre de succès
-        return $response->withHeader('Location', '/clients/' . $clientId . '?created_ticket=' . $ticketId)->withStatus(302);
-    }
-
     public function index(Request $request, Response $response): Response
     {
         $clients = [];
