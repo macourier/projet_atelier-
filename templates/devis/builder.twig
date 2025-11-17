@@ -575,9 +575,14 @@
     const box=document.getElementById('client-search-results');
     if(!box) return;
     if(q.length<2){ box.innerHTML='<div class="text-muted">Tapez au moins 2 caractères…</div>'; return; }
-    fetch('/search?q='+encodeURIComponent(q), {headers:{'X-Requested-With':'fetch'}})
+    fetch('/search?q='+encodeURIComponent(q), { credentials: 'include', headers: { 'Accept': 'text/html' } })
       .then(r=>r.text())
       .then(html=>{
+        // Si on a été redirigé vers la page de login (middleware), prévenir l'utilisateur
+        if (html.includes('<form') && html.toLowerCase().includes('login')) {
+          box.innerHTML = '<div style="color:#b00020">Session expirée — veuillez vous reconnecter.</div>';
+          return;
+        }
         const parser=new DOMParser();
         const doc=parser.parseFromString(html,'text/html');
         const links=[...doc.querySelectorAll('a[href^="/clients/"]')];
