@@ -184,11 +184,11 @@ footer{
 }
 /* Outline bleu pour boutons secondaires (ex: Devis PDF, Client) */
 .btn-outline-primary{
-  border: 1px solid rgba(59, 130, 246, 0.6) !important; /* bleu 60% opacité */
+  border: 1px solid rgba(59, 130, 246, 0.5) !important; /* bleu 50% opacité */
   color: #1D4ED8; /* bleu un peu plus foncé pour le texte */
 }
 .btn-outline-primary:hover{
-  border-color: rgba(37, 99, 235, 0.75) !important; /* hover 75% opacité */
+  border-color: rgba(37, 99, 235, 0.65) !important; /* hover 65% opacité */
   background: #EFF6FF; /* très léger fond bleu au survol */
   color: #1D4ED8;
 }
