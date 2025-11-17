@@ -279,7 +279,16 @@
 
     {% if client and client.note %}
       <h3 style="margin-top:16px;">Note</h3>
-      <div class="text-muted">{{ client.note }}</div>
+      <div class="note-container">
+        {% set isLong = (client.note|length > 120) %}
+        <div class="note-preview" data-full-note="{{ client.note|e('html_attr') }}">
+          {{ client.note|slice(0, 120) }}{% if isLong %}…{% endif %}
+        </div>
+        {% if isLong %}
+          <button class="note-more" type="button">… Voir plus</button>
+        {% endif %}
+        <a href="/clients/{{ client.id }}/edit#note" class="note-edit">Modifier la note</a>
+      </div>
     {% endif %}
 
     <div x-show="pending.length > 0" style="margin-top:12px;">
@@ -500,5 +509,20 @@
         setTimeout(()=>{ t.remove(); }, 5000);
       }
     })();
+  </script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+    var moreBtn = document.querySelector('.note-more');
+    if (moreBtn) {
+      moreBtn.addEventListener('click', function(){
+        var cont = moreBtn.closest('.note-container');
+        var preview = cont ? cont.querySelector('.note-preview') : null;
+        if (!preview) return;
+        var full = preview.getAttribute('data-full-note') || '';
+        preview.textContent = full;
+        moreBtn.style.display = 'none';
+      });
+    }
+  });
   </script>
 {% endblock %}

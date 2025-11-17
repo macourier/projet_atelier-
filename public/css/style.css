@@ -708,3 +708,39 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus{
   color:var(--accent-contrast);
 }
 .catalog-dark .btn-accent:hover{ filter:brightness(1.05); }
+
+/* === Ticket note (encadré + voir plus) === */
+.note-container {
+  background: #F3F4F6;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-top: 8px;
+}
+
+.note-preview {
+  font-size: 14px;
+  color: #374151;
+  white-space: pre-line;
+}
+
+.note-more {
+  margin-top: 6px;
+  background: none;
+  border: none;
+  color: #3B82F6;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.note-edit {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #6B7280;
+  text-decoration: underline;
+}
+
+.note-edit:hover {
+  color: #374151;
+}
