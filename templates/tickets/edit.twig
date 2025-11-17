@@ -10,12 +10,12 @@
 
     {% if client %}
     <div class="flex" style="gap:8px; align-items:stretch; margin:8px 0;">
-      <div class="card client-card client-card-narrow" x-data="{ openNote: false }" style="background:#f9fafb; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:12px 14px; line-height:1.45; font-size:.95rem; position:relative; overflow:visible;">
+      <div class="card client-card client-card-narrow" style="background:#f9fafb; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:12px 14px; line-height:1.45; font-size:.95rem; position:relative; overflow:visible;">
         <div class="client-row"><span class="client-label">Nom:</span> {{ client.name|default('') }}</div>
         <div class="client-row"><span class="client-label">Email:</span> {{ client.email|default('') }}</div>
         <div class="client-row"><span class="client-label">Téléphone:</span> {{ client.phone|default('') }}</div>
       </div>
-      <div class="card client-card client-card-narrow" style="background:#f1f3f5; border:none; border-radius:14px; box-shadow:none; padding:12px 14px; line-height:1.45; font-size:.95rem; position:relative; overflow:visible;">
+      <div class="card client-card client-card-narrow" x-data="{ openNote: false }" x-effect="if(openNote){ $nextTick(()=>{ if($refs.noteTextarea){ $refs.noteTextarea.focus(); const v=$refs.noteTextarea.value; $refs.noteTextarea.setSelectionRange(v.length, v.length); } }); }" style="background:#f1f3f5; border:none; border-radius:14px; box-shadow:none; padding:12px 14px; line-height:1.45; font-size:.95rem; position:relative; overflow:visible;">
         <div class="note-card-header" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
           <span class="note-title" style="font-weight:600; font-size:14px; color:#111827;">Note</span>
           <button type="button" class="note-edit-btn" aria-label="Modifier la note" @click="openNote = true" style="border:none; background:transparent; padding:4px; border-radius:999px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
@@ -29,7 +29,7 @@
             <p class="note-placeholder" style="margin:0; color:#9CA3AF; font-style:italic;">Aucune note pour l’instant.</p>
           {% endif %}
         </div>
-        <form class="note-form" method="post" action="/clients/{{ client.id }}/edit" x-show="openNote" x-transition.opacity @keydown.escape.window="openNote=false" style="position:absolute; top:0; left:0; right:0; background:#f1f3f5; border:none; border-radius:12px; box-shadow:none; padding:12px; z-index:30;">
+        <form class="note-form" method="post" action="/clients/{{ client.id }}/edit" x-show="openNote" x-transition.opacity @keydown.escape.window="openNote=false" style="position:absolute; top:0; left:0; right:0; background:#f1f3f5; border:none; border-radius:12px; box-shadow:none; padding:12px; z-index:100;">
           <input type="hidden" name="return" value="/tickets/{{ ticket ? ticket.id : 0 }}/edit">
           {# Préserver les champs client pour éviter d'écraser les données lors de l'update #}
           <input type="hidden" name="name" value="{{ client.name|default('') }}">
@@ -37,7 +37,7 @@
           <input type="hidden" name="email" value="{{ client.email|default('') }}">
           <input type="hidden" name="phone" value="{{ client.phone|default('') }}">
           <div>
-            <textarea name="note" class="note-textarea" style="width:100%; min-height:100px; border-radius:8px; border:1px solid #D1D5DB; padding:8px 10px; font-size:13px; resize:vertical;">{{ client.note }}</textarea>
+            <textarea name="note" class="note-textarea" x-ref="noteTextarea" style="width:100%; min-height:100px; border-radius:8px; border:1px solid #D1D5DB; padding:8px 10px; font-size:13px; resize:vertical;">{{ client.note }}</textarea>
           </div>
           <div class="note-form-actions" style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
             <button type="submit" class="btn-primary btn-note-save">Enregistrer</button>
