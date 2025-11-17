@@ -121,7 +121,6 @@
               t.className = 'toast';
               t.textContent = 'Ticket créé ✓';
               document.body.appendChild(t);
-              try{ localStorage.removeItem('devisDraft'); localStorage.removeItem('clientDraft'); }catch(_e){}
               setTimeout(()=>{ t.remove(); }, 5000);
               // scroll sur la section "tickets ouverts" et surligner la ligne si présente
               const openSec = document.getElementById('tickets-open');
@@ -155,7 +154,7 @@
         // Construire un formulaire POST caché vers /tickets/0/edit
         const form = document.createElement('form');
         form.method = 'post';
-        form.action = '/clients/' + String(clientId) + '/select';
+        form.action = '/tickets/0/edit';
 
         const add = (n,v) => { const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i); };
 
@@ -204,6 +203,9 @@
           } catch(_e){}
         }
         document.body.appendChild(form);
+        // Nettoyer le brouillon pour éviter de re-proposer
+        localStorage.removeItem('devisDraft');
+        localStorage.removeItem('clientDraft');
         form.submit();
       }catch(e){
         console.error(e);
@@ -261,7 +263,7 @@
         // Construire un formulaire POST caché vers /tickets/0/edit
         const form = document.createElement('form');
         form.method = 'post';
-        form.action = '/clients/' + String(clientId) + '/select';
+        form.action = '/tickets/0/edit';
 
         const add = (n,v) => { const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i); };
 
@@ -310,6 +312,9 @@
           } catch(_e){}
         }
         document.body.appendChild(form);
+        // Nettoyer le brouillon pour éviter de re-proposer
+        localStorage.removeItem('devisDraft');
+        localStorage.removeItem('clientDraft');
         form.submit();
       }catch(e){
         console.error(e);

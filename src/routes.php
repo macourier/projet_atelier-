@@ -64,15 +64,6 @@ return function (App $app, array $container) {
             $ctrl = new \App\Controller\ClientController($container);
             return $ctrl->update($request, $response, $args);
         });
-        // Sélectionner un client existant depuis le catalogue: créer ticket + lignes et rediriger vers dashboard
-        $group->post('/clients/{id}/select', function (Request $request, Response $response, $args) use ($container) {
-            $ctrl = new \App\Controller\ClientController($container);
-            if (method_exists($ctrl, 'select')) {
-                return $ctrl->select($request, $response, $args);
-            }
-            $response->getBody()->write('Not implemented');
-            return $response->withStatus(501);
-        });
 
 
         // Tickets
