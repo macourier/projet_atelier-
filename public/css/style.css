@@ -351,6 +351,39 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus{
 /* Variante plus légère du bouton fantôme */
 .btn-ghost-sm{ min-height:32px; padding:.25rem .6rem; font-size:.9rem; }
 
+/* Bouton primaire compact (bleu) de même gabarit que .btn-ghost-sm */
+.btn-primary-sm{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:32px;
+  padding:.25rem .6rem;
+  border-radius:.5rem;
+  font-size:.9rem;
+  font-weight:600;
+  background:#3B82F6;   /* même bleu que .btn-primary / Nouveau client */
+  color:#FFFFFF;
+  border:none;
+  cursor:pointer;
+  transition:background .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+.btn-primary-sm:hover{
+  background:#2563EB;
+}
+.btn-primary-sm:disabled{
+  background:#93C5FD;   /* bleu adouci pour l’état désactivé */
+  cursor:default;
+}
+
+/* Champ de saisie compact aligné sur .btn-primary-sm */
+.price-input-compact{
+  min-height:32px;
+  height:32px;
+  padding:.25rem .6rem;
+  border-radius:.5rem;
+  font-size:.9rem;
+}
+
 /* Micro animations */
 @keyframes pulse{ 0%{background:transparent} 50%{background:#f1f3f5} 100%{background:transparent} }
 .pulse-on-change{ animation:pulse .6s ease; }

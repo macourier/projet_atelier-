@@ -110,25 +110,25 @@
                       <option value="1">1</option>
                       <option value="2">2</option>
                     </select>
-
-                    <div class="flex gap-8" style="align-items:center;">
-                      <button type="button" class="btn btn-ghost btn-ghost-sm price-soft" :disabled="!checked" 
-                              x-show="!moEdit && moInput===''" 
+                  </div>
+                  <div class="flex gap-8" style="align-items:center; margin-top:4px;">
+                    <button type="button" class="btn btn-ghost btn-ghost-sm price-soft" :disabled="!checked" 
+                            x-show="!moEdit && moInput===''" 
 @click="moEdit=true" x-transition>
-                        Prix
+                      Prix
+                    </button>
+                    <div x-show="moEdit" x-transition style="display:flex; align-items:center; gap:8px;">
+                      <input type="number" step="0.01" placeholder="Prix HT" :disabled="!checked" class="price-input price-input-compact"
+                             x-model="moInput" @input="$root.recalc()">
+                      <button type="button" class="btn-primary-sm"
+                              x-show="moValid()"
+                              @click="if(moValid()){ moEdit=false; $root.recalc(); }" x-transition>
+                        Valider
                       </button>
-                      <div x-show="moEdit" x-transition style="display:flex; align-items:center; gap:8px;">
-<input type="number" step="0.01" placeholder="0.00" :disabled="!checked" class="price-input"
-                               x-model="moInput" style="width:70px; padding:0 .35rem; text-align:center" @input="$root.recalc()">
-                        <button type="button" class="btn" :class="moValid() ? 'btn-success' : 'btn-ghost btn-ghost-sm'"
-                                @click="if(moValid()){ moEdit=false; $root.recalc(); }" x-transition>
-                          Valider
-                        </button>
-                      </div>
-                      <a href="javascript:void(0)" class="text-muted" style="font-size:.85rem;" 
-                         x-show="moInput!==''" x-transition
-                         @click="resetMo(); $root.recalc()">Réinitialiser</a>
                     </div>
+                    <button type="button" class="btn-ghost-sm" title="Réinitialiser"
+                            x-show="moInput!==''" x-transition
+                            @click="resetMo(); $root.recalc()">↺</button>
                   </div>
                 </div>
 
@@ -158,25 +158,25 @@
                       <option value="1">1</option>
                       <option value="2">2</option>
                     </select>
-
-                    <div class="flex gap-8" style="align-items:center;">
-                      <button type="button" class="btn btn-ghost btn-ghost-sm price-soft" :disabled="!pieceChecked" 
-                              x-show="!pieceEdit && pieceInput===''" 
+                  </div>
+                  <div class="flex gap-8" style="align-items:center; margin-top:4px;">
+                    <button type="button" class="btn btn-ghost btn-ghost-sm price-soft" :disabled="!pieceChecked" 
+                            x-show="!pieceEdit && pieceInput===''" 
 @click="pieceEdit=true" x-transition>
-                        Prix
+                      Prix
+                    </button>
+                    <div x-show="pieceEdit" x-transition style="display:flex; align-items:center; gap:8px;">
+                      <input type="number" step="0.01" placeholder="Prix HT" :disabled="!pieceChecked" class="price-input price-input-compact"
+                             x-model="pieceInput" @input="$root.recalc()">
+                      <button type="button" class="btn-primary-sm"
+                              x-show="pieceValid()"
+                              @click="if(pieceValid()){ pieceEdit=false; $root.recalc(); }" x-transition>
+                        Valider
                       </button>
-                      <div x-show="pieceEdit" x-transition style="display:flex; align-items:center; gap:8px;">
-<input type="number" step="0.01" placeholder="0.00" :disabled="!pieceChecked" class="price-input"
-                               x-model="pieceInput" style="width:70px; padding:0 .35rem; text-align:center" @input="$root.recalc()">
-                        <button type="button" class="btn" :class="pieceValid() ? 'btn-success' : 'btn-ghost btn-ghost-sm'"
-                                @click="if(pieceValid()){ pieceEdit=false; $root.recalc(); }" x-transition>
-                          Valider
-                        </button>
-                      </div>
-                      <a href="javascript:void(0)" class="text-muted" style="font-size:.85rem;" 
-                         x-show="pieceInput!==''" x-transition
-                         @click="resetPiece(); $root.recalc()">Réinitialiser</a>
                     </div>
+                    <button type="button" class="btn-ghost-sm" title="Réinitialiser"
+                            x-show="pieceInput!==''" x-transition
+                            @click="resetPiece(); $root.recalc()">↺</button>
                   </div>
                 </div>
 
