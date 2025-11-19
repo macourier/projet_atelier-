@@ -382,6 +382,13 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus{
   padding:.25rem .6rem;
   border-radius:.5rem;
   font-size:.9rem;
+  width:96px;         /* largeur fixe plus courte pour le champ de prix */
+  max-width:96px;     /* évite qu'il s'étire dans les flex */
+}
+
+/* Spécifique pour casser le width:100% global des inputs */
+input.price-input-compact{
+  width:96px;
 }
 
 /* Micro animations */

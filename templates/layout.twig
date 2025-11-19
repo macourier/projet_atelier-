@@ -71,14 +71,17 @@
       return false;
     }
 
-    // Mise en évidence du lien actif (SaaS-like) côté client
+    // Mise en évidence du lien actif + barre glissante (SaaS-like) côté client
     document.addEventListener('DOMContentLoaded', function(){
       try {
         var nav = document.querySelector('nav.header-nav');
         if (!nav) return;
         var path = (location.pathname || '').toLowerCase();
 
-        nav.querySelectorAll('a.nav-link').forEach(function(a){
+        var links = nav.querySelectorAll('a.nav-link');
+
+        // Appliquer la classe active en fonction de l'URL
+        links.forEach(function(a){
           var label = (a.textContent || '').trim().toLowerCase();
           var href  = (a.getAttribute('href') || '').toLowerCase();
 
@@ -87,6 +90,33 @@
           if (path.indexOf('/tickets') === 0 && (label.indexOf("file d'attente") >= 0 || label.indexOf('file') >= 0)) a.classList.add('active');
           if (path.indexOf('/admin') === 0 && (label.indexOf('administrateur') >= 0 || href === '/admin')) a.classList.add('active');
         });
+
+        // Barre glissante
+        var bar = nav.querySelector('.nav-slide-bar');
+        if (!bar) {
+          bar = document.createElement('span');
+          bar.className = 'nav-slide-bar';
+          bar.setAttribute('aria-hidden', 'true');
+          nav.appendChild(bar);
+        }
+
+        function positionBar(link) {
+          if (!link || !bar) return;
+          var navRect = nav.getBoundingClientRect();
+          var rect = link.getBoundingClientRect();
+          var linkWidth = rect.width || 0;
+          if (!linkWidth) return;
+          var barWidth = linkWidth * 0.20; // 20% de la largeur du lien
+          var center = rect.left + linkWidth / 2;
+          bar.style.width = barWidth + 'px';
+          bar.style.left = (center - barWidth / 2 - navRect.left) + 'px';
+        }
+
+        // Positionner la barre sous le lien actif initial (hors Déconnexion)
+        var active = nav.querySelector('a.nav-link.active:not(.nav-link-logout)');
+        if (active) {
+          positionBar(active);
+        }
       } catch (_e) {}
     });
   </script>
