@@ -1,0 +1,108 @@
+{% set tvadef = env.TVA_DEFAULT|default(20) %}
+
+{# Bloc récapitulatif dynamique #}
+<div x-show="pending.length > 0" style="margin-top:12px;">
+  <h3>Nouveaux éléments</h3>
+  <table class="recap-table">
+    <thead><tr><th>Libellé</th><th>Qté</th><th>Sous-total TTC</th></tr></thead>
+    <tbody>
+      <template x-for="p in pending" :key="p.label + '-' + p.ttc">
+        <tr>
+          <td x-text="p.label"></td>
+          <td x-text="p.qty"></td>
+          <td x-text="fmt(p.ttc)"></td>
+        </tr>
+      </template>
+    </tbody>
+  </table>
+</div>
+
+{# Badge Total #}
+<div class="footer-sticky">
+  <div class="total-pill">
+    <i class="fas fa-receipt icon"></i>
+    <span class="total-label">Total</span>
+    <span class="total-amount" id="t-total">{{ '%.2f'|format(totaux.ttc|default(0)) }}</span>
+    <span class="text-muted" style="font-size:.9rem;">€</span>
+  </div>
+  
+  {# Boutons conditionnels #}
+  <div class="flex gap-8">
+    {% if mode == 'ticket' %}
+      {% if client %}
+        <a class="btn btn-ghost btn-ghost-sm" href="/clients/{{ client.id }}">Dashboard client</a>
+      {% endif %}
+      <button type="button" class="btn btn-secondary" @click="showCatalogue = !showCatalogue; $nextTick(()=>{ const c=document.getElementById('catalogue'); if(c && showCatalogue){ c.scrollIntoView({behavior:'smooth', block:'start'});} });">
+        <i class="fas fa-plus" style="margin-right:6px;"></i>Ajouter prestation
+      </button>
+      <button class="btn" type="submit"><i class="fas fa-save" style="margin-right:6px;"></i>Enregistrer</button>
+    {% endif %}
+
+    <button class="btn" type="submit" @click.prevent="handleFacturer($el)"
+            {% if mode == 'ticket' and not ticket %}disabled{% endif %}
+            name="payment_method" value="ESPECE"
+            formaction="{{ mode == 'ticket' ? '/tickets/'~(ticket ? ticket.id : 0)~'/facturer/confirm' : '/facturer/valider' }}">
+      <i class="fas fa-money-bill-wave" style="margin-right:6px;"></i>Espèce
+    </button>
+    <button class="btn btn-light-primary" type="submit" @click.prevent="handleFacturer($el)"
+            {% if mode == 'ticket' and not ticket %}disabled{% endif %}
+            name="payment_method" value="CB"
+            formaction="{{ mode == 'ticket' ? '/tickets/'~(ticket ? ticket.id : 0)~'/facturer/confirm' : '/facturer/valider' }}">
+      <i class="fas fa-credit-card" style="margin-right:6px;"></i>CB
+    </button>
+  </div>
+</div>
+
+{# Tables historiques (optionnelles) #}
+{% if mode == 'ticket' and (prestations is not empty or consommables is not empty) %}
+  <div class="flex" style="margin-top:16px; justify-content:space-between; align-items:baseline;">
+    <h3 style="margin:0;">Récapitulatif</h3>
+    <div class="bike-inline" style="font-size:1.25rem; font-weight:600; color:#111827;">
+      Vélo : {{ ticket.bike_model|default(client.bike_model|default('—')) }}
+    </div>
+  </div>
+  
+  {% if prestations is not empty %}
+    <table class="recap-table">
+      <colgroup>
+        <col style="width:auto">
+        <col style="width:80px">
+        <col style="width:120px">
+        <col style="width:120px">
+      </colgroup>
+      <thead><tr><th>Prestation</th><th>Qté</th><th>Unitaire TTC</th><th>Sous-total TTC</th></tr></thead>
+      <tbody>
+      {% for p in prestations %}
+        <tr>
+          <td>{{ p.label }}</td>
+          <td>{{ p.quantite }}</td>
+          <td>{{ '%.2f'|format((p.prix_ht_snapshot|default(0)) * (1 + (p.tva_snapshot|default(tvadef))/100)) }}</td>
+          <td>{{ '%.2f'|format(((p.prix_ht_snapshot|default(0)) * (1 + (p.tva_snapshot|default(tvadef))/100)) * (p.quantite|default(1))) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+  {% if consommables is not empty %}
+    <table class="recap-table">
+      <colgroup>
+        <col style="width:auto">
+        <col style="width:80px">
+        <col style="width:120px">
+        <col style="width:120px">
+      </colgroup>
+      <thead><tr><th>Consommable</th><th>Qté</th><th>Unitaire TTC</th><th>Sous-total TTC</th></tr></thead>
+      <tbody>
+      {% for c in consommables %}
+        <tr>
+          <td>{{ c.label }}</td>
+          <td>{{ c.quantite }}</td>
+          <td>{{ '%.2f'|format((c.prix_ht_snapshot|default(0)) * (1 + (c.tva_snapshot|default(tvadef))/100)) }}</td>
+          <td>{{ '%.2f'|format(((c.prix_ht_snapshot|default(0)) * (1 + (c.tva_snapshot|default(tvadef))/100)) * (c.quantite|default(1))) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endif %}

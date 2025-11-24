@@ -4,18 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{% block title %}Atelier Vélo — Facturation{% endblock %}</title>
-  <link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
   <!-- FontAwesome (icônes) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" />
   <!-- Alpine.js (interactivité tactile légère) -->
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.2/dist/cdn.min.js"
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.2/dist/cdn.min.js"
           onerror="(function(){var s=document.createElement('script');s.src='/js/alpine-3.15.2.min.js';s.defer=true;document.head.appendChild(s);}())"></script>
   <script>
     // Fallback runtime si Alpine n'est pas chargé par le CDN (Tracking/CORS)
     window.addEventListener('DOMContentLoaded', function(){
       try {
-        if (!window.Alpine) {
+if (!window.Alpine) {
           var s = document.createElement('script');
           s.src = '/js/alpine-3.15.2.min.js';
           s.defer = true;
@@ -30,7 +30,7 @@
 <body>
   <div class="container">
     <header>
-      <a href="/" class="brand-logo" aria-label="L'Atelier Vélo">
+<a href="/" class="brand-logo" aria-label="L'Atelier Vélo">
         <span class="brand-label">
           <span class="brand-line1">l’atelier</span>
         </span>
@@ -41,14 +41,14 @@
         <span class="logo-divider"></span>
       </a>
       <nav class="flex header-nav">
-        <a href="/catalogue" class="nav-link">Catalogue</a>
-        <a href="/tickets/queue" class="nav-link">File d'attente</a>
-        <a href="#" onclick="return adminAccess()" title="Accès administrateur" class="nav-link">Administrateur</a>
-        <a href="/logout" class="nav-link nav-link-logout">Déconnexion</a>
-        <form action="/search" method="get" class="flex" style="gap:6px; margin-left:12px; align-items:center;">
-          <input type="text" name="q" placeholder="Recherche…" style="min-width:220px; height:32px; padding:6px 10px; border:1px solid #ddd; border-radius:8px;">
-          <button class="search-btn" type="submit" aria-label="Rechercher"><img src="/img/search.png" alt="" aria-hidden="true" /><span class="sr-only">Rechercher</span></button>
-        </form>
+<a href="/catalogue" class="nav-link">Catalogue</a>
+<a href="/tickets/queue" class="nav-link">File d'attente</a>
+<a href="#" onclick="return adminAccess()" title="Accès administrateur" class="nav-link">Administrateur</a>
+<a href="/logout" class="nav-link nav-link-logout">Déconnexion</a>
+<form action="/search" method="get" class="flex" style="gap:6px; margin-left:12px; align-items:center;">
+  <input type="text" name="q" placeholder="Recherche…" style="min-width:220px; height:32px; padding:6px 10px; border:1px solid #ddd; border-radius:8px;">
+  <button class="search-btn" type="submit" aria-label="Rechercher"><img src="/img/search.png" alt="" aria-hidden="true" /><span class="sr-only">Rechercher</span></button>
+</form>
       </nav>
     </header>
 

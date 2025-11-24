@@ -72,6 +72,7 @@ $twig = new TwigEnvironment($twigLoader, [
     'debug' => ($_ENV['APP_DEBUG'] ?? 'false') === 'true',
 ]);
 
+
 // Simple container array
 $container = [];
 

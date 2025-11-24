@@ -1,0 +1,168 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Facturation rapide{% endblock %}
+
+{% block content %}
+  <h2 class="page-title-inside">Facturation rapide</h2>
+
+  <style>
+    .recap-table { width:100%; border-collapse: collapse; margin-bottom:12px; }
+    .recap-table th, .recap-table td { padding:6px 8px; border-bottom:1px solid #e5e7eb; vertical-align:middle; }
+    .recap-table th { text-align:left; font-weight:700; background:transparent; }
+    .recap-table td { text-align:left; }
+    .recap-table th:nth-child(2), .recap-table td:nth-child(2) { text-align:center; width:80px; }
+    .recap-table th:nth-child(3), .recap-table td:nth-child(3) { text-align:right; width:120px; }
+    .recap-table th:nth-child(4), .recap-table td:nth-child(4) { text-align:right; width:120px; }
+    .recap-table th:nth-child(5), .recap-table td:nth-child(5) { text-align:center; width:40px; }
+    .btn-delete-line { border:none; background:transparent; color:#9CA3AF; cursor:pointer; padding:4px; transition:color 0.2s; }
+    .btn-delete-line:hover { color:#EF4444; }
+  </style>
+
+  {% if lignes is empty %}
+    <div class="text-muted" style="margin:24px 0; text-align:center;">
+      <p>Aucune prestation sélectionnée.</p>
+      <a href="/catalogue" class="btn btn-primary" style="margin-top:12px;">Retour au catalogue</a>
+    </div>
+  {% else %}
+    <h3 style="margin:16px 0 8px;">Récapitulatif</h3>
+    <table class="recap-table">
+      <colgroup>
+        <col style="width:auto">
+        <col style="width:80px">
+        <col style="width:120px">
+        <col style="width:120px">
+        <col style="width:40px">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Prestation</th>
+          <th>Qté</th>
+          <th>Unitaire TTC</th>
+          <th>Sous-total TTC</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ligne in lignes %}
+          <tr data-line-index="{{ loop.index0 }}">
+            <td>{{ ligne.label }}</td>
+            <td>{{ ligne.qty }}</td>
+            <td class="cell-unit">{{ '%.2f'|format(ligne.unitaireTTC) }}</td>
+            <td class="cell-soustotal">{{ '%.2f'|format(ligne.soustotalTTC) }}</td>
+            <td>
+              <button type="button"
+                      class="btn-delete-line js-quick-remove-line"
+                      data-index="{{ loop.index0 }}"
+                      title="Supprimer la ligne">
+                <i class="fas fa-minus-circle"></i>
+              </button>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <form method="post" action="/facturer/valider">
+      <input type="hidden" name="totalTTC" value="{{ totalTTC }}">
+      
+      {# Reproduire les données POST pour persistance #}
+      {% if postData.prest_id is defined %}
+        {% for idx, prestId in postData.prest_id %}
+          <div class="quick-line-hidden" data-index="{{ idx }}">
+            <input type="hidden" name="prest_id[]" value="{{ prestId }}">
+            {% if postData.qty[idx] is defined %}
+              <input type="hidden" name="qty[]" value="{{ postData.qty[idx] }}">
+            {% endif %}
+            {% if postData.price_override[idx] is defined %}
+              <input type="hidden" name="price_override[]" value="{{ postData.price_override[idx] }}">
+            {% endif %}
+            {% if postData.piece_qty[idx] is defined %}
+              <input type="hidden" name="piece_qty[]" value="{{ postData.piece_qty[idx] }}">
+            {% endif %}
+            {% if postData.piece_price_override[idx] is defined %}
+              <input type="hidden" name="piece_price_override[]" value="{{ postData.piece_price_override[idx] }}">
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <div class="footer-sticky">
+        <div class="total-pill">
+          <i class="fas fa-receipt icon"></i>
+          <span class="total-label">Total</span>
+          <span class="total-amount">{{ '%.2f'|format(totalTTC) }}</span>
+          <span class="text-muted" style="font-size:.9rem;">€</span>
+        </div>
+        <div class="flex gap-8">
+          <a href="/catalogue" class="btn btn-secondary">
+            <i class="fas fa-arrow-left" style="margin-right:6px;"></i>Retour catalogue
+          </a>
+          <a href="/catalogue" class="btn btn-secondary btn-outline-primary">
+            <i class="fas fa-plus" style="margin-right:6px;"></i>Ajouter prestation
+          </a>
+          <button class="btn" type="submit" name="payment_method" value="ESPECE">
+            <i class="fas fa-money-bill-wave" style="margin-right:6px;"></i>Espèce
+          </button>
+          <button class="btn btn-light-primary" type="submit" name="payment_method" value="CB">
+            <i class="fas fa-credit-card" style="margin-right:6px;"></i>CB
+          </button>
+        </div>
+      </div>
+    </form>
+  {% endif %}
+
+  <script>
+    // Suppression de ligne et recalcul du total pour la facturation rapide
+    (function(){
+      document.addEventListener('click', function(e){
+        var btn = e.target && e.target.closest ? e.target.closest('.js-quick-remove-line') : null;
+        if (!btn) return;
+        
+        // Confirmation
+        if (!window.confirm('Supprimer cette prestation ?')) return;
+        
+        var index = btn.getAttribute('data-index');
+        if (!index && index !== '0') return;
+        
+        // Supprimer la ligne du tableau
+        var row = document.querySelector('tr[data-line-index="' + index + '"]');
+        if (row) row.remove();
+        
+        // Supprimer les inputs cachés correspondants
+        var hiddenDiv = document.querySelector('.quick-line-hidden[data-index="' + index + '"]');
+        if (hiddenDiv) hiddenDiv.remove();
+        
+        // Recalculer le total
+        var total = 0;
+        var cells = document.querySelectorAll('.cell-soustotal');
+        cells.forEach(function(cell){
+          var val = parseFloat(cell.textContent) || 0;
+          total += val;
+        });
+        
+        // Mettre à jour l'affichage du total
+        var totalAmount = document.querySelector('.total-amount');
+        if (totalAmount) {
+          totalAmount.textContent = total.toFixed(2);
+        }
+        
+        // Mettre à jour l'input caché totalTTC
+        var totalInput = document.querySelector('input[name="totalTTC"]');
+        if (totalInput) {
+          totalInput.value = total.toFixed(2);
+        }
+        
+        // Vérifier s'il reste des lignes
+        var remainingRows = document.querySelectorAll('tbody tr[data-line-index]');
+        if (remainingRows.length === 0) {
+          // Désactiver les boutons de paiement si plus de lignes
+          var paymentButtons = document.querySelectorAll('button[name="payment_method"]');
+          paymentButtons.forEach(function(btn){
+            btn.disabled = true;
+          });
+        }
+      });
+    })();
+  </script>
+
+{% endblock %}

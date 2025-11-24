@@ -1,0 +1,24 @@
+{% set tvadef = env.TVA_DEFAULT|default(20) %}
+
+{# Bloc récapitulatif dynamique #}
+<div x-show="pending.length > 0" style="margin-top:12px;">
+  <h3>Éléments sélectionnés</h3>
+  <table class="recap-table">
+    <thead>
+      <tr>
+        <th>Libellé</th>
+        <th>Qté</th>
+        <th>Sous-total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <template x-for="p in pending" :key="p.id">
+        <tr>
+          <td x-text="p.label"></td>
+          <td x-text="p.qty"></td>
+          <td x-text="fmt(p.total)"></td>
+        </tr>
+      </template>
+    </tbody>
+  </table>
+</div>

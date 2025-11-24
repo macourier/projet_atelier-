@@ -1,0 +1,120 @@
+<script>
+function ticketForm(){
+  return {
+    pending: [],
+    showCatalogue: false,
+    baseTtc: Number("{{ '%.2f'|format(totaux.ttc|default(0)) }}"),
+    lastTotal: Number("{{ '%.2f'|format(totaux.ttc|default(0)) }}"),
+    debounceId: null,
+    debouncedRecalc(){ if (this.debounceId) clearTimeout(this.debounceId); this.debounceId = setTimeout(()=>{ this.recalc(); }, 130); },
+    fmt(n){ return Number(n).toFixed(2); },
+    toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{ t.remove(); }, 3000); },
+    ttc(mq,mp,pq,pp,tva){ const ht=(Number(mq||0)*Number(mp||0))+(Number(pq||0)*Number(pp||0)); return ht*(1+Number(tva||0)/100); },
+    addFromRow(id,label,mq,mp,pq,pp,tva){
+      const qty = Number(mq||0) + Number(pq||0);
+      const amount = this.ttc(mq,mp,pq,pp,tva);
+      // Récap dynamique
+      this.pending.push({ label, qty, ttc: amount });
+      // Injection d'inputs cachés pour persistance
+      const cont = document.getElementById('pending-hidden');
+      if (cont) {
+        const add = (n,v)=>{ const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=String(v); cont.appendChild(i); };
+        // MO
+        const moQty = Number(mq||0);
+        const moPrice = (mp!==null && mp!==undefined && mp!=='') ? mp : '';
+        if (moQty > 0) {
+          add('prest_id[]', id);
+          add('qty[]', moQty);
+          add('price_override[]', moPrice);
+        }
+        // Pièce
+        const pQty = Number(pq||0);
+        const pPrice = (pp!==null && pp!==undefined && pp!=='') ? pp : '';
+        if (pQty > 0) {
+          add('prest_id[]', id);
+          add('piece_qty[]', pQty);
+          add('piece_price_override[]', pPrice);
+        }
+      }
+      this.recalc();
+    },
+    recalc(){
+      let total = this.baseTtc || 0;
+      document.querySelectorAll('.prestation').forEach((row)=>{
+        const moCb = row.querySelector('input.prest-check');
+        const pieceCb = row.querySelector('input.piece-check');
+        const includeRow = ((moCb && moCb.checked) || (pieceCb && pieceCb.checked));
+        if (!includeRow) return;
+
+        // MO
+        let qty = 0, price = 0;
+        if (moCb && moCb.checked) {
+          const qtyEl = row.querySelector("select[name='qty[]']") || row.querySelector("input[name='qty[]']");
+          const ovEl  = row.querySelector("input[name='price_override[]']");
+          qty = parseFloat(qtyEl?.value || '0'); if (isNaN(qty) || qty < 0) qty = 0;
+          price = parseFloat(ovEl?.value || '');
+          if (isNaN(price)) price = parseFloat(row.dataset.price || '0');
+        }
+
+        // Pièce
+        let pqty = 0, pprice = 0;
+        if (pieceCb && pieceCb.checked) {
+          const pQtyEl = row.querySelector("select[name='piece_qty[]']");
+          const pOvEl  = row.querySelector("input[name='piece_price_override[]']");
+          pqty = parseFloat(pQtyEl?.value || '0'); if (isNaN(pqty) || pqty < 0) pqty = 0;
+          pprice = parseFloat(pOvEl?.value || '');
+          if (isNaN(pprice)) pprice = parseFloat(row.dataset.piecePrice || '0');
+        }
+
+        total += (qty * price) + (pqty * pprice);
+      });
+      const fmt = (n) => Number(n).toFixed(2);
+      const totalEl = document.getElementById('t-total');
+      if (totalEl) {
+        totalEl.textContent = fmt(total);
+        // Inject CSS bounce une seule fois
+        if (!document.getElementById('css-total-bounce')) {
+          const st = document.createElement('style');
+          st.id = 'css-total-bounce';
+          st.textContent = '@keyframes totalBounce{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}} .total-pill.bounce{animation:totalBounce .3s ease-in-out}';
+          document.head.appendChild(st);
+        }
+        const pill = document.querySelector('.total-pill');
+        if (pill && total !== this.lastTotal) {
+          pill.classList.add('bounce');
+          setTimeout(()=>pill.classList.remove('bounce'), 350);
+          this.lastTotal = total;
+        }
+      }
+    },
+    handleFacturer(btn){
+      const ph = document.getElementById('pending-hidden');
+      const hasPending = (this.pending && this.pending.length > 0) || (ph && ph.children && ph.children.length > 0);
+      let proceed = true;
+      if (hasPending) {
+        proceed = window.confirm("Vous n'avez pas enregistré l'ajout de prestation. Poursuivre la facturation ?");
+      }
+      if (!proceed) return;
+      const form = btn.form || document.querySelector('form');
+      if (!form) return;
+      const fa = btn.getAttribute('formaction');
+      if (fa) form.setAttribute('action', fa);
+      const fm = btn.getAttribute('formmethod');
+      if (fm) form.setAttribute('method', fm);
+
+      // Injecter le mode de paiement (le submit() programmatique ne soumet pas le name/value du bouton)
+      const existing = form.querySelector('input[name="payment_method"]');
+      if (existing) existing.remove();
+      const pm = btn.getAttribute('value') || btn.getAttribute('data-payment') || '';
+      if (pm) {
+        const i = document.createElement('input');
+        i.type = 'hidden';
+        i.name = 'payment_method';
+        i.value = pm;
+        form.appendChild(i);
+      }
+      form.submit();
+    }
+  }
+}
+</script>

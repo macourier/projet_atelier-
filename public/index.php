@@ -9,10 +9,10 @@ require __DIR__ . '/../vendor/autoload.php';
 $container = require __DIR__ . '/../src/bootstrap.php';
 
  // Create Slim app
- $app = AppFactory::create();
+$app = AppFactory::create();
 
-// Add routing middleware and error middleware
-$app->addRoutingMiddleware();
+ // Add routing middleware and error middleware
+ $app->addRoutingMiddleware();
 $displayErrorDetails = ($_ENV['APP_DEBUG'] ?? 'false') === 'true';
 $errorMiddleware = $app->addErrorMiddleware($displayErrorDetails, true, true);
 

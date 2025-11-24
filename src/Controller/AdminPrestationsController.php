@@ -137,12 +137,16 @@ class AdminPrestationsController
         if (!$this->pdo) return $response->withStatus(500);
         $d = (array)$request->getParsedBody();
 
-        // Resolve category: accept category_id or categorie (name)
+        $hasCategoryId = $this->hasCategoryIdColumn();
+
+        // Resolve category only if the column exists
         $categoryId = null;
-        if (isset($d['category_id']) && trim((string)$d['category_id']) !== '') {
-            $categoryId = (int)$d['category_id'];
-        } elseif (!empty($d['categorie'])) {
-            $categoryId = $this->resolveCategoryId(trim((string)$d['categorie']));
+        if ($hasCategoryId) {
+            if (isset($d['category_id']) && trim((string)$d['category_id']) !== '') {
+                $categoryId = (int)$d['category_id'];
+            } elseif (!empty($d['categorie'])) {
+                $categoryId = $this->resolveCategoryId(trim((string)$d['categorie']));
+            }
         }
 
         $lib = trim($d['libelle'] ?? '');
@@ -150,7 +154,12 @@ class AdminPrestationsController
         $prixStr = str_replace(',', '.', $prixStr);
         $prix = (float)$prixStr;
 
-        if (($categoryId === null || $categoryId === 0) || $lib === '') {
+        // Toujours exiger un libellé
+        if ($lib === '') {
+            return $response->withStatus(400);
+        }
+        // Si la colonne category_id existe, exiger une catégorie valide
+        if ($hasCategoryId && ($categoryId === null || $categoryId === 0)) {
             return $response->withStatus(400);
         }
 
@@ -170,20 +179,37 @@ class AdminPrestationsController
         $piecePrixStr = str_replace(',', '.', $piecePrixStr);
         $piecePrix = (float)$piecePrixStr;
 
-        $sql = "INSERT INTO prestations_catalogue (id, categorie, category_id, libelle, prix_main_oeuvre_ht, piece_libelle, piece_prix_ht, tva_pct, duree_min) 
-                VALUES (:id,:c,:cid,:l,:p,:pl,:pp,:t,:d)";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            'id' => $id,
-            'c' => $d['categorie'] ?? '',
-            'cid' => $categoryId,
-            'l' => $lib,
-            'p' => $prix,
-            'pl' => $pieceLib,
-            'pp' => $piecePrix,
-            't' => $tva,
-            'd' => $dur
-        ]);
+        if ($hasCategoryId) {
+            $sql = "INSERT INTO prestations_catalogue (id, categorie, category_id, libelle, prix_main_oeuvre_ht, piece_libelle, piece_prix_ht, tva_pct, duree_min) 
+                    VALUES (:id,:c,:cid,:l,:p,:pl,:pp,:t,:d)";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                'id' => $id,
+                'c' => $d['categorie'] ?? '',
+                'cid' => $categoryId,
+                'l' => $lib,
+                'p' => $prix,
+                'pl' => $pieceLib,
+                'pp' => $piecePrix,
+                't' => $tva,
+                'd' => $dur
+            ]);
+        } else {
+            // Fallback sans colonne category_id : on stocke seulement la catégorie texte
+            $sql = "INSERT INTO prestations_catalogue (id, categorie, libelle, prix_main_oeuvre_ht, piece_libelle, piece_prix_ht, tva_pct, duree_min) 
+                    VALUES (:id,:c,:l,:p,:pl,:pp,:t,:d)";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                'id' => $id,
+                'c' => $d['categorie'] ?? '',
+                'l' => $lib,
+                'p' => $prix,
+                'pl' => $pieceLib,
+                'pp' => $piecePrix,
+                't' => $tva,
+                'd' => $dur
+            ]);
+        }
 
         return $response->withHeader('Location','/admin/prestations')->withStatus(302);
     }
@@ -194,21 +220,32 @@ class AdminPrestationsController
         $pid = $args['id'] ?? null;
         if (!$pid) return $response->withStatus(400);
 
+        $hasCategoryId = $this->hasCategoryIdColumn();
+
         $d = (array)$request->getParsedBody();
         // On accepte uniquement ces champs malgré l'UI simplifiée
-        $fields = ['categorie','category_id','libelle','prix_main_oeuvre_ht','piece_libelle','piece_prix_ht','tva_pct','duree_min'];
+        $fields = ['categorie','libelle','prix_main_oeuvre_ht','piece_libelle','piece_prix_ht','tva_pct','duree_min'];
+        if ($hasCategoryId) {
+            $fields[] = 'category_id';
+        }
         $sets = [];
         $params = ['id' => $pid];
         foreach ($fields as $f) {
             if (array_key_exists($f, $d)) {
                 if ($f === 'categorie') {
-                    // resolve category name to id and set both fields
                     $catName = trim((string)$d[$f]);
-                    $catId = $this->resolveCategoryId($catName);
-                    $sets[] = "categorie = :categorie";
-                    $sets[] = "category_id = :category_id";
-                    $params['categorie'] = $catName;
-                    $params['category_id'] = $catId;
+                    if ($hasCategoryId) {
+                        // resolve category name to id and set both fields
+                        $catId = $this->resolveCategoryId($catName);
+                        $sets[] = "categorie = :categorie";
+                        $sets[] = "category_id = :category_id";
+                        $params['categorie'] = $catName;
+                        $params['category_id'] = $catId;
+                    } else {
+                        // Pas de colonne category_id : on ne met à jour que le texte
+                        $sets[] = "categorie = :categorie";
+                        $params['categorie'] = $catName;
+                    }
                 } else {
                     $sets[] = "$f = :$f";
                     if ($f === 'libelle' || $f === 'piece_libelle') {
@@ -301,6 +338,29 @@ class AdminPrestationsController
     }
 
     /**
+     * Indique si la colonne category_id existe dans prestations_catalogue.
+     * Permet de garder la compatibilité avec d'anciennes bases non migrées.
+     */
+    private function hasCategoryIdColumn(): bool
+    {
+        if (!$this->pdo) {
+            return false;
+        }
+        try {
+            $cols = $this->pdo->query("PRAGMA table_info(prestations_catalogue)")->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($cols as $c) {
+                $n = strtolower($c['name'] ?? '');
+                if ($n === 'category_id') {
+                    return true;
+                }
+            }
+        } catch (\Throwable $e) {
+            return false;
+        }
+        return false;
+    }
+
+    /**
      * Résout l'id d'une catégorie en base en créant la catégorie si nécessaire.
      */
     private function resolveCategoryId(string $name): int
@@ -377,8 +437,13 @@ class AdminPrestationsController
             $name = (string)($st->fetchColumn() ?: '');
 
             // Supprimer prestations associées (par id ou par nom)
-            $dp = $this->pdo->prepare("DELETE FROM prestations_catalogue WHERE category_id = :id OR categorie = :n");
-            $dp->execute(['id' => $id, 'n' => $name]);
+            if ($this->hasCategoryIdColumn()) {
+                $dp = $this->pdo->prepare("DELETE FROM prestations_catalogue WHERE category_id = :id OR categorie = :n");
+                $dp->execute(['id' => $id, 'n' => $name]);
+            } else {
+                $dp = $this->pdo->prepare("DELETE FROM prestations_catalogue WHERE categorie = :n");
+                $dp->execute(['n' => $name]);
+            }
 
             // Supprimer la catégorie
             $dc = $this->pdo->prepare("DELETE FROM categories WHERE id = :id");

@@ -14,16 +14,6 @@ return function (App $app, array $container) {
             ->withStatus(302);
     });
 
-    // New home: Catalogue (ex /devis/new)
-    $app->get('/catalogue', function (Request $request, Response $response) use ($container) {
-        $ctrl = new \App\Controller\DevisController($container);
-        if (method_exists($ctrl, 'builder')) {
-            return $ctrl->builder($request, $response);
-        }
-        $response->getBody()->write('Not implemented');
-        return $response->withStatus(501);
-    });
-
     // Backward compat: /dashboard -> redirect to /catalogue
     $app->get('/dashboard', function (Request $request, Response $response) {
         return $response->withHeader('Location', '/catalogue')->withStatus(302);
@@ -47,6 +37,15 @@ return function (App $app, array $container) {
     $authMiddleware = new \App\Middleware\AuthMiddleware($container);
 
     $app->group('', function (\Slim\Routing\RouteCollectorProxy $group) use ($container) {
+        // New home: Catalogue (ex /devis/new)
+        $group->get('/catalogue', function (Request $request, Response $response) use ($container) {
+            $ctrl = new \App\Controller\DevisController($container);
+            if (method_exists($ctrl, 'builder')) {
+                return $ctrl->builder($request, $response);
+            }
+            $response->getBody()->write('Not implemented');
+            return $response->withStatus(501);
+        });
         // Clients
         $group->get('/clients', function (Request $request, Response $response) use ($container) {
             $ctrl = new \App\Controller\ClientController($container);
