@@ -127,12 +127,12 @@
           <div class="card-body">
             <label>Manœuvre</label>
             <input class="cell lg" name="new_libelle" placeholder="Ex : Réglage dérailleur" />
-            <label>Prix main d’œuvre</label>
-            <input class="cell lg" name="new_prix_main_oeuvre_ht" type="number" step="0.01" inputmode="decimal" placeholder="Main d’œuvre (€)" />
+            <label>Prix main d'œuvre</label>
+            <input class="cell lg" name="new_prix_main_oeuvre_ht" type="number" step="0.01" inputmode="decimal" min="0" max="9999" placeholder="Main d'œuvre (€)" oninput="if(parseFloat(this.value) > 9999) this.value = 9999;" />
             <label>Pièce</label>
-            <input class="cell lg" name="new_piece_libelle" placeholder="Pièce (optionnel)" />
+            <input class="cell lg" name="new_piece_libelle" placeholder="Pièce (optionnel)" maxlength="36" oninput="if(this.value.length > 36) this.value = this.value.slice(0, 36);" />
             <label>Prix pièce</label>
-            <input class="cell lg" name="new_piece_prix_ht" type="number" step="0.01" inputmode="decimal" placeholder="Pièce (€)" />
+            <input class="cell lg" name="new_piece_prix_ht" type="number" step="0.01" inputmode="decimal" min="0" max="9999" placeholder="Pièce (€)" oninput="if(parseFloat(this.value) > 9999) this.value = 9999;" />
             <div class="row-actions">
               <button class="btn btn-add-prest" type="button">➕ Ajouter une prestation</button>
             </div>
@@ -149,18 +149,18 @@
 
             {% if piece_supported|default(false) %}
             <label>Pièce</label>
-            <input class="cell lg" name="piece_libelle" value="{{ p.piece_libelle|default('Pièce') }}" placeholder="Pièce" />
+            <input class="cell lg" name="piece_libelle" value="{{ p.piece_libelle|default('Pièce') }}" placeholder="Pièce" maxlength="36" oninput="if(this.value.length > 36) this.value = this.value.slice(0, 36);" />
             {% endif %}
 
             <div class="grid-2">
               <div>
                 <label>Prix MO</label>
-          <input class="cell lg" name="prix_main_oeuvre_ht" type="number" step="0.01" inputmode="decimal" value="{{ p.prix_main_oeuvre_ht }}" />
+          <input class="cell lg" name="prix_main_oeuvre_ht" type="number" step="0.01" inputmode="decimal" min="0" max="9999" value="{{ p.prix_main_oeuvre_ht }}" oninput="if(parseFloat(this.value) > 9999) this.value = 9999;" />
               </div>
               {% if piece_supported|default(false) %}
               <div>
                 <label>Prix pièce</label>
-          <input class="cell lg" name="piece_prix_ht" type="number" step="0.01" inputmode="decimal" value="{{ p.piece_prix_ht|default(0) }}" />
+          <input class="cell lg" name="piece_prix_ht" type="number" step="0.01" inputmode="decimal" min="0" max="9999" value="{{ p.piece_prix_ht|default(0) }}" oninput="if(parseFloat(this.value) > 9999) this.value = 9999;" />
               </div>
               {% endif %}
             </div>

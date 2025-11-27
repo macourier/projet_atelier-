@@ -11,10 +11,22 @@ function ticketForm(){
     toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{ t.remove(); }, 3000); },
     ttc(mq,mp,pq,pp,tva){ const ht=(Number(mq||0)*Number(mp||0))+(Number(pq||0)*Number(pp||0)); return ht*(1+Number(tva||0)/100); },
     addFromRow(id,label,mq,mp,pq,pp,tva){
-      const qty = Number(mq||0) + Number(pq||0);
-      const amount = this.ttc(mq,mp,pq,pp,tva);
-      // Récap dynamique
-      this.pending.push({ label, qty, ttc: amount });
+      const mqNum = Number(mq || 0);
+      const pqNum = Number(pq || 0);
+      const mpNum = Number(mp || 0);
+      const ppNum = Number(pp || 0);
+
+      const qty = mqNum + pqNum;
+      const ht  = (mqNum * mpNum) + (pqNum * ppNum);
+      const unit = qty > 0 ? (ht / qty) : 0;
+
+      // Récap dynamique en brut (aligné tuiles / ticket)
+      this.pending.push({
+        label,
+        qty,
+        unit,
+        subtotal: ht
+      });
       // Injection d'inputs cachés pour persistance
       const cont = document.getElementById('pending-hidden');
       if (cont) {

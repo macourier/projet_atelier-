@@ -3,22 +3,76 @@
 {# Bloc récapitulatif dynamique #}
 <div x-show="pending.length > 0" style="margin-top:12px;">
   <h3>Éléments sélectionnés</h3>
-  <table class="recap-table">
-    <thead>
-      <tr>
-        <th>Libellé</th>
-        <th>Qté</th>
-        <th>Sous-total</th>
-      </tr>
-    </thead>
-    <tbody>
-      <template x-for="p in pending" :key="p.id">
+
+  {# Tableau Prestations (MO) #}
+  <template x-if="pending.some(p => p.moQty > 0)">
+    <table class="recap-table">
+      <thead>
         <tr>
-          <td x-text="p.label"></td>
-          <td x-text="p.qty"></td>
-          <td x-text="fmt(p.total)"></td>
+          <th>Prestation</th>
+          <th>Qté</th>
+          <th>Unitaire</th>
+          <th>Sous-total</th>
         </tr>
-      </template>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <template x-for="p in pending" :key="p.id + '-mo'">
+          <tr x-show="p.moQty > 0">
+            <td x-text="p.label"></td>
+            <td x-text="p.moQty"></td>
+            <td x-text="fmt(p.moUnit)"></td>
+            <td x-text="fmt(p.moTotal)"></td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </template>
+
+  {# Tableau Consommables (Pièces) #}
+  <template x-if="pending.some(p => p.pieceQty > 0)">
+    <table class="recap-table">
+      <thead>
+        <tr>
+          <th>Consommable</th>
+          <th>Qté</th>
+          <th>Unitaire</th>
+          <th>Sous-total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="p in pending" :key="p.id + '-piece'">
+          <tr x-show="p.pieceQty > 0">
+            <td x-text="p.pieceLabel || p.label"></td>
+            <td x-text="p.pieceQty"></td>
+            <td x-text="fmt(p.pieceUnit)"></td>
+            <td x-text="fmt(p.pieceTotal)"></td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </template>
+
+  {# Tableau Vente de vélo #}
+  <template x-if="pending.some(p => p.type === 'bike')">
+    <table class="recap-table">
+      <thead>
+        <tr>
+          <th>Vente de vélo</th>
+          <th>Qté</th>
+          <th>Unitaire</th>
+          <th>Sous-total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="p in pending" :key="(p.id || p.label) + '-bike'">
+          <tr x-show="p.type === 'bike'">
+            <td x-text="p.label"></td>
+            <td x-text="p.qty"></td>
+            <td x-text="fmt(p.unit)"></td>
+            <td x-text="fmt(p.subtotal)"></td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </template>
 </div>

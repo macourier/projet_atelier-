@@ -1,17 +1,16 @@
-
-
-
-
 {% extends 'layout.twig' %}
 
 {% block title %}Catalogue{% endblock %}
 
 {% block content %}
 
-
   {# Bloc coordonnées client supprimé sur la page d'accueil /catalogue #}
 
-  <form method="post" action="/devis/pdf/direct" target="_blank" x-data="ticketForm()" x-init="recalc(); loadDevisDraft()" @change="recalc()" @input="recalc()">
+  <form method="post" action="/devis/pdf/direct" target="_blank"
+        x-data="ticketForm()"
+        x-init="recalc(); loadDevisDraft()"
+        @change="recalc()" @input="recalc()"
+        @add-bike-sale.window="addBikeSale($event.detail)">
     {% if client %}
       <input type="hidden" name="client_id" value="{{ client.id }}">
     {% endif %}
@@ -42,7 +41,7 @@
     min-height: 32px;
   }
   
-  /* Zone gauche: label + prix */
+  /* Zone gauche: label */
   .line-mo-piece .zone-left {
     display: flex;
     align-items: center;
@@ -51,34 +50,97 @@
     min-width: 0;
   }
   
-  /* Zone centre: quantité */
+  /* Zone centre: quantité (resté pour compat, mais plus utilisé dans le nouveau layout) */
   .line-mo-piece .zone-center {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     flex: 0 0 auto;
-    min-width: 90px;
+    min-width: 70px;
   }
   
   /* Zone droite: icônes */
   .line-mo-piece .zone-right {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
     flex: 0 0 auto;
+    min-width: 120px;
+    justify-content: flex-end;
   }
   
-  /* Select quantité compact */
+  /* Select quantité compact (UI PC) */
   .qty-compact {
-    width: 50px;
-    height: 30px;
-    padding: 2px 4px;
+    width: 42px;
+    height: 26px;
+    padding: 1px 3px;
     font-size: .8rem;
     border: 1px solid #d1d5db;
     border-radius: 4px;
     text-align: center;
-    line-height: 26px;
+  }
+
+  .qty-label {
+    font-size: .75rem;
+    color: #6b7280;
+    margin: 0 4px;
+    white-space: nowrap;
+  }
+
+  .mo-label {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .mo-price {
+    font-size: .95rem;
+    font-weight: 700;
+    color: #111827;
+    margin-left: 8px;
+  }
+
+  .piece-label {
+    display: inline-block;
+    max-width: 18ch;
+    font-size: .95rem;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.3;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    max-height: calc(1.3em * 2);
+    overflow: hidden;
+  }
+
+  .piece-price {
+    font-size: .9rem;
+    font-weight: 700;
+    color: #111827;
+    margin-left: 8px;
+    white-space: nowrap;
+  }
+
+  .prestation .label .title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .presta-title {
+    font-weight: 600;
+    color: #111827;
+  }
+
+  .mo-header {
+    font-size: .85rem;
+    font-weight: 600;
+    color: #111827;
+    white-space: nowrap;
   }
   
   /* Icônes inline sans encadrement */
@@ -157,14 +219,22 @@
                     moBase:0, pieceBase:0, 
                     moEdit:false, pieceEdit:false, 
                     moInput:'', pieceInput:'',
+                    pieceLabel:'',
                     moFinal(){ return this.moInput!=='' && !isNaN(+this.moInput) ? +this.moInput : this.moBase; },
                     pieceFinal(){ return this.pieceInput!=='' && !isNaN(+this.pieceInput) ? +this.pieceInput : this.pieceBase; },
                     moValid(){ return this.moInput!=='' && !isNaN(+this.moInput); },
                     pieceValid(){ return this.pieceInput!=='' && !isNaN(+this.pieceInput); },
                     resetMo(){ this.moInput=''; this.moQty=1; },
-                    resetPiece(){ this.pieceInput=''; this.pieceQty=1; }
+                    resetPiece(){ this.pieceInput=''; this.pieceQty=1; },
+                    sanitizePrice(val){
+                      let s = String(val ?? '').replace(',', '.').replace(/[^\d.]/g, '');
+                      let num = parseFloat(s);
+                      if (isNaN(num) || num < 0) return '';
+                      if (num > 9999) num = 9999;
+                      return num.toString().slice(0, 7);
+                    }
                  }"
-                 x-init="moBase=parseFloat($el.dataset.price)||0; pieceBase=parseFloat($el.dataset.piecePrice)||0; baseTva=parseFloat($el.dataset.tva)||20"
+                 x-init="moBase=parseFloat($el.dataset.price)||0; pieceBase=parseFloat($el.dataset.piecePrice)||0; baseTva=parseFloat($el.dataset.tva)||20; pieceLabel=$el.dataset.pieceLabel || 'Pièce'"
                  data-price="{{ item.prix_main_oeuvre_ht|default(0) }}"
                  data-tva="{{ item.tva_pct|default(tvadef) }}"
                  data-piece-price="{{ item.piece_prix_ht|default(0) }}"
@@ -172,7 +242,12 @@
               <input type="checkbox" class="round prest-check" style="width:20px;height:20px"
                       x-model="checked" @change="if($el.checked){ pieceChecked = true; } $root.recalc()">
               <div class="label">
-                <div style="font-weight:600">{{ item.libelle }}</div>
+                <div class="title-row">
+                  <span class="presta-title">{{ item.libelle }}</span>
+                  <span class="mo-header" x-text="'MO : ' + $root.fmt(moFinal()) + ' €'">
+                    {{ (item.prix_main_oeuvre_ht|default(0))|number_format(2, ',', ' ') }} €
+                  </span>
+                </div>
               </div>
 
               <input type="hidden" name="prest_id[]" value="{{ item.id }}" :disabled="!checked">
@@ -181,12 +256,13 @@
                 <!-- Ligne Main d'œuvre -->
                 <div class="line-mo-piece">
                   <div class="zone-left">
-                    <span class="text-muted" style="font-size:.85rem; font-weight:600;">MO</span>
-                    <span class="text-muted" style="font-size:.75rem;" x-text="$root.fmt(moFinal()) + ' €'">{{ (item.prix_main_oeuvre_ht|default(0))|number_format(2, ',', ' ') }} €</span>
-                  </div>
-                  
-                  <div class="zone-center">
-                    <label class="text-muted" style="font-size:.75rem;">Qté</label>
+                    <span class="mo-label">MO :</span>
+
+                    <span class="mo-price" x-text="Number(moFinal() || 0).toFixed(2) + ' €'">
+                      {{ (item.prix_main_oeuvre_ht|default(0))|number_format(2, ',', ' ') }} €
+                    </span>
+
+                    <span class="qty-label">Qté</span>
                     <select name="qty[]" :disabled="!checked" x-model="moQty" @change="$root.recalc()" class="qty-compact">
                       <option value="1">1</option>
                       <option value="2">2</option>
@@ -203,8 +279,8 @@
                       </button>
                     </div>
                     <div x-show="moEdit" x-transition style="display:flex; align-items:center; gap:4px;">
-                      <input type="number" step="0.01" placeholder="Prix HT" :disabled="!checked" class="price-input"
-                             x-model="moInput" @input="$root.recalc()" 
+                      <input type="number" step="0.01" min="0" max="9999" inputmode="decimal" placeholder="Prix HT" :disabled="!checked" class="price-input"
+                             x-model="moInput" @input="moInput = sanitizePrice(moInput); $root.recalc()" 
                              style="width:75px; padding:3px 6px; font-size:.85rem; border:1px solid #3b82f6; border-radius:4px;">
                       <button type="button" x-show="moValid()" @click="if(moValid()){ moEdit=false; $root.recalc(); }" x-transition
                               style="padding:3px 8px; font-size:.8rem; background:#3b82f6; color:#fff; border:none; border-radius:4px; cursor:pointer;">✓</button>
@@ -214,14 +290,17 @@
 
                 <!-- Ligne Pièce -->
                 <div class="line-mo-piece">
-                  <div class="zone-left">
-                    <input type="checkbox" class="round piece-check" style="width:16px;height:16px; margin-right:2px;" x-model="pieceChecked" @change="$root.recalc()">
-                    <span class="text-muted" style="font-size:.85rem; font-weight:600;" x-text="$el.closest('.prestation')?.dataset?.pieceLabel || 'Pièce'">Pièce</span>
-                    <span class="text-muted" style="font-size:.75rem;" x-text="$root.fmt(pieceFinal()) + ' €'">{{ (item.piece_prix_ht|default(0))|number_format(2, ',', ' ') }} €</span>
-                  </div>
+                  <div class="zone-left" style="gap:10px;">
+                    <input type="checkbox" class="round piece-check" style="width:16px;height:16px; margin-right:4px;" x-model="pieceChecked" @change="$root.recalc()">
+                    <span class="piece-label" x-text="pieceLabel">
+                      {{ item.piece_libelle|default('Pièce') }}
+                    </span>
 
-                  <div class="zone-center">
-                    <label class="text-muted" style="font-size:.75rem;">Qté</label>
+                    <span class="piece-price" x-text="Number(pieceFinal() || 0).toFixed(2) + ' €'">
+                      {{ (item.piece_prix_ht|default(0))|number_format(2, ',', ' ') }} €
+                    </span>
+
+                    <span class="qty-label">Qté</span>
                     <select name="piece_qty[]" :disabled="!pieceChecked" x-model="pieceQty" @change="$root.recalc()" class="qty-compact">
                       <option value="1">1</option>
                       <option value="2">2</option>
@@ -229,6 +308,9 @@
                   </div>
 
                   <div class="zone-right">
+                    <span class="piece-price" x-text="$root.fmt(pieceFinal()) + ' €'">
+                      {{ (item.piece_prix_ht|default(0))|number_format(2, ',', ' ') }} €
+                    </span>
                     <div x-show="!pieceEdit" style="display:flex; align-items:center; gap:4px;">
                       <button type="button" :disabled="!pieceChecked" @click="pieceEdit=true" x-transition title="Modifier le prix Pièce" class="icon-inline">
                         <img src="/img/crayon-de-couleur.png" alt="Modifier">
@@ -238,8 +320,8 @@
                       </button>
                     </div>
                     <div x-show="pieceEdit" x-transition style="display:flex; align-items:center; gap:4px;">
-                      <input type="number" step="0.01" placeholder="Prix HT" :disabled="!pieceChecked" class="price-input"
-                             x-model="pieceInput" @input="$root.recalc()" 
+                      <input type="number" step="0.01" min="0" max="9999" inputmode="decimal" placeholder="Prix HT" :disabled="!pieceChecked" class="price-input"
+                             x-model="pieceInput" @input="pieceInput = sanitizePrice(pieceInput); $root.recalc()" 
                              style="width:75px; padding:3px 6px; font-size:.85rem; border:1px solid #3b82f6; border-radius:4px;">
                       <button type="button" x-show="pieceValid()" @click="if(pieceValid()){ pieceEdit=false; $root.recalc(); }" x-transition
                               style="padding:3px 8px; font-size:.8rem; background:#3b82f6; color:#fff; border:none; border-radius:4px; cursor:pointer;">✓</button>
@@ -258,6 +340,44 @@
     {% else %}
       <p class="text-muted">Le catalogue est vide. Allez dans Administration → Prestations pour le remplir.</p>
     {% endfor %}
+
+    {# Tuile spéciale: Vente de vélo (toujours en dernier) #}
+    <div class="category" x-data="{ id: '_bike_sale' }" :class="{ 'open': openCat === id }" data-cat="_bike_sale">
+      <div class="category-header"
+           role="button"
+           tabindex="0"
+           :aria-expanded="openCat === id ? 'true' : 'false'"
+           @click="openCat = (openCat === id ? null : id); $nextTick(() => { $el.scrollIntoView({ behavior: 'smooth', block: 'start' }); })"
+           @keydown.enter.prevent="openCat = (openCat === id ? null : id)"
+           @keydown.space.prevent="openCat = (openCat === id ? null : id)">
+          <div style="font-weight:700; display:flex; align-items:center; gap:.5rem;">
+            Vente de vélo
+          </div>
+      </div>
+      <template x-if="openCat === id"><div class="prestations">
+        <div class="row-card" x-data style="display:flex; flex-direction:column; gap:8px;">
+          <div>
+            <label>Modèle du vélo</label>
+            <input x-ref="bikeModel" type="text" class="input" placeholder="Ex: Rockrider 540">
+          </div>
+          <div>
+            <label>Prix du vélo</label>
+            <input x-ref="bikePrice" type="number" step="0.01" inputmode="decimal" class="input" placeholder="0.00">
+          </div>
+          <div>
+            <button type="button" class="btn btn-secondary"
+                    @click.prevent="
+                      $dispatch('add-bike-sale', { model: $refs.bikeModel.value, price: $refs.bikePrice.value });
+                      openCat = null;
+                      $refs.bikeModel.value = '';
+                      $refs.bikePrice.value = '';
+                    ">
+              Ajouter
+            </button>
+          </div>
+        </div>
+      </div></template>
+    </div>
     </div>
 
     {% include 'components/catalogue_recap.twig' %}
@@ -326,6 +446,7 @@
       return {
         lastTotal: 0,
         pending: [],
+        bikeSales: [],
         fmt(n){ const v = Number(n); return Number.isFinite(v) ? v.toFixed(2) : '0.00'; },
         recalc(){
           this.pending = [];
@@ -359,18 +480,62 @@
             const lineTotal = (qty * price) + (pqty * pprice);
             total += lineTotal;
 
-            // Ajouter au tableau pending pour le récap
+            // Calcul pour le récap (type ticket) : unitaire / sous-total
             const labelEl = row.querySelector('.label > div');
             const label = labelEl ? labelEl.textContent.trim() : '';
+            const pieceLabel = row.dataset.pieceLabel || 'Pièce';
+            const totalQty = (qty || 0) + (pqty || 0);
+            const unit = totalQty > 0 ? (lineTotal / totalQty) : 0;
+
             this.pending.push({
               id: row.dataset.id,
               label: label,
-              qty: (qty || 0) + (pqty || 0),
+              pieceLabel: pieceLabel,
+              // quantité totale (MO + Pièce)
+              qty: totalQty,
+              // détails conservés pour d'autres usages
               moQty: qty,
               pieceQty: pqty,
+              moUnit: price,
+              pieceUnit: pprice,
+              moTotal: qty * price,
+              pieceTotal: pqty * pprice,
+              // pour le tableau unifié
+              unit: unit,
+              subtotal: lineTotal,
               total: lineTotal
             });
           });
+
+          // Intégrer les ventes de vélo (bikeSales) dans pending + total
+          if (Array.isArray(this.bikeSales)) {
+            this.bikeSales.forEach((sale, idx) => {
+              const unit = Number(sale.unit || 0);
+              const qty = Number(sale.qty || 1);
+              const subtotal = Number(
+                sale.subtotal !== undefined && sale.subtotal !== null
+                  ? sale.subtotal
+                  : unit * qty
+              );
+              total += subtotal;
+              this.pending.push({
+                type: 'bike',
+                id: sale.id || ('bike-' + idx),
+                label: sale.label || 'Vente de vélo',
+                qty: qty,
+                moQty: 0,
+                pieceQty: 0,
+                moUnit: 0,
+                pieceUnit: 0,
+                moTotal: 0,
+                pieceTotal: 0,
+                unit: unit,
+                subtotal: subtotal,
+                total: subtotal
+              });
+            });
+          }
+
           const fmt = (n) => Number(n).toFixed(2);
           const totalEl = document.getElementById('t-total');
           if (totalEl) {
@@ -389,14 +554,54 @@
               this.lastTotal = total;
             }
           }
-        }
+        },
+
+        // Nouvelle méthode Vente de vélo (Alpine)
+        addBikeSale(detail){
+          const model = String(detail?.model || '').trim();
+          let price = Number(String(detail?.price || '').replace(',', '.'));
+
+          if (!model) { alert('Saisir le modèle du vélo'); return; }
+          if (!Number.isFinite(price) || price < 0) { alert('Saisir un prix valide'); return; }
+
+          if (!Array.isArray(this.bikeSales)) this.bikeSales = [];
+          this.bikeSales.push({
+            label: 'Vente de vélo — ' + model,
+            qty: 1,
+            unit: price,
+            subtotal: price
+          });
+
+          try {
+            let draft;
+            try {
+              draft = JSON.parse(localStorage.getItem('devisDraft') || 'null') || {};
+            } catch(_e) {
+              draft = {};
+            }
+            if (!draft.custom) draft.custom = {};
+            if (!Array.isArray(draft.custom.prest)) draft.custom.prest = [];
+            draft.custom.prest.push({
+              label: 'Vente de vélo — ' + model,
+              price: price
+            });
+            localStorage.setItem('devisDraft', JSON.stringify(draft));
+          } catch(_e) {}
+
+          if (typeof this.recalc === 'function') this.recalc();
+          if (typeof this.toast === 'function') this.toast('Vente de vélo ajoutée ✓');
+        },
       }
     }
     // Sauvegarde locale du brouillon avant navigation (pour "Nouveau client")
     function saveDevisDraft(){
-      const draft = {
-        rows: []
-      };
+      let draft;
+      try{
+        draft = JSON.parse(localStorage.getItem('devisDraft') || 'null') || {};
+      }catch(_e){
+        draft = {};
+      }
+      draft.rows = [];
       document.querySelectorAll('.prestation').forEach((row)=>{
         const id = row.getAttribute('data-id');
         const moCb = row.querySelector('input.prest-check');
@@ -410,6 +615,11 @@
           pieceChecked: !!pieceCb?.checked, pieceQty, pieceInput
         });
       });
+      // Conserver aussi les ventes de vélo en custom.prest
+      try{
+        if (!draft.custom) draft.custom = {};
+        if (!Array.isArray(draft.custom.prest)) draft.custom.prest = [];
+      }catch(_e){}
       localStorage.setItem('devisDraft', JSON.stringify(draft));
     }
     function loadDevisDraft(){
@@ -436,12 +646,26 @@
             if(pOv){ pOv.value = r.pieceInput || ''; }
           });
         }
+        // Restaurer les ventes de vélo dans l'état Alpine si présentes
+        if (draft && draft.custom && Array.isArray(draft.custom.prest)) {
+          const form = document.querySelector('form[x-data]');
+          const data = form && form.__x ? form.__x.$data : null;
+          if (data) {
+            draft.custom.prest.forEach(l=>{
+              const lab = String(l?.label || '').trim();
+              const pr = Number(String(l?.price || '').replace(',', '.'));
+              if (lab && Number.isFinite(pr) && pr >= 0) {
+                if (!Array.isArray(data.bikeSales)) data.bikeSales = [];
+                data.bikeSales.push({ label: lab, qty: 1, unit: pr, subtotal: pr });
+              }
+            });
+            if (typeof data.recalc === 'function') data.recalc();
+          }
+        }
         // on recalcule une fois chargé
         if (typeof ticketForm === 'function') {
-          // trigger via any alpine root if needed; fallback:
           const totalEl = document.getElementById('t-total');
           if (totalEl) {
-            // fire input event to trigger recalc handler
             const e = new Event('input');
             document.body.dispatchEvent(e);
           }
@@ -663,8 +887,8 @@
       closeDevisModal();
       return false;
     }
-</script>
-<script>
+  </script>
+  <script>
   function openClientSelectModal(){
     const m = document.getElementById('client-select-modal');
     if(m){ m.style.display='flex'; const i=document.getElementById('client-search-input'); if(i){ i.value=''; i.focus(); } const r=document.getElementById('client-search-results'); if(r){ r.innerHTML=''; } }
@@ -675,7 +899,10 @@
     q=(q||'').trim();
     const box=document.getElementById('client-search-results');
     if(!box) return;
-    if(q.length<2){ box.innerHTML='<div class="text-muted">Tapez au moins 2 caractères…</div>'; return; }
+    if (q.length < 2) {
+      box.innerHTML = '<div class="text-muted">Tapez au moins 2 caractères…</div>';
+      return;
+    }
     fetch('/search?q='+encodeURIComponent(q), { credentials: 'include', headers: { 'Accept': 'text/html' } })
       .then(r=>r.text())
       .then(html=>{
@@ -731,5 +958,5 @@
       closeClientSelectModal();
     }catch(e){ console.error(e); alert('Impossible de créer le ticket pour ce client.'); }
   }
-</script>
+  </script>
 {% endblock %}

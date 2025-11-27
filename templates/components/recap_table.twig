@@ -1,23 +1,76 @@
-{% set tvadef = env.TVA_DEFAULT|default(20) %}
 
 {# Bloc récapitulatif dynamique #}
 <div x-show="pending.length > 0" style="margin-top:12px;">
   <h3>Nouveaux éléments</h3>
   <table class="recap-table">
-    <thead><tr><th>Libellé</th><th>Qté</th><th>Sous-total TTC</th></tr></thead>
+    <thead><tr><th>Libellé</th><th>Qté</th><th>Sous-total</th></tr></thead>
     <tbody>
-      <template x-for="p in pending" :key="p.label + '-' + p.ttc">
+      <template x-for="p in pending" :key="p.label + '-' + p.subtotal">
         <tr>
           <td x-text="p.label"></td>
           <td x-text="p.qty"></td>
-          <td x-text="fmt(p.ttc)"></td>
+          <td x-text="fmt(p.subtotal)"></td>
         </tr>
       </template>
     </tbody>
   </table>
 </div>
 
-{# Badge Total #}
+{# Tables historiques (optionnelles) #}
+{% if mode == 'ticket' and (prestations is not empty or consommables is not empty) %}
+  <div class="flex" style="margin-top:16px; justify-content:space-between; align-items:baseline;">
+    <h3 style="margin:0;">Récapitulatif</h3>
+    <div class="bike-inline" style="font-size:1.25rem; font-weight:600; color:#111827;">
+      Vélo : {{ ticket.bike_model|default(client.bike_model|default('—')) }}
+    </div>
+  </div>
+  
+  {% if prestations is not empty %}
+    <table class="recap-table">
+      <colgroup>
+        <col style="width:auto">
+        <col style="width:80px">
+        <col style="width:120px">
+        <col style="width:120px">
+      </colgroup>
+      <thead><tr><th>Prestation</th><th>Qté</th><th>Unitaire</th><th>Sous-total</th></tr></thead>
+      <tbody>
+      {% for p in prestations %}
+        <tr>
+          <td>{{ p.label }}</td>
+          <td>{{ p.quantite }}</td>
+          <td>{{ '%.2f'|format(p.prix_ht_snapshot|default(0)) }}</td>
+          <td>{{ '%.2f'|format((p.prix_ht_snapshot|default(0)) * (p.quantite|default(1))) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+  {% if consommables is not empty %}
+    <table class="recap-table">
+      <colgroup>
+        <col style="width:auto">
+        <col style="width:80px">
+        <col style="width:120px">
+        <col style="width:120px">
+      </colgroup>
+      <thead><tr><th>Consommable</th><th>Qté</th><th>Unitaire</th><th>Sous-total</th></tr></thead>
+      <tbody>
+      {% for c in consommables %}
+        <tr>
+          <td>{{ c.label }}</td>
+          <td>{{ c.quantite }}</td>
+          <td>{{ '%.2f'|format(c.prix_ht_snapshot|default(0)) }}</td>
+          <td>{{ '%.2f'|format((c.prix_ht_snapshot|default(0)) * (c.quantite|default(1))) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endif %}
+
+{# Badge Total (sous le récapitulatif) #}
 <div class="footer-sticky">
   <div class="total-pill">
     <i class="fas fa-receipt icon"></i>
@@ -52,57 +105,3 @@
     </button>
   </div>
 </div>
-
-{# Tables historiques (optionnelles) #}
-{% if mode == 'ticket' and (prestations is not empty or consommables is not empty) %}
-  <div class="flex" style="margin-top:16px; justify-content:space-between; align-items:baseline;">
-    <h3 style="margin:0;">Récapitulatif</h3>
-    <div class="bike-inline" style="font-size:1.25rem; font-weight:600; color:#111827;">
-      Vélo : {{ ticket.bike_model|default(client.bike_model|default('—')) }}
-    </div>
-  </div>
-  
-  {% if prestations is not empty %}
-    <table class="recap-table">
-      <colgroup>
-        <col style="width:auto">
-        <col style="width:80px">
-        <col style="width:120px">
-        <col style="width:120px">
-      </colgroup>
-      <thead><tr><th>Prestation</th><th>Qté</th><th>Unitaire TTC</th><th>Sous-total TTC</th></tr></thead>
-      <tbody>
-      {% for p in prestations %}
-        <tr>
-          <td>{{ p.label }}</td>
-          <td>{{ p.quantite }}</td>
-          <td>{{ '%.2f'|format((p.prix_ht_snapshot|default(0)) * (1 + (p.tva_snapshot|default(tvadef))/100)) }}</td>
-          <td>{{ '%.2f'|format(((p.prix_ht_snapshot|default(0)) * (1 + (p.tva_snapshot|default(tvadef))/100)) * (p.quantite|default(1))) }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  {% endif %}
-
-  {% if consommables is not empty %}
-    <table class="recap-table">
-      <colgroup>
-        <col style="width:auto">
-        <col style="width:80px">
-        <col style="width:120px">
-        <col style="width:120px">
-      </colgroup>
-      <thead><tr><th>Consommable</th><th>Qté</th><th>Unitaire TTC</th><th>Sous-total TTC</th></tr></thead>
-      <tbody>
-      {% for c in consommables %}
-        <tr>
-          <td>{{ c.label }}</td>
-          <td>{{ c.quantite }}</td>
-          <td>{{ '%.2f'|format((c.prix_ht_snapshot|default(0)) * (1 + (c.tva_snapshot|default(tvadef))/100)) }}</td>
-          <td>{{ '%.2f'|format(((c.prix_ht_snapshot|default(0)) * (1 + (c.tva_snapshot|default(tvadef))/100)) * (c.quantite|default(1))) }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  {% endif %}
-{% endif %}
