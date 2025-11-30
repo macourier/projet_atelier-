@@ -97,6 +97,22 @@
     white-space: nowrap;
   }
 
+  /* Wrapper quantité avec largeur fixe (Option B - alignement parfait) */
+  .qty-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 90px;
+  }
+
+  /* Wrapper prix avec largeur fixe pour éviter les décalages lors de l'édition */
+  .price-cell {
+    min-width: 80px;
+    max-width: 80px;
+    text-align: right;
+    display: inline-block;
+  }
+
   .mo-label {
     font-size: .9rem;
     font-weight: 700;
@@ -186,8 +202,15 @@
 
   /* Cartes dans les tuiles (fond gris très pâle) */
   .category .row-card {
-    background: #F5F5F5;
+    background: #FAFAFA;
     border: 1px solid #E5E5E5;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  
+  /* Carte cochée en bleu pâle */
+  .category .row-card.checked {
+    background: #F0F6FF;
+    border-color: #D6E4FF;
   }
 </style>
 
@@ -223,7 +246,7 @@
              role="button"
              tabindex="0"
              :aria-expanded="openCat === id ? 'true' : 'false'"
-             @click="openCat = (openCat === id ? null : id); $nextTick(() => { $el.scrollIntoView({ behavior: 'smooth', block: 'start' }); })"
+             @click="openCat = (openCat === id ? null : id); $nextTick(() => { $el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' }); })"
              @keydown.enter.prevent="openCat = (openCat === id ? null : id)"
              @keydown.space.prevent="openCat = (openCat === id ? null : id)">
           <div style="font-weight:700; display:flex; align-items:center; gap:.5rem;">
@@ -232,7 +255,9 @@
         </div>
         <div class="prestations">
           {% for item in items %}
-            <div class="prestation row-card" data-id="{{ item.id }}" x-data="{ 
+            <div class="prestation row-card" data-id="{{ item.id }}" 
+                 :class="{ 'checked': checked || pieceChecked }"
+                 x-data="{
                     checked:false, pieceChecked:false, 
                     moQty:1, pieceQty:1, 
                     moBase:0, pieceBase:0, 
@@ -253,7 +278,7 @@
                       return num.toString().slice(0, 7);
                     }
                  }"
-                 x-init="moBase=parseFloat($el.dataset.price)||0; pieceBase=parseFloat($el.dataset.piecePrice)||0; baseTva=parseFloat($el.dataset.tva)||20; pieceLabel=$el.dataset.pieceLabel || 'Pièce'"
+                 x-init="moBase=parseFloat($el.dataset.price)||0; pieceBase=parseFloat($el.dataset.piecePrice)||0; baseTva=parseFloat($el.dataset.tva)||20; pieceLabel=($el.dataset.pieceLabel || 'Pièce').slice(0, 19)"
                  data-price="{{ item.prix_main_oeuvre_ht|default(0) }}"
                  data-tva="{{ item.tva_pct|default(tvadef) }}"
                  data-piece-price="{{ item.piece_prix_ht|default(0) }}"
@@ -366,7 +391,7 @@
            role="button"
            tabindex="0"
            :aria-expanded="openCat === id ? 'true' : 'false'"
-           @click="openCat = (openCat === id ? null : id); $nextTick(() => { $el.scrollIntoView({ behavior: 'smooth', block: 'start' }); })"
+           @click="openCat = (openCat === id ? null : id); $nextTick(() => { $el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' }); })"
            @keydown.enter.prevent="openCat = (openCat === id ? null : id)"
            @keydown.space.prevent="openCat = (openCat === id ? null : id)">
           <div style="font-weight:700; display:flex; align-items:center; gap:.5rem;">
@@ -502,7 +527,7 @@
             // Calcul pour le récap (type ticket) : unitaire / sous-total
             const labelEl = row.querySelector('.label > div');
             const label = labelEl ? labelEl.textContent.trim() : '';
-            const pieceLabel = row.dataset.pieceLabel || 'Pièce';
+            const pieceLabel = (row.dataset.pieceLabel || 'Pièce').slice(0, 19);
             const totalQty = (qty || 0) + (pqty || 0);
             const unit = totalQty > 0 ? (lineTotal / totalQty) : 0;
 

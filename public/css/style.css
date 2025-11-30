@@ -11,6 +11,11 @@
   --radius:1rem;
 }
 
+/* Force la scrollbar verticale à toujours être visible pour éviter layout shift */
+html {
+  overflow-y: scroll;
+}
+
 /* Base */
 *{box-sizing:border-box}
 html,body{height:100%}
