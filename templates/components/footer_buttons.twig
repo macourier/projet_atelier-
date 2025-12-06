@@ -1,0 +1,35 @@
+{# Badge Total et boutons d'action #}
+<div class="footer-sticky">
+  <div class="total-pill">
+    <i class="fas fa-receipt icon"></i>
+    <span class="total-label">Total</span>
+    <span class="total-amount" id="t-total">{{ '%.2f'|format(totaux.ttc|default(0)) }}</span>
+    <span class="text-muted" style="font-size:.9rem;">€</span>
+  </div>
+  
+  {# Boutons conditionnels #}
+  <div class="flex gap-8">
+    {% if mode == 'ticket' %}
+      {% if client %}
+        <a class="btn btn-ghost btn-ghost-sm" href="/clients/{{ client.id }}">Dashboard client</a>
+      {% endif %}
+      <button type="button" class="btn btn-secondary" @click="showCatalogue = !showCatalogue; $nextTick(()=>{ const c=document.getElementById('catalogue'); if(c && showCatalogue){ c.scrollIntoView({behavior:'smooth', block:'start'});} });">
+        <i class="fas fa-plus" style="margin-right:6px;"></i>Ajouter prestation
+      </button>
+      <button class="btn" type="submit"><i class="fas fa-save" style="margin-right:6px;"></i>Enregistrer</button>
+    {% endif %}
+
+    <button class="btn" type="submit" @click.prevent="handleFacturer($el)"
+            {% if mode == 'ticket' and not ticket %}disabled{% endif %}
+            name="payment_method" value="ESPECE"
+            formaction="{{ mode == 'ticket' ? '/tickets/'~(ticket ? ticket.id : 0)~'/facturer/confirm' : '/facturer/valider' }}">
+      <i class="fas fa-money-bill-wave" style="margin-right:6px;"></i>Espèce
+    </button>
+    <button class="btn btn-light-primary" type="submit" @click.prevent="handleFacturer($el)"
+            {% if mode == 'ticket' and not ticket %}disabled{% endif %}
+            name="payment_method" value="CB"
+            formaction="{{ mode == 'ticket' ? '/tickets/'~(ticket ? ticket.id : 0)~'/facturer/confirm' : '/facturer/valider' }}">
+      <i class="fas fa-credit-card" style="margin-right:6px;"></i>CB
+    </button>
+  </div>
+</div>

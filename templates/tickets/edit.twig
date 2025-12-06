@@ -237,8 +237,13 @@
 
     <input type="hidden" name="received_at" value="{{ (ticket.received_at|default('now'))|date('Y-m-d\\TH:i') }}">
 
+    <div style="margin:8px 0; padding:8px 12px; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb;">
+      <strong style="color:#111827;">Vélo :</strong> 
+      <span style="color:#6b7280;">{{ ticket.bike_model|default(client.bike_model|default('—')) }}</span>
+    </div>
+
     {% if not ticket %}
-    <fieldset class="form-field">
+    <fieldset class="form-field" style="display:none;">
       <legend style="font-weight:600;">Vélo</legend>
       <div class="form-field">
         <label for="bike_model">Modèle</label>
@@ -249,10 +254,6 @@
         <textarea id="bike_notes" name="bike_notes" rows="2">{{ ticket.bike_notes|default('') }}</textarea>
       </div>
     </fieldset>
-    {% else %}
-    <div class="form-field">
-      <strong>Vélo :</strong> {{ ticket.bike_model|default(client.bike_model|default('—')) }}
-    </div>
     {% endif %}
 
     <div id="catalogue" x-show="showCatalogue" x-transition.opacity x-transition.duration.250ms style="transform-origin: top;">
@@ -432,13 +433,12 @@
     </div>
     </div>
 
-    {# Récapitulatif et nouveaux éléments #}
+    {# Récapitulatif dynamique #}
     {% include 'components/catalogue_recap.twig' %}
     
-    {% include 'components/recap_table.twig' with {
+    {# Total et boutons d'action #}
+    {% include 'components/footer_buttons.twig' with {
       mode: 'ticket',
-      prestations: prestations,
-      consommables: consommables,
       ticket: ticket,
       client: client,
       totaux: totaux
