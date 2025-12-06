@@ -6,8 +6,18 @@
   <div style="margin-top:12px;">
     <h3 style="color:#444; font-weight:700;">Récapitulatif</h3>
     
-    {# Tableau Prestations existantes (MO) #}
-    {% if prestations is not empty %}
+    {# Tableau Prestations existantes (MO) - Exclure les ventes de vélo #}
+    {% set realPrestations = [] %}
+    {% set ventesVelo = [] %}
+    {% for p in prestations %}
+      {% if p.label starts with 'Vente —' %}
+        {% set ventesVelo = ventesVelo|merge([p]) %}
+      {% else %}
+        {% set realPrestations = realPrestations|merge([p]) %}
+      {% endif %}
+    {% endfor %}
+    
+    {% if realPrestations is not empty %}
     <table class="recap-table">
       <thead>
         <tr>
@@ -18,7 +28,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for p in prestations %}
+        {% for p in realPrestations %}
         <tr>
           <td>{{ p.label }}</td>
           <td>{{ p.quantite }}</td>
@@ -48,6 +58,30 @@
           <td>{{ c.quantite }}</td>
           <td>{{ '%.2f'|format(c.prix_ht_snapshot|default(0)) }}</td>
           <td>{{ '%.2f'|format((c.prix_ht_snapshot|default(0)) * (c.quantite|default(1))) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {# Tableau Ventes de vélo existantes #}
+    {% if ventesVelo is not empty %}
+    <table class="recap-table">
+      <thead>
+        <tr>
+          <th>Vente</th>
+          <th>Qté</th>
+          <th>Unitaire</th>
+          <th>Sous-total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in ventesVelo %}
+        <tr>
+          <td>{{ v.label }}</td>
+          <td>{{ v.quantite }}</td>
+          <td>{{ '%.2f'|format(v.prix_ht_snapshot|default(0)) }}</td>
+          <td>{{ '%.2f'|format((v.prix_ht_snapshot|default(0)) * (v.quantite|default(1))) }}</td>
         </tr>
         {% endfor %}
       </tbody>
