@@ -10,6 +10,24 @@ function ticketForm(){
     fmt(n){ return Number(n).toFixed(2); },
     toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{ t.remove(); }, 3000); },
     ttc(mq,mp,pq,pp,tva){ const ht=(Number(mq||0)*Number(mp||0))+(Number(pq||0)*Number(pp||0)); return ht*(1+Number(tva||0)/100); },
+    addBikeSale(detail){
+      const model = String(detail?.model || '').trim();
+      let price = Number(String(detail?.price || '').replace(',', '.'));
+
+      if (!model) { alert('Saisir le modèle du vélo'); return; }
+      if (!Number.isFinite(price) || price < 0) { alert('Saisir un prix valide'); return; }
+
+      if (!Array.isArray(this.bikeSales)) this.bikeSales = [];
+      this.bikeSales.push({
+        label: 'Vente — ' + model,
+        qty: 1,
+        unit: price,
+        subtotal: price
+      });
+
+      this.recalc();
+      this.toast('Vente de vélo ajoutée ✓');
+    },
     addFromRow(id,label,mq,mp,pq,pp,tva){
       const mqNum = Number(mq || 0);
       const pqNum = Number(pq || 0);
@@ -105,6 +123,35 @@ function ticketForm(){
           total: lineTotal
         });
       });
+
+      // Intégrer les ventes de vélo (bikeSales) dans pending + total
+      if (Array.isArray(this.bikeSales)) {
+        this.bikeSales.forEach((sale, idx) => {
+          const unit = Number(sale.unit || 0);
+          const qty = Number(sale.qty || 1);
+          const subtotal = Number(
+            sale.subtotal !== undefined && sale.subtotal !== null
+              ? sale.subtotal
+              : unit * qty
+          );
+          total += subtotal;
+          this.pending.push({
+            type: 'bike',
+            id: sale.id || ('bike-' + idx),
+            label: sale.label || 'Vente',
+            qty: qty,
+            moQty: 0,
+            pieceQty: 0,
+            moUnit: 0,
+            pieceUnit: 0,
+            moTotal: 0,
+            pieceTotal: 0,
+            unit: unit,
+            subtotal: subtotal,
+            total: subtotal
+          });
+        });
+      }
       
       const fmt = (n) => Number(n).toFixed(2);
       const totalEl = document.getElementById('t-total');
