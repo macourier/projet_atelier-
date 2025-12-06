@@ -809,6 +809,12 @@
     }
     function goNewClient(){
       const autostart = hasSelectedLines();
+      // Récupérer le dernier modèle de vélo si disponible
+      let bikeModel = '';
+      try {
+        bikeModel = localStorage.getItem('lastBikeModel') || '';
+      } catch(_e) {}
+      
       // Toujours créer un nouveau client (ne pas réutiliser un client_id existant)
       const live = readClientFields();
       const hasLive = !!(live && (live.name || live.address || live.email || live.phone));
@@ -856,12 +862,19 @@
         add('address', f.address || '');
         add('email', f.email || '');
         add('phone', f.phone || '');
+        if (bikeModel) {
+          add('bike_model', bikeModel);
+        }
         document.body.appendChild(form);
         form.submit();
         return false;
       }
-      // Rien saisi → bascule sur l’édition client (vierge)
-      window.location.href = '/clients/0/edit?return=' + encodeURIComponent('/catalogue');
+      // Rien saisi → bascule sur l'édition client (vierge)
+      const params = ['return=' + encodeURIComponent('/catalogue')];
+      if (bikeModel) {
+        params.push('bike_model=' + encodeURIComponent(bikeModel));
+      }
+      window.location.href = '/clients/0/edit?' + params.join('&');
       return false;
     }
     function preSubmitPdf(){

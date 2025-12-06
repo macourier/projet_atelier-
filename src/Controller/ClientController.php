@@ -222,7 +222,8 @@ class ClientController
                 'name' => trim($query['name'] ?? ''),
                 'address' => trim($query['address'] ?? ''),
                 'email' => trim($query['email'] ?? ''),
-                'phone' => trim($query['phone'] ?? '')
+                'phone' => trim($query['phone'] ?? ''),
+                'bike_model' => trim($query['bike_model'] ?? '')
             ];
         }
 

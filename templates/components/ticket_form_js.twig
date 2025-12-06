@@ -25,6 +25,11 @@ function ticketForm(){
         subtotal: price
       });
 
+      // Sauvegarder le dernier modèle de vélo pour pré-remplir le formulaire client
+      try {
+        localStorage.setItem('lastBikeModel', model);
+      } catch(e) {}
+
       this.recalc();
       this.toast('Vente de vélo ajoutée ✓');
     },
