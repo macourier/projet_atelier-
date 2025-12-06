@@ -310,7 +310,7 @@
               <div class="label">
                 <div class="title-row">
                   <span class="presta-title">{{ item.libelle }}</span>
-                  <span class="mo-header" x-text="'MO : ' + fmt(moFinal()) + ' €'">
+                  <span class="mo-header" x-text="fmt(moFinal()) + ' €'">
                     {{ (item.prix_main_oeuvre_ht|default(0))|number_format(2, ',', ' ') }} €
                   </span>
                 </div>
