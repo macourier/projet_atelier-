@@ -57,6 +57,19 @@
     .recap-table th:nth-child(2), .recap-table td:nth-child(2) { text-align:center; width:80px; }
     .recap-table th:nth-child(3), .recap-table td:nth-child(3) { text-align:right; width:120px; }
     .recap-table th:nth-child(4), .recap-table td:nth-child(4) { text-align:right; width:120px; }
+    
+    /* Cartes dans les tuiles (fond gris très pâle) */
+    .category .row-card {
+      background: #FAFAFA;
+      border: 1px solid #E5E5E5;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    
+    /* Carte cochée en bleu pâle */
+    .category .row-card.checked {
+      background: #F0F6FF;
+      border-color: #D6E4FF;
+    }
   </style>
 
 
@@ -108,7 +121,9 @@
         </div>
         <template x-if="openCat === id"><div class="prestations">
           {% for item in items %}
-            <div class="prestation row-card" x-data="{ 
+            <div class="prestation row-card" 
+                 :class="{ 'checked': checked || pieceChecked }"
+                 x-data="{
                     checked:false, pieceChecked:false, 
                     moQty:1, pieceQty:1, 
                     moBase:0, pieceBase:0, 
@@ -260,6 +275,8 @@
     </div>
 
     {# Récapitulatif et nouveaux éléments #}
+    {% include 'components/catalogue_recap.twig' %}
+    
     {% include 'components/recap_table.twig' with {
       mode: 'ticket',
       prestations: prestations,

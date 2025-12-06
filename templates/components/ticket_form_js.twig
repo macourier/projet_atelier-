@@ -51,6 +51,7 @@ function ticketForm(){
       this.recalc();
     },
     recalc(){
+      this.pending = [];
       let total = this.baseTtc || 0;
       document.querySelectorAll('.prestation').forEach((row)=>{
         const moCb = row.querySelector('input.prest-check');
@@ -71,15 +72,40 @@ function ticketForm(){
         // Pièce
         let pqty = 0, pprice = 0;
         if (pieceCb && pieceCb.checked) {
-          const pQtyEl = row.querySelector("select[name='piece_qty[]']");
+          const pQtyEl = row.querySelector("select[name='piece_qty[]']") || row.querySelector("input[name='piece_qty[]']");
           const pOvEl  = row.querySelector("input[name='piece_price_override[]']");
           pqty = parseFloat(pQtyEl?.value || '0'); if (isNaN(pqty) || pqty < 0) pqty = 0;
           pprice = parseFloat(pOvEl?.value || '');
           if (isNaN(pprice)) pprice = parseFloat(row.dataset.piecePrice || '0');
         }
 
-        total += (qty * price) + (pqty * pprice);
+        const lineTotal = (qty * price) + (pqty * pprice);
+        total += lineTotal;
+
+        // Remplir le tableau pending pour le récapitulatif (comme dans le catalogue)
+        const labelEl = row.querySelector('.label > div');
+        const label = labelEl ? labelEl.textContent.trim() : '';
+        const pieceLabel = (row.dataset.pieceLabel || 'Pièce').slice(0, 19);
+        const totalQty = (qty || 0) + (pqty || 0);
+        const unit = totalQty > 0 ? (lineTotal / totalQty) : 0;
+
+        this.pending.push({
+          id: row.dataset.id,
+          label: label,
+          pieceLabel: pieceLabel,
+          qty: totalQty,
+          moQty: qty,
+          pieceQty: pqty,
+          moUnit: price,
+          pieceUnit: pprice,
+          moTotal: qty * price,
+          pieceTotal: pqty * pprice,
+          unit: unit,
+          subtotal: lineTotal,
+          total: lineTotal
+        });
       });
+      
       const fmt = (n) => Number(n).toFixed(2);
       const totalEl = document.getElementById('t-total');
       if (totalEl) {
