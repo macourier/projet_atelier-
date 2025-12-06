@@ -70,6 +70,161 @@
       background: #F0F6FF;
       border-color: #D6E4FF;
     }
+    
+    /* Masquer les flèches des inputs numériques (seulement pour .price-input) */
+    input.price-input[type=number]::-webkit-outer-spin-button,
+    input.price-input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input.price-input[type=number] {
+      -moz-appearance: textfield;
+      appearance: textfield;
+      height: 20px;
+      min-height: 20px;
+      line-height: 20px;
+      font-size: .8rem;
+      padding: 0 .35rem;
+    }
+    
+    /* Ligne MO/Pièce structurée */
+    .line-mo-piece {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 32px;
+    }
+    
+    /* Zone gauche: label */
+    .line-mo-piece .zone-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    
+    /* Zone droite: icônes */
+    .line-mo-piece .zone-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+      min-width: 120px;
+      justify-content: flex-end;
+    }
+    
+    /* Select quantité compact (UI PC) */
+    .qty-compact {
+      width: 52px;
+      height: 26px;
+      padding: 0 6px;
+      font-size: .8rem;
+      border-radius: 6px;
+      border: 1px solid #D1D5DB;
+      background-color: #FFFFFF;
+      color: #111827;
+      text-align: center;
+      appearance: none;
+    }
+
+    .qty-compact:focus {
+      outline: none;
+      border-color: #93C5FD;
+      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.25);
+    }
+
+    .qty-label {
+      font-size: .7rem;
+      color: #9CA3AF;
+      margin: 0 4px;
+      white-space: nowrap;
+    }
+
+    .mo-label {
+      font-size: .9rem;
+      font-weight: 700;
+      color: #111827;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(37, 99, 235, 0.06);
+    }
+
+    .mo-price {
+      font-size: .9rem;
+      font-weight: 600;
+      color: #111827;
+      margin-left: 6px;
+    }
+
+    .piece-label {
+      display: inline-block;
+      max-width: 18ch;
+      font-size: .9rem;
+      font-weight: 600;
+      color: #111827;
+      line-height: 1.3;
+      word-wrap: break-word;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
+      max-height: calc(1.3em * 2);
+      overflow: hidden;
+    }
+
+    .piece-price {
+      font-size: .85rem;
+      font-weight: 600;
+      color: #111827;
+      margin-left: 6px;
+      white-space: nowrap;
+    }
+
+    .prestation .label .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .presta-title {
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .mo-header {
+      font-size: .85rem;
+      font-weight: 600;
+      color: #111827;
+      white-space: nowrap;
+    }
+    
+    /* Icônes inline sans encadrement */
+    .icon-inline {
+      background: transparent;
+      border: none;
+      padding: 2px;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.2s ease, transform 0.1s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .icon-inline:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+    
+    .icon-inline:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    
+    .icon-inline img {
+      width: 16px;
+      height: 16px;
+      vertical-align: middle;
+    }
   </style>
 
 
@@ -121,7 +276,7 @@
         </div>
         <template x-if="openCat === id"><div class="prestations">
           {% for item in items %}
-            <div class="prestation row-card" 
+            <div class="prestation row-card" data-id="{{ item.id }}"
                  :class="{ 'checked': checked || pieceChecked }"
                  x-data="{
                     checked:false, pieceChecked:false, 
@@ -129,103 +284,110 @@
                     moBase:0, pieceBase:0, 
                     moEdit:false, pieceEdit:false, 
                     moInput:'', pieceInput:'',
+                    pieceLabel:'',
                     fmt(n){ return Number(n).toFixed(2); },
                     moFinal(){ return this.moInput!=='' && !isNaN(+this.moInput) ? +this.moInput : this.moBase; },
                     pieceFinal(){ return this.pieceInput!=='' && !isNaN(+this.pieceInput) ? +this.pieceInput : this.pieceBase; },
                     moValid(){ return this.moInput!=='' && !isNaN(+this.moInput); },
                     pieceValid(){ return this.pieceInput!=='' && !isNaN(+this.pieceInput); },
                     resetMo(){ this.moInput=''; this.moQty=1; },
-                    resetPiece(){ this.pieceInput=''; this.pieceQty=1; }
+                    resetPiece(){ this.pieceInput=''; this.pieceQty=1; },
+                    sanitizePrice(val){
+                      let s = String(val ?? '').replace(',', '.').replace(/[^\d.]/g, '');
+                      let num = parseFloat(s);
+                      if (isNaN(num) || num < 0) return '';
+                      if (num > 9999) num = 9999;
+                      return num.toString().slice(0, 7);
+                    }
                  }"
-                 x-init="moBase=parseFloat($el.dataset.price)||0; pieceBase=parseFloat($el.dataset.piecePrice)||0; baseTva=parseFloat($el.dataset.tva)||20"
+                 x-init="moBase=parseFloat($el.dataset.price)||0; pieceBase=parseFloat($el.dataset.piecePrice)||0; baseTva=parseFloat($el.dataset.tva)||20; pieceLabel=($el.dataset.pieceLabel || 'Pièce').slice(0, 19)"
                  data-price="{{ item.prix_main_oeuvre_ht|default(0) }}"
                  data-tva="{{ item.tva_pct|default(tvadef) }}"
                  data-piece-price="{{ item.piece_prix_ht|default(0) }}"
                  data-piece-label="{{ item.piece_libelle|default('Pièce') }}">
               <input type="checkbox" class="round prest-check" style="width:20px;height:20px"
-                     x-model="checked" @change="if($el.checked){ pieceChecked = true; } $root.recalc()">
+                      x-model="checked" @change="if($el.checked){ pieceChecked = true; } $root.recalc()">
               <div class="label">
-                <div style="font-weight:600">{{ item.libelle }}</div>
+                <div class="title-row">
+                  <span class="presta-title">{{ item.libelle }}</span>
+                  <span class="mo-header" x-text="'MO : ' + fmt(moFinal()) + ' €'">
+                    {{ (item.prix_main_oeuvre_ht|default(0))|number_format(2, ',', ' ') }} €
+                  </span>
+                </div>
               </div>
 
               <input type="hidden" name="prest_id[]" value="{{ item.id }}" :disabled="!checked">
 
-              <div class="row-body">
-                <!-- Main d’œuvre -->
-                <div>
-                  <div class="text-muted section-title" style="font-size:.8rem; display:flex; align-items:center; gap:8px;"><i class="fas fa-wrench"></i><span>Main d’œuvre</span></div>
-                  <div class="price-lines">
-                    Prix de base MO: <strong><span>{{ (item.prix_main_oeuvre_ht|default(0))|number_format(0, ',', ' ') }}</span> €</strong>
-                  </div>
-                  <div class="flex gap-8" style="align-items:center;">
-                    <label class="text-muted" style="font-size:.8rem;">Qté</label>
-                    <div class="qty-spinner" style="display:flex; align-items:center; gap:6px;">
-                      <button type="button" class="btn btn-ghost btn-ghost-sm" :disabled="!checked" @click="moQty = Math.max(1, Number(moQty||1)-1); $root.debouncedRecalc()">−</button>
-                      <input name="qty[]" type="number" min="1" :disabled="!checked" x-model="moQty" @input="$root.debouncedRecalc()" class="select-qty" style="width:64px">
-                      <button type="button" class="btn btn-ghost btn-ghost-sm" :disabled="!checked" @click="moQty = Number(moQty||1)+1; $root.debouncedRecalc()">+</button>
-                    </div>
+              <div class="row-body" style="display:flex; flex-direction:column; gap:10px;">
+                <!-- Ligne Main d'œuvre -->
+                <div class="line-mo-piece">
+                  <div class="zone-left">
+                    <span class="mo-label">MO :</span>
 
-                    <div class="flex gap-8" style="align-items:center;">
-                      <button type="button" class="btn btn-ghost btn-ghost-sm price-soft" :disabled="!checked" 
-                              x-show="!moEdit && moInput===''" 
-                              @click="moEdit=true" x-transition>
-                        Prix
+                    <span class="mo-price" x-text="Number(moFinal() || 0).toFixed(2) + ' €'">
+                      {{ (item.prix_main_oeuvre_ht|default(0))|number_format(2, ',', ' ') }} €
+                    </span>
+
+                    <span class="qty-label">Qté</span>
+                    <select name="qty[]" :disabled="!checked" x-model="moQty" @change="$root.recalc()" class="qty-compact">
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                    </select>
+                  </div>
+
+                  <div class="zone-right">
+                    <div x-show="!moEdit" style="display:flex; align-items:center; gap:4px;">
+                      <button type="button" :disabled="!checked" @click="moEdit=true" x-transition title="Modifier le prix MO" class="icon-inline">
+                        <img src="/img/crayon-de-couleur.png" alt="Modifier">
                       </button>
-                      <div x-show="moEdit" x-transition style="display:flex; align-items:center; gap:8px;">
-                        <input type="number" step="0.01" placeholder="0.00" :disabled="!checked"
-                               x-model="moInput" style="width:120px" @input="$root.recalc()">
-                        <button type="button" class="btn" :class="moValid() ? 'btn-success' : 'btn-ghost btn-ghost-sm'"
-                                @click="if(moValid()){ moEdit=false; $root.recalc(); }" x-transition>
-                          Valider
-                        </button>
-                      </div>
-                      <a href="javascript:void(0)" class="text-muted" style="font-size:.85rem;" 
-                         x-show="moInput!==''" x-transition
-                         @click="resetMo(); $root.recalc()">Réinitialiser</a>
+                      <button type="button" title="Réinitialiser MO" x-show="moInput!==''" x-transition @click="resetMo(); $root.recalc()" class="icon-inline">
+                        <img src="/img/annuler.png" alt="Réinitialiser">
+                      </button>
+                    </div>
+                    <div x-show="moEdit" x-transition style="display:flex; align-items:center; gap:4px;">
+                      <input type="number" step="0.01" min="0" max="9999" inputmode="decimal" placeholder="Prix HT" :disabled="!checked" class="price-input"
+                             x-model="moInput" @input="moInput = sanitizePrice(moInput); $root.recalc()" 
+                             style="width:75px; padding:3px 6px; font-size:.85rem; border:1px solid #3b82f6; border-radius:4px;">
+                      <button type="button" x-show="moValid()" @click="if(moValid()){ moEdit=false; $root.recalc(); }" x-transition
+                              style="padding:3px 8px; font-size:.8rem; background:#3b82f6; color:#fff; border:none; border-radius:4px; cursor:pointer;">✓</button>
                     </div>
                   </div>
                 </div>
 
-                <!-- Pièce -->
-                <div>
-                  <div class="text-muted section-title" style="font-size:.8rem; display:flex; align-items:center; gap:8px;">
-                    <input type="checkbox" class="round piece-check" style="width:18px;height:18px" x-model="pieceChecked" @change="$root.recalc()">
-                    <i class="fas fa-puzzle-piece"></i><span x-text="$el.closest('.prestation')?.dataset?.pieceLabel || 'Pièce'">Pièce</span>
-                  </div>
-                  <div class="price-lines">
-                    <template x-if="pieceInput===''">
-                      <span>Prix de base Pièce: <strong x-text="fmt(pieceBase)">{{ (item.piece_prix_ht|default(0))|number_format(2, '.', '') }}</strong> €</span>
-                    </template>
-                    <template x-if="pieceInput!==''">
-                      <span>Prix <span style="padding:0 6px; border-radius:6px; background:#fffbeb; color:#92400e; font-weight:600;">modifié</span>: <strong x-text="fmt(pieceFinal())"></strong> €</span>
-                      <span class="text-muted" style="margin-left:6px;">(Prix de base Pièce: <span x-text="fmt(pieceBase)"></span> €)</span>
-                    </template>
-                  </div>
-                  <div class="flex gap-8" style="align-items:center; margin-top:6px;">
-                    <label class="text-muted" style="font-size:.8rem;">Qté</label>
-                    <div class="qty-spinner" style="display:flex; align-items:center; gap:6px;">
-                      <button type="button" class="btn btn-ghost btn-ghost-sm" :disabled="!pieceChecked" @click="pieceQty = Math.max(1, Number(pieceQty||1)-1); $root.debouncedRecalc()">−</button>
-                      <input name="piece_qty[]" type="number" min="1" :disabled="!pieceChecked" x-model="pieceQty" @input="$root.debouncedRecalc()" class="select-qty" style="width:64px">
-                      <button type="button" class="btn btn-ghost btn-ghost-sm" :disabled="!pieceChecked" @click="pieceQty = Number(pieceQty||1)+1; $root.debouncedRecalc()">+</button>
-                    </div>
+                <!-- Ligne Pièce -->
+                <div class="line-mo-piece">
+                  <div class="zone-left" style="gap:10px;">
+                    <input type="checkbox" class="round piece-check" style="width:16px;height:16px; margin-right:4px;" x-model="pieceChecked" @change="$root.recalc()">
+                    <span class="piece-label" x-text="pieceLabel">
+                      {{ item.piece_libelle|default('Pièce') }}
+                    </span>
 
-                    <div class="flex gap-8" style="align-items:center;">
-                      <button type="button" class="btn btn-ghost btn-ghost-sm price-soft" :disabled="!pieceChecked" 
-                              x-show="!pieceEdit && pieceInput===''" 
-                              @click="pieceEdit=true" x-transition>
-                        Prix
+                    <span class="piece-price" x-text="Number(pieceFinal() || 0).toFixed(2) + ' €'">
+                      {{ (item.piece_prix_ht|default(0))|number_format(2, ',', ' ') }} €
+                    </span>
+
+                    <span class="qty-label">Qté</span>
+                    <select name="piece_qty[]" :disabled="!pieceChecked" x-model="pieceQty" @change="$root.recalc()" class="qty-compact">
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                    </select>
+                  </div>
+
+                  <div class="zone-right">
+                    <div x-show="!pieceEdit" style="display:flex; align-items:center; gap:4px;">
+                      <button type="button" :disabled="!pieceChecked" @click="pieceEdit=true" x-transition title="Modifier le prix Pièce" class="icon-inline">
+                        <img src="/img/crayon-de-couleur.png" alt="Modifier">
                       </button>
-                      <div x-show="pieceEdit" x-transition style="display:flex; align-items:center; gap:8px;">
-                        <input type="number" step="0.01" placeholder="0.00" :disabled="!pieceChecked"
-                               x-model="pieceInput" style="width:120px" @input="$root.recalc()">
-                        <button type="button" class="btn" :class="pieceValid() ? 'btn-success' : 'btn-ghost btn-ghost-sm'"
-                                @click="if(pieceValid()){ pieceEdit=false; $root.recalc(); }" x-transition>
-                          Valider
-                        </button>
-                      </div>
-                      <a href="javascript:void(0)" class="text-muted" style="font-size:.85rem;" 
-                         x-show="pieceInput!==''" x-transition
-                         @click="resetPiece(); $root.recalc()">Réinitialiser</a>
+                      <button type="button" title="Réinitialiser Pièce" x-show="pieceInput!==''" x-transition @click="resetPiece(); $root.recalc()" class="icon-inline">
+                        <img src="/img/annuler.png" alt="Réinitialiser">
+                      </button>
+                    </div>
+                    <div x-show="pieceEdit" x-transition style="display:flex; align-items:center; gap:4px;">
+                      <input type="number" step="0.01" min="0" max="9999" inputmode="decimal" placeholder="Prix HT" :disabled="!pieceChecked" class="price-input"
+                             x-model="pieceInput" @input="pieceInput = sanitizePrice(pieceInput); $root.recalc()" 
+                             style="width:75px; padding:3px 6px; font-size:.85rem; border:1px solid #3b82f6; border-radius:4px;">
+                      <button type="button" x-show="pieceValid()" @click="if(pieceValid()){ pieceEdit=false; $root.recalc(); }" x-transition
+                              style="padding:3px 8px; font-size:.8rem; background:#3b82f6; color:#fff; border:none; border-radius:4px; cursor:pointer;">✓</button>
                     </div>
                   </div>
                 </div>
