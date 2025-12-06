@@ -212,6 +212,29 @@
     background: #F0F6FF;
     border-color: #D6E4FF;
   }
+  
+  /* Footer pour fermer l'accordéon */
+  .category-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 16px;
+    cursor: pointer;
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    transition: background 0.25s ease;
+    font-size: 15px;
+    color: #6b7280;
+    margin-top: 8px;
+  }
+  
+  .category-footer:hover {
+    background: #f3f4f6;
+  }
+  
+  .category-footer:active {
+    transform: scale(0.98);
+  }
 </style>
 
     <div id="piece-help-banner" role="status" aria-live="polite" style="margin:10px 0 12px; background:#FFFBEB; border:1px solid #FBC02D; color:#1C1C1C; padding:10px 12px; border-radius:12px; display:none;">
@@ -380,6 +403,20 @@
             </div>
           {% endfor %}
         </div>
+        
+        {# Footer pour fermer la catégorie (visible uniquement si ouverte) #}
+        <template x-if="openCat === id">
+          <div class="category-footer"
+               role="button"
+               tabindex="0"
+               @click="openCat = null; $nextTick(() => { document.querySelector('.category[x-data] .category-header').scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' }); })"
+               @keydown.enter.prevent="openCat = null"
+               @keydown.space.prevent="openCat = null">
+            <div style="font-size:1.3rem; display:flex; align-items:center; justify-content:center;">
+              ↑
+            </div>
+          </div>
+        </template>
       </div>
     {% else %}
       <p class="text-muted">Le catalogue est vide. Allez dans Administration → Prestations pour le remplir.</p>
