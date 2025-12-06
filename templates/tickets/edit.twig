@@ -308,12 +308,7 @@
               <input type="checkbox" class="round prest-check" style="width:20px;height:20px"
                       x-model="checked" @change="if($el.checked){ pieceChecked = true; } $root.recalc()">
               <div class="label">
-                <div class="title-row">
-                  <span class="presta-title">{{ item.libelle }}</span>
-                  <span class="mo-header" x-text="fmt(moFinal()) + ' €'">
-                    {{ (item.prix_main_oeuvre_ht|default(0))|number_format(2, ',', ' ') }} €
-                  </span>
-                </div>
+                <div style="font-weight:600">{{ item.libelle }}</div>
               </div>
 
               <input type="hidden" name="prest_id[]" value="{{ item.id }}" :disabled="!checked">
