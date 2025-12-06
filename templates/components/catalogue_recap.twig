@@ -2,7 +2,7 @@
 
 {# Bloc récapitulatif dynamique #}
 <div x-show="pending.length > 0" style="margin-top:12px;">
-  <h3>Éléments sélectionnés</h3>
+  <h3>Récapitulatif</h3>
 
   {# Tableau Prestations (MO) #}
   <template x-if="pending.some(p => p.moQty > 0)">
