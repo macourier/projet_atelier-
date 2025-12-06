@@ -129,6 +129,7 @@
                     moBase:0, pieceBase:0, 
                     moEdit:false, pieceEdit:false, 
                     moInput:'', pieceInput:'',
+                    fmt(n){ return Number(n).toFixed(2); },
                     moFinal(){ return this.moInput!=='' && !isNaN(+this.moInput) ? +this.moInput : this.moBase; },
                     pieceFinal(){ return this.pieceInput!=='' && !isNaN(+this.pieceInput) ? +this.pieceInput : this.pieceBase; },
                     moValid(){ return this.moInput!=='' && !isNaN(+this.moInput); },
@@ -193,11 +194,11 @@
                   </div>
                   <div class="price-lines">
                     <template x-if="pieceInput===''">
-                      <span>Prix de base Pièce: <strong x-text="$root.fmt(pieceBase)">{{ (item.piece_prix_ht|default(0))|number_format(2, '.', '') }}</strong> €</span>
+                      <span>Prix de base Pièce: <strong x-text="fmt(pieceBase)">{{ (item.piece_prix_ht|default(0))|number_format(2, '.', '') }}</strong> €</span>
                     </template>
                     <template x-if="pieceInput!==''">
-                      <span>Prix <span style="padding:0 6px; border-radius:6px; background:#fffbeb; color:#92400e; font-weight:600;">modifié</span>: <strong x-text="$root.fmt(pieceFinal())"></strong> €</span>
-                      <span class="text-muted" style="margin-left:6px;">(Prix de base Pièce: <span x-text="$root.fmt(pieceBase)"></span> €)</span>
+                      <span>Prix <span style="padding:0 6px; border-radius:6px; background:#fffbeb; color:#92400e; font-weight:600;">modifié</span>: <strong x-text="fmt(pieceFinal())"></strong> €</span>
+                      <span class="text-muted" style="margin-left:6px;">(Prix de base Pièce: <span x-text="fmt(pieceBase)"></span> €)</span>
                     </template>
                   </div>
                   <div class="flex gap-8" style="align-items:center; margin-top:6px;">
