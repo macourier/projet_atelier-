@@ -1,8 +1,64 @@
 {% set tvadef = env.TVA_DEFAULT|default(20) %}
 
-{# Bloc récapitulatif dynamique #}
+{# Bloc récapitulatif : affiche les prestations existantes ET les nouvelles sélections #}
+{% if (prestations is defined and prestations is not empty) or (consommables is defined and consommables is not empty) %}
+  {# Ticket existant : afficher les prestations déjà enregistrées #}
+  <div style="margin-top:12px;">
+    <h3 style="color:#444; font-weight:700;">Récapitulatif</h3>
+    
+    {# Tableau Prestations existantes (MO) #}
+    {% if prestations is not empty %}
+    <table class="recap-table">
+      <thead>
+        <tr>
+          <th>Prestation</th>
+          <th>Qté</th>
+          <th>Unitaire</th>
+          <th>Sous-total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in prestations %}
+        <tr>
+          <td>{{ p.label }}</td>
+          <td>{{ p.quantite }}</td>
+          <td>{{ '%.2f'|format(p.prix_ht_snapshot|default(0)) }}</td>
+          <td>{{ '%.2f'|format((p.prix_ht_snapshot|default(0)) * (p.quantite|default(1))) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {# Tableau Consommables existants (Pièces) #}
+    {% if consommables is not empty %}
+    <table class="recap-table">
+      <thead>
+        <tr>
+          <th>Consommable</th>
+          <th>Qté</th>
+          <th>Unitaire</th>
+          <th>Sous-total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in consommables %}
+        <tr>
+          <td>{{ c.label }}</td>
+          <td>{{ c.quantite }}</td>
+          <td>{{ '%.2f'|format(c.prix_ht_snapshot|default(0)) }}</td>
+          <td>{{ '%.2f'|format((c.prix_ht_snapshot|default(0)) * (c.quantite|default(1))) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+{% endif %}
+
+{# Bloc récapitulatif dynamique pour les nouvelles sélections #}
 <div x-show="pending.length > 0" style="margin-top:12px;">
-  <h3 style="color:#444; font-weight:700;">Récapitulatif</h3>
+  <h3 style="color:#444; font-weight:700;" x-show="!{{ (prestations is defined and prestations is not empty) or (consommables is defined and consommables is not empty) ? 'true' : 'false' }}">Récapitulatif</h3>
 
   {# Tableau Prestations (MO) #}
   <template x-if="pending.some(p => p.moQty > 0)">
