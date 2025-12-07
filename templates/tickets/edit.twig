@@ -457,6 +457,21 @@
 
   {% include 'components/ticket_form_js.twig' %}
   <script>
+    // Nettoyer le localStorage après sauvegarde d'un ticket
+    (function(){
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('success') === '1') {
+        try {
+          // Vider les ventes de vélo du brouillon
+          const draft = JSON.parse(localStorage.getItem('devisDraft') || 'null');
+          if (draft && draft.custom && draft.custom.prest) {
+            draft.custom.prest = [];
+            localStorage.setItem('devisDraft', JSON.stringify(draft));
+          }
+        } catch(_e) {}
+      }
+    })();
+    
     // Fallback minimal si Alpine n'est pas disponible (bloqué par le navigateur)
     (function(){
       if (window.Alpine) return; // Alpine présent, ne rien faire
