@@ -228,7 +228,7 @@
   </style>
 
 
-  <form method="post" action="/tickets/{{ ticket ? ticket.id : 0 }}/edit" x-data="ticketForm()" x-init="debouncedRecalc()" @change="debouncedRecalc()" @input="debouncedRecalc()" @add-bike-sale.window="addBikeSale($event.detail)">
+  <form method="post" action="/tickets/{{ ticket ? ticket.id : 0 }}/edit" x-data="ticketForm()" x-init="init()" @change="debouncedRecalc()" @input="debouncedRecalc()" @add-bike-sale.window="addBikeSale($event.detail)">
 
     {% if client %}
       <input type="hidden" name="client_id" value="{{ client.id }}">

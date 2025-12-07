@@ -2,6 +2,7 @@
 function ticketForm(){
   return {
     pending: [],
+    bikeSales: [],
     showCatalogue: false,
     baseTtc: Number("{{ '%.2f'|format(totaux.ttc|default(0)) }}"),
     lastTotal: Number("{{ '%.2f'|format(totaux.ttc|default(0)) }}"),
@@ -10,6 +11,23 @@ function ticketForm(){
     fmt(n){ return Number(n).toFixed(2); },
     toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{ t.remove(); }, 3000); },
     ttc(mq,mp,pq,pp,tva){ const ht=(Number(mq||0)*Number(mp||0))+(Number(pq||0)*Number(pp||0)); return ht*(1+Number(tva||0)/100); },
+    init(){
+      // Charger les ventes de vélo depuis localStorage (ajoutées depuis le catalogue)
+      try {
+        const draft = JSON.parse(localStorage.getItem('devisDraft') || 'null');
+        if (draft && draft.custom && Array.isArray(draft.custom.prest)) {
+          draft.custom.prest.forEach(l => {
+            const lab = String(l?.label || '').trim();
+            const pr = Number(String(l?.price || '').replace(',', '.'));
+            if (lab && Number.isFinite(pr) && pr >= 0) {
+              if (!Array.isArray(this.bikeSales)) this.bikeSales = [];
+              this.bikeSales.push({ label: lab, qty: 1, unit: pr, subtotal: pr });
+            }
+          });
+        }
+      } catch(_e) {}
+      this.debouncedRecalc();
+    },
     addBikeSale(detail){
       const model = String(detail?.model || '').trim();
       let price = Number(String(detail?.price || '').replace(',', '.'));
