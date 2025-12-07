@@ -15,7 +15,18 @@ function ticketForm(){
       // Charger les ventes de vélo depuis localStorage UNIQUEMENT pour les nouveaux tickets
       // Si le ticket existe déjà (ID présent), les ventes sont déjà en BDD
       const hasExistingTicket = {{ ticket.id|default(0) }};
-      if (!hasExistingTicket) {
+      
+      if (hasExistingTicket) {
+        // Ticket existant : nettoyer le localStorage pour éviter d'afficher des ventes d'autres tickets
+        try {
+          const draft = JSON.parse(localStorage.getItem('devisDraft') || 'null');
+          if (draft && draft.custom && draft.custom.prest) {
+            draft.custom.prest = [];
+            localStorage.setItem('devisDraft', JSON.stringify(draft));
+          }
+        } catch(_e) {}
+      } else {
+        // Nouveau ticket : charger depuis localStorage
         try {
           const draft = JSON.parse(localStorage.getItem('devisDraft') || 'null');
           if (draft && draft.custom && Array.isArray(draft.custom.prest)) {
