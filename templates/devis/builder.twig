@@ -653,6 +653,11 @@
             subtotal: price
           });
 
+          // Sauvegarder le dernier modèle de vélo pour pré-remplir le formulaire client
+          try {
+            localStorage.setItem('lastBikeModel', model);
+          } catch(_e) {}
+
           try {
             let draft;
             try {
