@@ -10,7 +10,7 @@
     {% set realPrestations = [] %}
     {% set ventesVelo = [] %}
     {% for p in prestations %}
-      {% if p.label starts with 'Vente —' %}
+      {% if p.label starts with 'Vente —' or p.label starts with 'Vente de vélo —' %}
         {% set ventesVelo = ventesVelo|merge([p]) %}
       {% else %}
         {% set realPrestations = realPrestations|merge([p]) %}
