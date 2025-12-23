@@ -165,9 +165,14 @@
         const add = (n,v) => { const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i); };
 
         add('client_id', String(clientId));
-        // Récupérer le modèle depuis le localStorage (vente de vélo)
+        // Récupérer le modèle depuis le localStorage (vente de vélo) OU depuis l'URL (création client)
         try {
-          const bikeModel = localStorage.getItem('lastBikeModel');
+          let bikeModel = localStorage.getItem('lastBikeModel');
+          // Fallback: récupérer depuis l'URL si pas dans localStorage
+          if (!bikeModel) {
+            const u = new URL(window.location.href);
+            bikeModel = u.searchParams.get('bike_model');
+          }
           if (bikeModel) { 
             add('bike_model', bikeModel);
             // Nettoyer immédiatement pour éviter la réutilisation
