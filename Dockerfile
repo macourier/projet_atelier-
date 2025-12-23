@@ -14,8 +14,8 @@ COPY . .
 
 RUN chown -R www-data:www-data /var/www/html && chmod -R 775 /var/www/html/data
 
-# Script d'entrypoint pour lancer les migrations et créer l'admin
-RUN echo '#!/bin/bash\nset -e\nphp /var/www/html/bin/migrate.php\nif [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_PASSWORD" ]; then\n  php /var/www/html/bin/create_admin.php "$ADMIN_EMAIL" "$ADMIN_PASSWORD"\nfi\napache2-foreground' > /entrypoint.sh \
+# Script d'entrypoint pour lancer les migrations, créer l'admin et mettre à jour la BD
+RUN echo '#!/bin/bash\nset -e\nphp /var/www/html/bin/migrate.php\nif [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_PASSWORD" ]; then\n  php /var/www/html/bin/create_admin.php "$ADMIN_EMAIL" "$ADMIN_PASSWORD"\nfi\nphp /var/www/html/bin/update_db.php\napache2-foreground' > /entrypoint.sh \
     && chmod +x /entrypoint.sh
 
 EXPOSE 80
