@@ -364,8 +364,10 @@ class ClientController
             if (preg_match('#^/(devis/new|catalogue)#', $ret) === 1) {
                 // Forcer l'autostart pour créer automatiquement un ticket depuis le brouillon
                 $params = '?from=devis&autostart=1' . ($autoCreate ? '&auto_create=1' : '');
-                // Note: bike_model n'est plus passé dans l'URL pour éviter la persistance
-                // Il sera récupéré depuis le brouillon localStorage côté client
+                // Ajouter bike_model à l'URL s'il a été saisi
+                if ($bikeModel !== '') {
+                    $params .= '&bike_model=' . urlencode($bikeModel);
+                }
                 $redir = '/clients/' . $id . $params;
                 return $response->withHeader('Location', $redir)->withStatus(302);
             }
@@ -377,6 +379,11 @@ class ClientController
             return $response->withHeader('Location', $ret . $sep . 'client_id=' . $id)->withStatus(302);
         }
 
-        return $response->withHeader('Location', '/clients/'.$id)->withStatus(302);
+        $redirect = '/clients/' . $id;
+        // Passer bike_model en URL pour le transférer au ticket créé
+        if ($bikeModel !== '') {
+            $redirect .= '?bike_model=' . urlencode($bikeModel);
+        }
+        return $response->withHeader('Location', $redirect)->withStatus(302);
     }
 }
