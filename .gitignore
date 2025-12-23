@@ -1,5 +1,4 @@
 # Project files to ignore
-/vendor/
 /.env
 /data/*.db
 /data/app.sqlite
