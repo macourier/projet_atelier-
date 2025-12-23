@@ -8,16 +8,21 @@ use Dotenv\Dotenv;
 $root = dirname(__DIR__);
 
 // Load .env or .env.example
-if (file_exists($root . '/.env')) {
-    $dotenv = Dotenv::createImmutable($root);
-    $dotenv->load();
-    echo "[info] Loaded .env\n";
-} elseif (file_exists($root . '/.env.example')) {
-    $dotenv = Dotenv::createImmutable($root, '.env.example');
-    $dotenv->load();
-    echo "[info] .env absent — loaded .env.example as fallback\n";
-} else {
-    echo "[warn] No .env or .env.example found. Using defaults.\n";
+try {
+    if (file_exists($root . '/.env')) {
+        $dotenv = Dotenv::createImmutable($root);
+        $dotenv->load();
+        echo "[info] Loaded .env\n";
+    } elseif (file_exists($root . '/.env.example')) {
+        $dotenv = Dotenv::createImmutable($root, '.env.example');
+        $dotenv->load();
+        echo "[info] .env absent — loaded .env.example as fallback\n";
+    } else {
+        echo "[warn] No .env or .env.example found. Using defaults.\n";
+    }
+} catch (Throwable $e) {
+    fwrite(STDERR, "[error] Failed to load .env file: " . $e->getMessage() . "\n");
+    exit(1);
 }
 
 // Ensure data directory exists
