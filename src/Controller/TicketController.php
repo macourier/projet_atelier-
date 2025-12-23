@@ -444,4 +444,42 @@ class TicketController
         $response->getBody()->write($html);
         return $response;
     }
+
+    /**
+     * Supprimer une prestation ou consommable d'un ticket
+     * POST /tickets/{id}/prestations/{prest_id}/delete
+     */
+    public function deletePrestation(Request $request, Response $response, array $args): Response
+    {
+        $ticketId = (int)($args['id'] ?? 0);
+        $prestId = (int)($args['prest_id'] ?? 0);
+
+        if (!$this->pdo || $ticketId <= 0 || $prestId <= 0) {
+            $response->getBody()->write('Paramètre invalide');
+            return $response->withStatus(400);
+        }
+
+        try {
+            // Essayer de supprimer de ticket_prestations d'abord
+            $stmt = $this->pdo->prepare('DELETE FROM ticket_prestations WHERE ticket_id = :ticket_id AND id = :prest_id');
+            $stmt->execute(['ticket_id' => $ticketId, 'prest_id' => $prestId]);
+            $prestDeleted = $stmt->rowCount();
+
+            // Si rien n'a été supprimé, essayer ticket_consommables (Pièces/Ventes vélo)
+            if ($prestDeleted === 0) {
+                $stmt = $this->pdo->prepare('DELETE FROM ticket_consommables WHERE ticket_id = :ticket_id AND id = :prest_id');
+                $stmt->execute(['ticket_id' => $ticketId, 'prest_id' => $prestId]);
+            }
+
+            // Recalculer les totaux du ticket
+            $svc = new \App\Service\TicketService($this->pdo);
+            $svc->computeTotals($ticketId);
+
+        } catch (\Throwable $e) {
+            return $response->withStatus(500)->withContent('Erreur lors de la suppression');
+        }
+
+        // Redirection vers la page d'édition du ticket
+        return $response->withHeader('Location', '/tickets/' . $ticketId . '/edit?deleted=1')->withStatus(302);
+    }
 }

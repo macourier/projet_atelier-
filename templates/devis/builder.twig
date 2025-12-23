@@ -10,7 +10,8 @@
         x-data="ticketForm()"
         x-init="recalc(); loadDevisDraft()"
         @change="recalc()" @input="recalc()"
-        @add-bike-sale.window="addBikeSale($event.detail)">
+        @add-bike-sale.window="addBikeSale($event.detail)"
+        @recalc-needed.window="recalc()">
     {% if client %}
       <input type="hidden" name="client_id" value="{{ client.id }}">
     {% endif %}
@@ -70,18 +71,21 @@
     justify-content: flex-end;
   }
   
-  /* Select quantité compact (UI PC) */
+  /* Select quantité compact (UI PC) - Taille réduite de 50% */
   .qty-compact {
-    width: 52px;
-    height: 26px;
-    padding: 0 6px;
-    font-size: .8rem;
-    border-radius: 6px;
+    width: 26px;
+    height: 18px;
+    padding: 0 2px;
+    font-size: .65rem;
+    border-radius: 3px;
     border: 1px solid #D1D5DB;
     background-color: #FFFFFF;
     color: #111827;
     text-align: center;
     appearance: none;
+    line-height: 1;
+    min-height: 18px;
+    max-height: 18px;
   }
 
   .qty-compact:focus {
@@ -307,13 +311,10 @@
                  data-piece-price="{{ item.piece_prix_ht|default(0) }}"
                  data-piece-label="{{ item.piece_libelle|default('Pièce') }}">
               <input type="checkbox" class="round prest-check" style="width:20px;height:20px"
-                      x-model="checked" @change="if($el.checked){ pieceChecked = true; } $root.recalc()">
+                      x-model="checked" @change="if($el.checked){ pieceChecked = true; } $dispatch('recalc-needed')">
               <div class="label">
                 <div class="title-row">
                   <span class="presta-title">{{ item.libelle }}</span>
-                  <span class="mo-header" x-text="'MO : ' + $root.fmt(moFinal()) + ' €'">
-                    {{ (item.prix_main_oeuvre_ht|default(0))|number_format(2, ',', ' ') }} €
-                  </span>
                 </div>
               </div>
 
@@ -330,7 +331,7 @@
                     </span>
 
                     <span class="qty-label">Qté</span>
-                    <select name="qty[]" :disabled="!checked" x-model="moQty" @change="$root.recalc()" class="qty-compact">
+                    <select name="qty[]" :disabled="!checked" x-model="moQty" @change="$dispatch('recalc-needed')" class="qty-compact">
                       <option value="1">1</option>
                       <option value="2">2</option>
                     </select>
@@ -346,7 +347,7 @@
                       </button>
                     </div>
                     <div x-show="moEdit" x-transition style="display:flex; align-items:center; gap:4px;">
-                      <input type="number" step="0.01" min="0" max="9999" inputmode="decimal" placeholder="Prix HT" :disabled="!checked" class="price-input"
+                      <input type="number" step="0.01" min="0" max="9999" inputmode="decimal" :disabled="!checked" class="price-input"
                              x-model="moInput" @input="moInput = sanitizePrice(moInput); $root.recalc()" 
                              style="width:75px; padding:3px 6px; font-size:.85rem; border:1px solid #3b82f6; border-radius:4px;">
                       <button type="button" x-show="moValid()" @click="if(moValid()){ moEdit=false; $root.recalc(); }" x-transition
@@ -375,7 +376,7 @@
                   </div>
 
                   <div class="zone-right">
-                    <span class="piece-price" x-text="$root.fmt(pieceFinal()) + ' €'">
+                    <span class="piece-price" x-text="Number(pieceFinal() || 0).toFixed(2) + ' €'">
                       {{ (item.piece_prix_ht|default(0))|number_format(2, ',', ' ') }} €
                     </span>
                     <div x-show="!pieceEdit" style="display:flex; align-items:center; gap:4px;">
@@ -387,7 +388,7 @@
                       </button>
                     </div>
                     <div x-show="pieceEdit" x-transition style="display:flex; align-items:center; gap:4px;">
-                      <input type="number" step="0.01" min="0" max="9999" inputmode="decimal" placeholder="Prix HT" :disabled="!pieceChecked" class="price-input"
+                      <input type="number" step="0.01" min="0" max="9999" inputmode="decimal" :disabled="!pieceChecked" class="price-input"
                              x-model="pieceInput" @input="pieceInput = sanitizePrice(pieceInput); $root.recalc()" 
                              style="width:75px; padding:3px 6px; font-size:.85rem; border:1px solid #3b82f6; border-radius:4px;">
                       <button type="button" x-show="pieceValid()" @click="if(pieceValid()){ pieceEdit=false; $root.recalc(); }" x-transition
@@ -516,6 +517,37 @@
       <div id="client-search-results" style="max-height:300px; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; padding:6px;"></div>
       <div class="flex gap-8" style="justify-content:flex-end; margin-top:10px;">
         <button type="button" class="btn btn-ghost btn-ghost-sm" onclick="closeClientSelectModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale de validation du ticket (client sélectionné) -->
+  <div id="ticket-validation-modal" style="position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:2000;">
+    <div style="background:#fff; padding:20px; border-radius:12px; width:95%; max-width:500px; max-height:90vh; overflow-y:auto;">
+      <h3 style="margin-top:0;">Créer le ticket</h3>
+      <div class="form-field">
+        <label for="tv_client_name">Nom du client</label>
+        <input id="tv_client_name" type="text" readonly style="background:#f5f5f5; color:#666;">
+      </div>
+      <div class="form-field">
+        <label for="tv_bike_model">Modèle du vélo</label>
+        <input id="tv_bike_model" type="text" placeholder="Ex: Rockrider 540">
+      </div>
+      <div class="form-field">
+        <label for="tv_email">Email</label>
+        <input id="tv_email" type="email">
+      </div>
+      <div class="form-field">
+        <label for="tv_phone">Téléphone</label>
+        <input id="tv_phone" type="tel">
+      </div>
+      <div class="form-field">
+        <label for="tv_note">Note interne</label>
+        <textarea id="tv_note" rows="3" placeholder="Notes internes..."></textarea>
+      </div>
+      <div class="flex gap-8" style="justify-content:flex-end; margin-top:16px;">
+        <button type="button" class="btn btn-ghost btn-ghost-sm" onclick="closeTicketValidationModal()">Annuler</button>
+        <button type="button" class="btn btn-secondary" onclick="submitTicketValidation()">Créer le ticket</button>
       </div>
     </div>
   </div>
@@ -674,8 +706,67 @@
             localStorage.setItem('devisDraft', JSON.stringify(draft));
           } catch(_e) {}
 
-          if (typeof this.recalc === 'function') this.recalc();
-          if (typeof this.toast === 'function') this.toast('Vente de vélo ajoutée ✓');
+        if (typeof this.recalc === 'function') this.recalc();
+        if (typeof this.toast === 'function') this.toast('Vente de vélo ajoutée ✓');
+        },
+        removePending(idx){
+          if (idx >= 0 && idx < this.pending.length) {
+            this.pending = this.pending.filter((_, i) => i !== idx);
+            this.recalc();
+            const t=document.createElement('div'); t.className='toast'; t.textContent='Ligne supprimée ✓'; document.body.appendChild(t); setTimeout(()=>{ t.remove(); }, 3000);
+          }
+        },
+        removeMo(id){
+          // Décocher seulement la checkbox MO 
+          const row = document.querySelector(`.prestation[data-id="${id}"]`);
+          if (row) {
+            const moCb = row.querySelector('input.prest-check');
+            if (moCb) moCb.checked = false;
+          }
+          this.recalc();
+          const t=document.createElement('div'); t.className='toast'; t.textContent='Ligne supprimée ✓'; document.body.appendChild(t); setTimeout(()=>{ t.remove(); }, 3000);
+        },
+        removePiece(id){
+          // Décocher seulement la checkbox Pièce
+          const row = document.querySelector(`.prestation[data-id="${id}"]`);
+          if (row) {
+            const pieceCb = row.querySelector('input.piece-check');
+            if (pieceCb) pieceCb.checked = false;
+          }
+          this.recalc();
+          const t=document.createElement('div'); t.className='toast'; t.textContent='Ligne supprimée ✓'; document.body.appendChild(t); setTimeout(()=>{ t.remove(); }, 3000);
+        },
+        removeBikeById(id){
+          // Supprimer du tableau bikeSales
+          const initialLen = this.bikeSales.length;
+          this.bikeSales = this.bikeSales.filter((s) => s.id !== id);
+          if (this.bikeSales.length < initialLen) {
+            this.recalc();
+            const t=document.createElement('div'); t.className='toast'; t.textContent='Vente de vélo supprimée ✓'; document.body.appendChild(t); setTimeout(()=>{ t.remove(); }, 3000);
+          }
+        },
+        removePendingById(id){
+          const initialLen = this.pending.length;
+          this.pending = this.pending.filter((p) => p.id !== id);
+          if (this.pending.length < initialLen) {
+            // Décocher la checkbox correspondante dans le catalogue
+            const row = document.querySelector(`.prestation[data-id="${id}"]`);
+            if (row) {
+              const moCb = row.querySelector('input.prest-check');
+              const pieceCb = row.querySelector('input.piece-check');
+              if (moCb) moCb.checked = false;
+              if (pieceCb) pieceCb.checked = false;
+            }
+            this.recalc();
+            const t=document.createElement('div'); t.className='toast'; t.textContent='Ligne supprimée ✓'; document.body.appendChild(t); setTimeout(()=>{ t.remove(); }, 3000);
+          }
+        },
+        removeBikeSale(idx){
+          if (idx >= 0 && idx < this.bikeSales.length) {
+            this.bikeSales = this.bikeSales.filter((_, i) => i !== idx);
+            this.recalc();
+            const t=document.createElement('div'); t.className='toast'; t.textContent='Vente de vélo supprimée ✓'; document.body.appendChild(t); setTimeout(()=>{ t.remove(); }, 3000);
+          }
         },
       }
     }
@@ -869,6 +960,10 @@
         add('phone', f.phone || '');
         if (bikeModel) {
           add('bike_model', bikeModel);
+          // Nettoyer le localStorage après utilisation pour éviter la persistance
+          try {
+            localStorage.removeItem('lastBikeModel');
+          } catch(_e) {}
         }
         document.body.appendChild(form);
         form.submit();
@@ -1029,33 +1124,116 @@
       const raw = localStorage.getItem('devisDraft');
       const draft = raw ? JSON.parse(raw) : null;
       if(!draft){ alert('Aucun brouillon de devis trouvé.'); return; }
-      const form = document.createElement('form'); form.method='post'; form.action='/clients/'+String(clientId)+'/select';
-      const add=(n,v)=>{ const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i); };
-      if(Array.isArray(draft.rows)){
-        draft.rows.forEach(r=>{
-          if(r.checked || r.pieceChecked){
-            add('prest_id[]', r.id || '');
-            add('qty[]', r.moQty || '1');
-            add('price_override[]', r.moInput || '');
-            add('piece_qty[]', r.pieceQty || '0');
-            add('piece_price_override[]', r.pieceInput || '');
-          }
+      
+      // Ouvrir modale de validation au lieu de soumettre directement
+      fetch('/clients/' + clientId + '/info')
+        .then(r => r.json())
+        .then(client => {
+          // Pré-remplir la modale
+          document.getElementById('tv_client_name').value = client.name || '';
+          document.getElementById('tv_email').value = client.email || '';
+          document.getElementById('tv_phone').value = client.phone || '';
+          document.getElementById('tv_bike_model').value = '';
+          document.getElementById('tv_note').value = '';
+          
+          // Stocker clientId et draft pour la soumission
+          window._pendingClientId = clientId;
+          window._pendingDraft = draft;
+          
+          // Ouvrir modale
+          openTicketValidationModal();
+          closeClientSelectModal();
+        })
+        .catch(err => {
+          console.error(err);
+          alert('Erreur lors du chargement des infos client.');
         });
-      }
-      if(draft && draft.custom){
-        try{
-          if(Array.isArray(draft.custom.prest)){
-            draft.custom.prest.forEach(l=>{ const lab=(l?.label||'').trim(); const pr=Number(String(l?.price??'').replace(',','.')); if(lab!=='' && Number.isFinite(pr) && pr>=0){ add('custom_prest_label[]', lab); add('custom_prest_price[]', String(pr)); } });
-          }
-          if(Array.isArray(draft.custom.piece)){
-            draft.custom.piece.forEach(l=>{ const lab=(l?.label||'').trim(); const pr=Number(String(l?.price??'').replace(',','.')); if(lab!=='' && Number.isFinite(pr) && pr>=0){ add('custom_piece_label[]', lab); add('custom_piece_price[]', String(pr)); } });
-          }
-        }catch(_e){}
-      }
-      document.body.appendChild(form);
-      form.submit();
-      closeClientSelectModal();
-    }catch(e){ console.error(e); alert('Impossible de créer le ticket pour ce client.'); }
+    }catch(e){ console.error(e); alert('Impossible de sélectionner ce client.'); }
+  }
+  
+  function openTicketValidationModal(){
+    const m = document.getElementById('ticket-validation-modal');
+    if(m){ m.style.display = 'flex'; }
+  }
+  
+  function closeTicketValidationModal(){
+    const m = document.getElementById('ticket-validation-modal');
+    if(m){ m.style.display = 'none'; }
+    window._pendingClientId = null;
+    window._pendingDraft = null;
+  }
+  
+  function submitTicketValidation(){
+    const clientId = window._pendingClientId;
+    const draft = window._pendingDraft;
+    if(!clientId || !draft){ alert('Données manquantes.'); return; }
+    
+    const bikeModel = document.getElementById('tv_bike_model').value.trim();
+    const email = document.getElementById('tv_email').value.trim();
+    const phone = document.getElementById('tv_phone').value.trim();
+    const note = document.getElementById('tv_note').value.trim();
+    
+    // Créer et soumettre le formulaire
+    const form = document.createElement('form');
+    form.method = 'post';
+    form.action = '/clients/' + String(clientId) + '/select';
+    
+    const add = (n, v) => { 
+      const i = document.createElement('input'); 
+      i.type = 'hidden'; 
+      i.name = n; 
+      i.value = v; 
+      form.appendChild(i); 
+    };
+    
+    // Lignes de prestations
+    if(Array.isArray(draft.rows)){
+      draft.rows.forEach(r=>{
+        if(r.checked || r.pieceChecked){
+          add('prest_id[]', r.id || '');
+          add('qty[]', r.moQty || '1');
+          add('price_override[]', r.moInput || '');
+          add('piece_qty[]', r.pieceQty || '0');
+          add('piece_price_override[]', r.pieceInput || '');
+        }
+      });
+    }
+    
+    // Prestations/pièces custom
+    if(draft && draft.custom){
+      try{
+        if(Array.isArray(draft.custom.prest)){
+          draft.custom.prest.forEach(l=>{ 
+            const lab=(l?.label||'').trim(); 
+            const pr=Number(String(l?.price??'').replace(',','.')); 
+            if(lab!=='' && Number.isFinite(pr) && pr>=0){ 
+              add('custom_prest_label[]', lab); 
+              add('custom_prest_price[]', String(pr)); 
+            } 
+          });
+        }
+        if(Array.isArray(draft.custom.piece)){
+          draft.custom.piece.forEach(l=>{ 
+            const lab=(l?.label||'').trim(); 
+            const pr=Number(String(l?.price??'').replace(',','.')); 
+            if(lab!=='' && Number.isFinite(pr) && pr>=0){ 
+              add('custom_piece_label[]', lab); 
+              add('custom_piece_price[]', String(pr)); 
+            } 
+          });
+        }
+      }catch(_e){}
+    }
+    
+    // Champs de validation
+    add('bike_model', bikeModel);
+    add('email', email);
+    add('phone', phone);
+    add('note', note);
+    
+    document.body.appendChild(form);
+    form.submit();
+    closeTicketValidationModal();
   }
   </script>
 {% endblock %}

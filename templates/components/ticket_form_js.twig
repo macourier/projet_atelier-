@@ -210,6 +210,20 @@ function ticketForm(){
         }
       }
     },
+    removePending(idx){
+      if (idx >= 0 && idx < this.pending.length) {
+        this.pending.splice(idx, 1);
+        this.recalc();
+        this.toast('Ligne supprimée ✓');
+      }
+    },
+    removeBikeSale(idx){
+      if (idx >= 0 && idx < this.bikeSales.length) {
+        this.bikeSales.splice(idx, 1);
+        this.recalc();
+        this.toast('Vente de vélo supprimée ✓');
+      }
+    },
     handleFacturer(btn){
       const ph = document.getElementById('pending-hidden');
       const hasPending = (this.pending && this.pending.length > 0) || (ph && ph.children && ph.children.length > 0);

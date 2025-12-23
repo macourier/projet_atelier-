@@ -63,6 +63,15 @@ return function (App $app, array $container) {
             $ctrl = new \App\Controller\ClientController($container);
             return $ctrl->update($request, $response, $args);
         });
+        // API: Récupérer infos client (JSON)
+        $group->get('/clients/{id}/info', function (Request $request, Response $response, $args) use ($container) {
+            $ctrl = new \App\Controller\ClientController($container);
+            if (method_exists($ctrl, 'getInfo')) {
+                return $ctrl->getInfo($request, $response, $args);
+            }
+            $response->getBody()->write('Not implemented');
+            return $response->withStatus(501);
+        });
         // Sélectionner un client existant depuis le catalogue: créer ticket + lignes et rediriger vers dashboard
         $group->post('/clients/{id}/select', function (Request $request, Response $response, $args) use ($container) {
             $ctrl = new \App\Controller\ClientController($container);
@@ -91,6 +100,15 @@ return function (App $app, array $container) {
         $group->post('/tickets/{id}/edit', function (Request $request, Response $response, $args) use ($container) {
             $ctrl = new \App\Controller\TicketController($container);
             return $ctrl->update($request, $response, $args);
+        });
+        // Supprimer une prestation/consommable du ticket
+        $group->post('/tickets/{id}/prestations/{prest_id}/delete', function (Request $request, Response $response, $args) use ($container) {
+            $ctrl = new \App\Controller\TicketController($container);
+            if (method_exists($ctrl, 'deletePrestation')) {
+                return $ctrl->deletePrestation($request, $response, $args);
+            }
+            $response->getBody()->write('Not implemented');
+            return $response->withStatus(501);
         });
         // Tickets → Devis / Facturation
         $group->get('/tickets/{id}/devis/preview', function (Request $request, Response $response, $args) use ($container) {

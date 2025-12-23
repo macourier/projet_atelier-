@@ -18,7 +18,7 @@
     </div>
     <div class="form-field">
       <label for="bike_model">Modèle du vélo</label>
-      <input id="bike_model" name="bike_model" type="text" placeholder="Ex: VTT Rockrider 540" value="{{ client.bike_model|default('') }}">
+      <input id="bike_model" name="bike_model" type="text" value="{{ client.bike_model|default('') }}" autocomplete="off">
     </div>
     <div class="form-field">
       <label for="email">Email</label>
@@ -34,4 +34,42 @@
     </div>
     <button class="btn" type="submit">Enregistrer</button>
   </form>
+
+  <script>
+    // Nettoyer le localStorage et vider le champ après utilisation
+    (function(){
+      try {
+        // Vérifier si on vient du catalogue (avec bike_model dans l'URL)
+        const url = new URL(window.location.href);
+        const bikeModelParam = url.searchParams.get('bike_model');
+        
+        // Si le modèle a été utilisé pour pré-remplir, on le retire de l'URL
+        // pour éviter qu'il persiste lors d'un rechargement de page
+        if (bikeModelParam) {
+          url.searchParams.delete('bike_model');
+          window.history.replaceState({}, '', url.toString());
+        }
+        
+        // Toujours nettoyer le localStorage pour éviter la réutilisation
+        localStorage.removeItem('lastBikeModel');
+        
+      } catch(_e) {
+        // Ignorer les erreurs silencieusement
+      }
+    })();
+    
+    // Vider le champ après soumission réussie (quand on revient sur la page)
+    window.addEventListener('pageshow', function(event) {
+      try {
+        // Si la page est chargée depuis le cache (back/forward), vider le champ
+        if (event.persisted) {
+          const bikeField = document.getElementById('bike_model');
+          if (bikeField) {
+            bikeField.value = '';
+          }
+          localStorage.removeItem('lastBikeModel');
+        }
+      } catch(_e) {}
+    });
+  </script>
 {% endblock %}

@@ -27,11 +27,19 @@
           <button class="btn btn-secondary" type="button" onclick="createTicketFromDraft({{ client.id }})">
             <i class="fas fa-file-invoice" style="margin-right:6px;"></i>Créer le ticket depuis devis
           </button>
-          <button class="btn btn-ghost btn-ghost-sm" type="button" onclick="localStorage.removeItem('devisDraft'); localStorage.removeItem('clientDraft'); this.closest('div.bg-white').remove();">
+          <button class="btn btn-ghost btn-ghost-sm" type="button" onclick="localStorage.removeItem('devisDraft'); localStorage.removeItem('clientDraft'); localStorage.removeItem('lastBikeModel'); this.closest('div.bg-white').remove();">
             Ignorer
           </button>
         </div>
       </div>
+      <script>
+        // Nettoyer le modèle de vélo du localStorage après création du client
+        (function(){
+          try {
+            localStorage.removeItem('lastBikeModel');
+          } catch(_e) {}
+        })();
+      </script>
     {% endif %}
 
     <div style="display:flex; gap:8px; margin:36px 0;">
@@ -60,12 +68,11 @@
       {% if openTickets is not empty %}
         <table>
           <thead>
-            <tr><th>ID</th><th>Vélo</th><th>Date de réception</th><th>Total TTC</th><th>Facture</th><th></th></tr>
+            <tr><th>Vélo</th><th>Date de réception</th><th>Total TTC</th><th>Facture</th><th></th></tr>
           </thead>
           <tbody>
             {% for t in openTickets %}
               <tr id="row-ticket-{{ t.id }}">
-                <td>#{{ t.id }}</td>
                 <td>{{ t.bike_model|default('—') }}</td>
                 <td>{{ t.received_at ? t.received_at|date('d/m/Y H:i') : (t.created_at ? t.created_at|date('d/m/Y H:i') : '—') }}</td>
                 <td>{{ '%.2f'|format(t.total_ttc|default(t.total_ht|default(0))) }}</td>
@@ -87,12 +94,11 @@
       {% if closedTickets is not empty %}
         <table>
           <thead>
-            <tr><th>ID</th><th>Vélo</th><th>Date de réception</th><th>Total TTC</th><th>Facture</th><th></th></tr>
+            <tr><th>Vélo</th><th>Date de réception</th><th>Total TTC</th><th>Facture</th><th></th></tr>
           </thead>
           <tbody>
             {% for t in closedTickets %}
               <tr id="row-ticket-{{ t.id }}">
-                <td>#{{ t.id }}</td>
                 <td>{{ t.bike_model|default('—') }}</td>
                 <td>{{ t.received_at ? t.received_at|date('d/m/Y H:i') : (t.created_at ? t.created_at|date('d/m/Y H:i') : '—') }}</td>
                 <td>{{ '%.2f'|format(t.total_ttc|default(t.total_ht|default(0))) }}</td>
@@ -159,11 +165,14 @@
         const add = (n,v) => { const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i); };
 
         add('client_id', String(clientId));
-        // Passer le modèle depuis l'URL si présent (ex: ?bike_model=Rockrider%20540)
+        // Récupérer le modèle depuis le localStorage (vente de vélo)
         try {
-          const u = new URL(window.location.href);
-          const bm = u.searchParams.get('bike_model');
-          if (bm) { add('bike_model', bm); }
+          const bikeModel = localStorage.getItem('lastBikeModel');
+          if (bikeModel) { 
+            add('bike_model', bikeModel);
+            // Nettoyer immédiatement pour éviter la réutilisation
+            localStorage.removeItem('lastBikeModel');
+          }
         } catch(_e){}
         if (Array.isArray(draft.rows)) {
           draft.rows.forEach(r=>{

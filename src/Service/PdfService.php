@@ -19,6 +19,8 @@ class PdfService
         $this->options->set('isRemoteEnabled', true);
         $this->options->set('defaultFont', 'DejaVu Sans');
         $this->options->set('isHtml5ParserEnabled', true);
+        // Autoriser l'accès aux fichiers locaux (pour les images dans les PDFs)
+        $this->options->set('chroot', realpath(__DIR__ . '/../../public'));
 
         if ($options) {
             foreach ($options as $k => $v) {

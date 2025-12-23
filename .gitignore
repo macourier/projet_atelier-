@@ -2,6 +2,7 @@
 /vendor/
 /.env
 /data/*.db
+/data/app.sqlite
 /cache/
 /tmp/
 /node_modules/
@@ -21,3 +22,10 @@ Thumbs.db
 
 # PHPUnit and other tooling caches
 .phpunit.result.cache
+
+# Generated files
+/public/pdfs/factures/*.pdf
+/public/pdfs/devis/*.pdf
+cookies.txt
+*.sqlite
+*.sqlite3

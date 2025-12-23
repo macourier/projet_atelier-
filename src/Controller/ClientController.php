@@ -20,6 +20,31 @@ class ClientController
     }
 
     /**
+     * API: Récupérer les infos du client (JSON)
+     * GET /clients/{id}/info
+     */
+    public function getInfo(Request $request, Response $response, array $args): Response
+    {
+        $clientId = (int)($args['id'] ?? 0);
+        if (!$this->pdo || $clientId <= 0) {
+            $response->getBody()->write(json_encode(['error' => 'Client non trouvé']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+        
+        $st = $this->pdo->prepare('SELECT id, name, email, phone FROM clients WHERE id = :id LIMIT 1');
+        $st->execute(['id' => $clientId]);
+        $client = $st->fetch();
+        
+        if (!$client) {
+            $response->getBody()->write(json_encode(['error' => 'Client non trouvé']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+        
+        $response->getBody()->write(json_encode($client));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    /**
      * Sélection d'un client existant depuis le catalogue: crée un ticket et y insère les lignes postées.
      * POST /clients/{id}/select
      */
@@ -50,14 +75,15 @@ class ClientController
         } catch (\Throwable $e) {
             // colonne absente — ignorer
         }
-        // Optionnel: enregistrer infos vélo si fournies
+        // Enregistrer infos du ticket : vélo + note depuis la modale de validation
         $bikeBrand = trim((string)($data['bike_brand'] ?? ''));
         $bikeModel = trim((string)($data['bike_model'] ?? ''));
         $bikeSerial = trim((string)($data['bike_serial'] ?? ''));
         $bikeNotes  = trim((string)($data['bike_notes'] ?? ''));
-        if ($bikeBrand !== '' || $bikeModel !== '' || $bikeSerial !== '' || $bikeNotes !== '') {
-            $updBike = $this->pdo->prepare('UPDATE tickets SET bike_brand = :bb, bike_model = :bm, bike_serial = :bs, bike_notes = :bn WHERE id = :tid');
-            $updBike->execute(['bb'=>$bikeBrand,'bm'=>$bikeModel,'bs'=>$bikeSerial,'bn'=>$bikeNotes,'tid'=>$ticketId]);
+        $note       = trim((string)($data['note'] ?? ''));
+        if ($bikeBrand !== '' || $bikeModel !== '' || $bikeSerial !== '' || $bikeNotes !== '' || $note !== '') {
+            $updBike = $this->pdo->prepare('UPDATE tickets SET bike_brand = :bb, bike_model = :bm, bike_serial = :bs, bike_notes = :bn, notes = :n WHERE id = :tid');
+            $updBike->execute(['bb'=>$bikeBrand,'bm'=>$bikeModel,'bs'=>$bikeSerial,'bn'=>$bikeNotes,'n'=>$note,'tid'=>$ticketId]);
         }
 
         // Insérer les lignes depuis le panier/catalogue
@@ -227,27 +253,6 @@ class ClientController
             ];
         }
 
-        // Pré-remplir le modèle (et marque) depuis le dernier ticket si disponible
-        if ($this->pdo && $id > 0) {
-            try {
-                $st = $this->pdo->prepare('SELECT bike_brand, bike_model FROM tickets WHERE client_id = :cid ORDER BY created_at DESC LIMIT 1');
-                $st->execute(['cid' => $id]);
-                $last = $st->fetch();
-                if ($last) {
-                    $bm = trim((string)($last['bike_model'] ?? ''));
-                    $bb = trim((string)($last['bike_brand'] ?? ''));
-                    if (($client['bike_model'] ?? '') === '' && $bm !== '') {
-                        $client['bike_model'] = $bm;
-                    }
-                    if (($client['bike_brand'] ?? '') === '' && $bb !== '') {
-                        $client['bike_brand'] = $bb;
-                    }
-                }
-            } catch (\Throwable $e) {
-                // ignore, pré-remplissage facultatif
-            }
-        }
-
         $response->getBody()->write($this->twig->render('clients/edit.twig', [
             'client' => $client,
             'return' => $return,
@@ -339,10 +344,8 @@ class ClientController
             if (preg_match('#^/(devis/new|catalogue)#', $ret) === 1) {
                 // Forcer l'autostart pour créer automatiquement un ticket depuis le brouillon
                 $params = '?from=devis&autostart=1' . ($autoCreate ? '&auto_create=1' : '');
-                // Passer le modèle saisi pour le récupérer côté clients/show (création ticket)
-                if (!empty($bikeModel)) {
-                    $params .= '&bike_model=' . rawurlencode($bikeModel);
-                }
+                // Note: bike_model n'est plus passé dans l'URL pour éviter la persistance
+                // Il sera récupéré depuis le brouillon localStorage côté client
                 $redir = '/clients/' . $id . $params;
                 return $response->withHeader('Location', $redir)->withStatus(302);
             }

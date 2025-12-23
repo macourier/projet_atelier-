@@ -32,8 +32,9 @@
         <col style="width:80px">
         <col style="width:120px">
         <col style="width:120px">
+        <col style="width:40px">
       </colgroup>
-      <thead><tr><th>Prestation</th><th>Qté</th><th>Unitaire</th><th>Sous-total</th></tr></thead>
+      <thead><tr><th>Prestation</th><th>Qté</th><th>Unitaire</th><th>Sous-total</th><th></th></tr></thead>
       <tbody>
       {% for p in prestations %}
         <tr>
@@ -41,6 +42,13 @@
           <td>{{ p.quantite }}</td>
           <td>{{ '%.2f'|format(p.prix_ht_snapshot|default(0)) }}</td>
           <td>{{ '%.2f'|format((p.prix_ht_snapshot|default(0)) * (p.quantite|default(1))) }}</td>
+          <td style="text-align:center;">
+            <form method="post" action="/tickets/{{ ticket ? ticket.id : 0 }}/prestations/{{ p.id }}/delete" style="display:inline; margin:0; padding:0;">
+              <button type="submit" class="icon-inline" title="Supprimer" onclick="return confirm('Supprimer cette prestation ?');">
+                <img src="/img/annuler.png" alt="Supprimer" style="width:14px; height:14px; opacity:0.6;">
+              </button>
+            </form>
+          </td>
         </tr>
       {% endfor %}
       </tbody>
