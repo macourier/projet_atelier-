@@ -81,6 +81,21 @@ class ClientController
         $bikeSerial = trim((string)($data['bike_serial'] ?? ''));
         $bikeNotes  = trim((string)($data['bike_notes'] ?? ''));
         $note       = trim((string)($data['note'] ?? ''));
+        
+        // Si bike_model est vide, le récupérer depuis le client sauvegardé
+        if ($bikeModel === '' && $clientId > 0) {
+            try {
+                $stClient = $this->pdo->prepare('SELECT bike_model FROM clients WHERE id = :id LIMIT 1');
+                $stClient->execute(['id' => $clientId]);
+                $clientData = $stClient->fetch();
+                if ($clientData && !empty($clientData['bike_model'])) {
+                    $bikeModel = trim((string)$clientData['bike_model']);
+                }
+            } catch (\Throwable $e) {
+                // Ignorer les erreurs de récupération
+            }
+        }
+        
         if ($bikeBrand !== '' || $bikeModel !== '' || $bikeSerial !== '' || $bikeNotes !== '' || $note !== '') {
             $updBike = $this->pdo->prepare('UPDATE tickets SET bike_brand = :bb, bike_model = :bm, bike_serial = :bs, bike_notes = :bn, notes = :n WHERE id = :tid');
             $updBike->execute(['bb'=>$bikeBrand,'bm'=>$bikeModel,'bs'=>$bikeSerial,'bn'=>$bikeNotes,'n'=>$note,'tid'=>$ticketId]);
