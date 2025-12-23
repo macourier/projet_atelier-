@@ -82,14 +82,19 @@ class ClientController
         $bikeNotes  = trim((string)($data['bike_notes'] ?? ''));
         $note       = trim((string)($data['note'] ?? ''));
         
-        // Si bike_model est vide, le récupérer depuis le client sauvegardé
+        // Si bike_model est vide, le récupérer depuis le dernier ticket du client
         if ($bikeModel === '' && $clientId > 0) {
             try {
-                $stClient = $this->pdo->prepare('SELECT bike_model FROM clients WHERE id = :id LIMIT 1');
-                $stClient->execute(['id' => $clientId]);
-                $clientData = $stClient->fetch();
-                if ($clientData && !empty($clientData['bike_model'])) {
-                    $bikeModel = trim((string)$clientData['bike_model']);
+                $stLast = $this->pdo->prepare("SELECT bike_model FROM tickets 
+                    WHERE client_id = :cid 
+                    AND bike_model IS NOT NULL 
+                    AND TRIM(bike_model) != '' 
+                    ORDER BY created_at DESC 
+                    LIMIT 1");
+                $stLast->execute(['cid' => $clientId]);
+                $lastTicket = $stLast->fetch();
+                if ($lastTicket && !empty($lastTicket['bike_model'])) {
+                    $bikeModel = trim((string)$lastTicket['bike_model']);
                 }
             } catch (\Throwable $e) {
                 // Ignorer les erreurs de récupération
