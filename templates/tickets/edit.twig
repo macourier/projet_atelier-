@@ -239,7 +239,7 @@
 
     <div style="margin:8px 0; padding:8px 12px; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb;">
       <strong style="color:#111827;">Vélo :</strong> 
-      <span style="color:#6b7280;">{{ ticket.bike_model|default(client.bike_model|default('—')) }}</span>
+      <span style="color:#6b7280;">{{ ticket.bike_model|default('—') }}</span>
     </div>
 
     {% if not ticket %}
