@@ -76,6 +76,30 @@ try {
         echo "[ok] Column 'clients.note' added successfully ✓\n";
     }
 
+    // Check and add missing bike columns to tickets table
+    echo "[info] Checking tickets table...\n";
+    
+    $stmt = $pdo->query("PRAGMA table_info(tickets)");
+    $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $requiredColumns = ['bike_brand', 'bike_model', 'bike_serial', 'bike_notes'];
+    $existingColumns = [];
+    foreach ($columns as $col) {
+        $existingColumns[] = strtolower($col['name'] ?? '');
+    }
+
+    foreach ($requiredColumns as $col) {
+        if (!in_array(strtolower($col), $existingColumns, true)) {
+            echo "[warn] Column 'tickets.$col' is missing. Adding it...\n";
+            $pdo->exec("ALTER TABLE tickets ADD COLUMN $col TEXT");
+            echo "[ok] Column 'tickets.$col' added successfully ✓\n";
+        }
+    }
+    
+    if (count($requiredColumns) === count(array_intersect($requiredColumns, array_map('strtolower', $existingColumns)))) {
+        echo "[ok] All bike columns on tickets already exist ✓\n";
+    }
+
     echo "[summary] Database update completed successfully.\n";
     exit(0);
 } catch (Throwable $e) {
