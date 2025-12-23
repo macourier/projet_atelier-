@@ -16,10 +16,12 @@
       <label for="name">Nom</label>
       <input id="name" name="name" type="text" required value="{{ client.name|default('') }}">
     </div>
+    {% if not client or client.id is not defined or client.id == 0 %}
     <div class="form-field">
       <label for="bike_model">Modèle du vélo</label>
       <input id="bike_model" name="bike_model" type="text" value="{{ client.bike_model|default('') }}" autocomplete="off">
     </div>
+    {% endif %}
     <div class="form-field">
       <label for="email">Email</label>
       <input id="email" name="email" type="email" value="{{ client.email|default('') }}">
