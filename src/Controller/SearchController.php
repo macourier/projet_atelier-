@@ -39,8 +39,8 @@ class SearchController
             $stmt->execute(['q' => $like]);
             $results['clients'] = $stmt->fetchAll() ?: [];
 
-            // Tickets: id (string match), description
-            $stmt = $this->pdo->prepare("SELECT id, description, status, total_ht FROM tickets WHERE CAST(id AS VARCHAR) LIKE :q ESCAPE '\\' OR description LIKE :q ESCAPE '\\' ORDER BY created_at DESC LIMIT 10");
+            // Tickets: id (string match)
+            $stmt = $this->pdo->prepare("SELECT id, status, total_ht FROM tickets WHERE CAST(id AS VARCHAR) LIKE :q ESCAPE '\\' ORDER BY created_at DESC LIMIT 10");
             $stmt->execute(['q' => $like]);
             $results['tickets'] = $stmt->fetchAll() ?: [];
 
