@@ -7,7 +7,10 @@ function ticketForm(){
     baseTtc: Number("{{ '%.2f'|format(totaux.ttc|default(0)) }}"),
     lastTotal: Number("{{ '%.2f'|format(totaux.ttc|default(0)) }}"),
     debounceId: null,
+    autoSaveId: null,
+    ticketId: {{ ticket.id|default(0) }},
     debouncedRecalc(){ if (this.debounceId) clearTimeout(this.debounceId); this.debounceId = setTimeout(()=>{ this.recalc(); }, 130); },
+    debouncedAutoSave(){ if (this.autoSaveId) clearTimeout(this.autoSaveId); this.autoSaveId = setTimeout(()=>{ this.autoSave(); }, 500); },
     fmt(n){ return Number(n).toFixed(2); },
     toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{ t.remove(); }, 3000); },
     ttc(mq,mp,pq,pp,tva){ const ht=(Number(mq||0)*Number(mp||0))+(Number(pq||0)*Number(pp||0)); return ht*(1+Number(tva||0)/100); },
@@ -251,6 +254,55 @@ function ticketForm(){
         form.appendChild(i);
       }
       form.submit();
+    },
+    autoSave(){
+      if (!this.ticketId || this.ticketId <= 0) return;
+      
+      // Collecter manuellement les prestations cochées, car FormData n'envoie pas les inputs :disabled
+      const fd = new FormData();
+      const prestIds = [];
+      const qtys = [];
+      const priceOverrides = [];
+      const pieceQtys = [];
+      const pricePieceOverrides = [];
+      
+      document.querySelectorAll('.prestation').forEach(row => {
+        const moCb = row.querySelector('input.prest-check');
+        const pieceCb = row.querySelector('input.piece-check');
+        const id = row.dataset.id;
+        
+        // MO
+        if (moCb && moCb.checked) {
+          const qtyEl = row.querySelector("select[name='qty[]']");
+          const ovEl = row.querySelector("input[name='price_override[]']");
+          prestIds.push(id);
+          qtys.push(qtyEl?.value || '1');
+          priceOverrides.push(ovEl?.value || '');
+        }
+        
+        // Pièce
+        if (pieceCb && pieceCb.checked) {
+          const pQtyEl = row.querySelector("select[name='piece_qty[]']");
+          const pOvEl = row.querySelector("input[name='piece_price_override[]']");
+          pieceQtys.push(pQtyEl?.value || '1');
+          pricePieceOverrides.push(pOvEl?.value || '');
+        }
+      });
+      
+      // Ajouter les données au FormData
+      prestIds.forEach(id => fd.append('prest_id[]', id));
+      qtys.forEach(q => fd.append('qty[]', q));
+      priceOverrides.forEach(p => fd.append('price_override[]', p));
+      pieceQtys.forEach(pq => fd.append('piece_qty[]', pq));
+      pricePieceOverrides.forEach(pp => fd.append('piece_price_override[]', pp));
+      
+      fetch('/tickets/' + this.ticketId + '/prestations/auto-save', {
+        method: 'POST',
+        body: fd,
+        headers: { 'Accept': 'application/json' }
+      })
+      .then(r => r.json())
+      .catch(e => console.warn('Auto-save error:', e));
     }
   }
 }

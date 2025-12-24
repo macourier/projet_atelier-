@@ -228,7 +228,7 @@
   </style>
 
 
-  <form method="post" action="/tickets/{{ ticket ? ticket.id : 0 }}/edit" x-data="ticketForm()" x-init="init()" @change="debouncedRecalc()" @input="debouncedRecalc()" @add-bike-sale.window="addBikeSale($event.detail)">
+  <form method="post" action="/tickets/{{ ticket ? ticket.id : 0 }}/edit" x-data="ticketForm()" x-init="init()" @change="debouncedRecalc(); debouncedAutoSave()" @input="debouncedRecalc(); debouncedAutoSave()" @add-bike-sale.window="addBikeSale($event.detail)">
 
     {% if client %}
       <input type="hidden" name="client_id" value="{{ client.id }}">
@@ -237,7 +237,7 @@
 
     <input type="hidden" name="received_at" value="{{ (ticket.received_at|default('now'))|date('Y-m-d\\TH:i') }}">
 
-    <div style="margin:8px 0; padding:8px 12px; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb;">
+    <div style="margin:8px 0; padding:12px 14px; background:#f9fafb; border-radius:14px; border:1px solid #e5e7eb; width:33%; max-width:420px;">
       <strong style="color:#111827;">Vélo :</strong> 
       <span style="color:#6b7280;">{{ ticket.bike_model|default('—') }}</span>
     </div>

@@ -101,6 +101,15 @@ return function (App $app, array $container) {
             $ctrl = new \App\Controller\TicketController($container);
             return $ctrl->update($request, $response, $args);
         });
+        // Auto-save prestations (AJAX)
+        $group->post('/tickets/{id}/prestations/auto-save', function (Request $request, Response $response, $args) use ($container) {
+            $ctrl = new \App\Controller\TicketController($container);
+            if (method_exists($ctrl, 'autoSave')) {
+                return $ctrl->autoSave($request, $response, $args);
+            }
+            $response->getBody()->write(json_encode(['error' => 'Not implemented']));
+            return $response->withStatus(501)->withHeader('Content-Type', 'application/json');
+        });
         // Supprimer une prestation/consommable du ticket
         $group->post('/tickets/{id}/prestations/{prest_id}/delete', function (Request $request, Response $response, $args) use ($container) {
             $ctrl = new \App\Controller\TicketController($container);

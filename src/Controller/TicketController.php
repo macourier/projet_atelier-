@@ -446,6 +446,34 @@ class TicketController
     }
 
     /**
+     * Auto-save prestations via AJAX (sans redirection)
+     * POST /tickets/{id}/prestations/auto-save
+     */
+    public function autoSave(Request $request, Response $response, array $args): Response
+    {
+        $id = (int)($args['id'] ?? 0);
+        $data = (array)$request->getParsedBody();
+
+        if (!$this->pdo || $id <= 0) {
+            $response->getBody()->write(json_encode(['success' => false, 'error' => 'Invalid ticket ID']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        }
+
+        try {
+            // Utiliser le service TicketService pour remplacer les prestations
+            $this->ticketService = $this->ticketService ?? new \App\Service\TicketService($this->pdo);
+            $this->ticketService->replacePrestationsFromPost($id, $data);
+            $this->ticketService->computeTotals($id);
+
+            $response->getBody()->write(json_encode(['success' => true, 'message' => 'Saved']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+        } catch (\Throwable $e) {
+            $response->getBody()->write(json_encode(['success' => false, 'error' => $e->getMessage()]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        }
+    }
+
+    /**
      * Supprimer une prestation ou consommable d'un ticket
      * POST /tickets/{id}/prestations/{prest_id}/delete
      */

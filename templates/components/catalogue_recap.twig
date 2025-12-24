@@ -16,7 +16,7 @@
 {% endif %}
 
 {# Afficher le titre si il y a du contenu (existant OU nouveau) #}
-<div x-show="(pending.length > 0) || {{ (realPrestations is not empty or (consommables is defined and consommables is not empty) or ventesVelo is not empty) ? 'true' : 'false' }}" style="margin-top:12px;">
+<div x-show="(pending.length > 0) || {{ (realPrestations is not empty or (consommables is defined and consommables is not empty) or ventesVelo is not empty) ? 'true' : 'false' }}" style="margin-top:32px;">
   <h3 style="color:#444; font-weight:700;">Récapitulatif</h3>
 
   {# ============= TABLEAU PRESTATIONS (MO) ============= #}
