@@ -210,7 +210,8 @@ if (!window.Alpine) {
           if (!href || href === '#') return;
           if (path.indexOf('/catalogue') === 0 && href.indexOf('/catalogue') === 0) a.classList.add('active');
           if (path.indexOf('/tickets') === 0 && href.indexOf('/tickets/queue') === 0) a.classList.add('active');
-          if (path.indexOf('/admin') === 0 && href.indexOf('/admin') === 0) a.classList.add('active');
+          // Pour les liens admin, correspondance exacte uniquement
+          if (path === href) a.classList.add('active');
         });
 
         var adminToggle = nav.querySelector('.sidebar-admin-toggle');
