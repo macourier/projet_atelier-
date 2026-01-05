@@ -33,6 +33,61 @@ if (!is_dir($dataDir)) {
     @mkdir($dataDir, 0755, true);
 }
 
+// Helper function to run database migrations automatically
+function runMigrations(PDO $pdo, string $root): void {
+    $migrationsDir = $root . '/migrations';
+    if (!is_dir($migrationsDir)) {
+        return;
+    }
+
+    $files = [];
+    foreach (scandir($migrationsDir) as $f) {
+        if (preg_match('/^\d+_.*\.sql$/', $f)) {
+            $files[] = $f;
+        }
+    }
+    natsort($files);
+    $files = array_values($files);
+
+    if (empty($files)) {
+        return;
+    }
+
+    foreach ($files as $f) {
+        $path = $migrationsDir . '/' . $f;
+        $sql = file_get_contents($path);
+        if ($sql === false) {
+            continue;
+        }
+
+        // Idempotency guards for specific migrations
+        if ($f === '003_add_ticket_id_to_factures.sql') {
+            $stmt = $pdo->query("PRAGMA table_info(factures)");
+            $cols = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            $has = false;
+            foreach ($cols as $c) {
+                if (strcasecmp($c['name'] ?? '', 'ticket_id') === 0) { $has = true; break; }
+            }
+            if ($has) continue;
+        }
+        if ($f === '004_tickets_bike_fields.sql') {
+            $stmt = $pdo->query("PRAGMA table_info(tickets)");
+            $cols = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            $hasBike = false;
+            foreach ($cols as $c) {
+                if (strcasecmp($c['name'] ?? '', 'bike_brand') === 0) { $hasBike = true; break; }
+            }
+            if ($hasBike) continue;
+        }
+
+        try {
+            $pdo->exec($sql);
+        } catch (Throwable $e) {
+            // Silently continue on error - migrations may already be applied
+        }
+    }
+}
+
 // Create PDO
 $driver = $_ENV['DB_DRIVER'] ?? 'sqlite';
 $pdo = null;
@@ -59,6 +114,9 @@ try {
     }
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    
+    // Run migrations automatically on startup
+    runMigrations($pdo, $envPath);
 } catch (Throwable $e) {
     // In case of DB error, we still continue but $pdo may be null
     $pdo = null;
