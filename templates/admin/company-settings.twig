@@ -1,0 +1,506 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Édition facture / devis — Administration{% endblock %}
+
+{% block content %}
+<style>
+  .settings-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 32px 16px;
+  }
+
+  .settings-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 24px;
+  }
+
+  /* Alertes */
+  .alert {
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .alert-success {
+    background: #d1fae5;
+    border: 1px solid #6ee7b7;
+    color: #065f46;
+  }
+
+  .alert-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+
+  /* Formulaire */
+  .settings-form {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 24px;
+  }
+
+  .form-section {
+    margin-bottom: 24px;
+  }
+
+  .form-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 6px;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    color: #1f2937;
+    transition: border-color 0.15s ease;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .form-help {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 4px;
+  }
+
+  /* Upload logo */
+  .logo-upload {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+  }
+
+  .logo-preview {
+    flex-shrink: 0;
+    width: 200px;
+    height: 120px;
+    background: #f9fafb;
+    border: 2px dashed #d1d5db;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .logo-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .logo-preview.placeholder {
+    color: #9ca3af;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .logo-input-container {
+    flex: 1;
+  }
+
+  .file-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 0.9rem;
+  }
+
+  /* Boutons */
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .btn {
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: none;
+  }
+
+  .btn-primary {
+    background: #3b82f6;
+    color: #fff;
+  }
+
+  .btn-primary:hover {
+    background: #2563eb;
+  }
+
+  /* Section aperçus */
+  .preview-section {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .preview-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 16px;
+  }
+
+  .preview-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .btn-preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #6b7280;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: background 0.15s ease;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn-preview:hover {
+    background: #4b5563;
+  }
+
+  /* Responsive */
+  @media (max-width: 767px) {
+    .logo-upload {
+      flex-direction: column;
+    }
+
+    .logo-preview {
+      width: 100%;
+      height: 150px;
+    }
+
+    .form-actions {
+      flex-direction: column;
+    }
+
+    .btn {
+      width: 100%;
+    }
+
+    .preview-actions {
+      flex-direction: column;
+    }
+
+    .btn-preview {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+
+<div class="settings-container">
+  <h1 class="settings-title">Édition facture / devis</h1>
+
+  {% if flash_success %}
+    <div class="alert alert-success">
+      <i class="fa fa-check-circle" aria-hidden="true"></i>
+      <span>{{ flash_success }}</span>
+    </div>
+  {% endif %}
+
+  {% if flash_error %}
+    <div class="alert alert-error">
+      <i class="fa fa-exclamation-circle" aria-hidden="true"></i>
+      <span>{{ flash_error }}</span>
+    </div>
+  {% endif %}
+
+  <form method="POST" action="/admin/company-settings" class="settings-form" enctype="multipart/form-data">
+    
+    <!-- Informations de l'entreprise -->
+    <div class="form-section">
+      <h2 class="form-section-title">Informations de l'entreprise</h2>
+
+      <div class="form-group">
+        <label for="name" class="form-label">Nom de l'entreprise *</label>
+        <input 
+          type="text" 
+          id="name" 
+          name="name" 
+          class="form-input" 
+          value="{{ profile.name|default('') }}"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="address_line1" class="form-label">Adresse ligne 1 *</label>
+        <input 
+          type="text" 
+          id="address_line1" 
+          name="address_line1" 
+          class="form-input" 
+          value="{{ profile.address_line1|default('') }}"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="address_line2" class="form-label">Adresse ligne 2 (optionnel)</label>
+        <input 
+          type="text" 
+          id="address_line2" 
+          name="address_line2" 
+          class="form-input" 
+          value="{{ profile.address_line2|default('') }}"
+          placeholder="Complément d'adresse"
+        >
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
+        <div class="form-group">
+          <label for="postcode" class="form-label">Code postal *</label>
+          <input 
+            type="text" 
+            id="postcode" 
+            name="postcode" 
+            class="form-input" 
+            value="{{ profile.postcode|default('') }}"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="city" class="form-label">Ville *</label>
+          <input 
+            type="text" 
+            id="city" 
+            name="city" 
+            class="form-input" 
+            value="{{ profile.city|default('') }}"
+            required
+          >
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-group">
+          <label for="phone" class="form-label">Téléphone *</label>
+          <input 
+            type="text" 
+            id="phone" 
+            name="phone" 
+            class="form-input" 
+            value="{{ profile.phone|default('') }}"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="email" class="form-label">Email (optionnel)</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            class="form-input" 
+            value="{{ profile.email|default('') }}"
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Logo -->
+    <div class="form-section">
+      <h2 class="form-section-title">Logo</h2>
+
+      <div class="logo-upload">
+        <div class="logo-preview" id="logoPreview">
+          {% if profile.logo_path %}
+            <img src="{{ profile.logo_path }}" alt="Logo actuel" id="logoImage">
+          {% else %}
+            <div class="logo-preview placeholder">
+              <i class="fa fa-image" style="font-size: 2rem; margin-bottom: 8px;"></i>
+              <div>Aucun logo</div>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="logo-input-container">
+          <div class="form-group">
+            <label for="logo" class="form-label">Changer le logo</label>
+            <input 
+              type="file" 
+              id="logo" 
+              name="logo" 
+              class="file-input" 
+              accept="image/png,image/jpeg,image/jpg"
+            >
+            <div class="form-help">
+              Formats acceptés : PNG, JPEG/JPG<br>
+              Taille maximale : 2 Mo
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">
+        <i class="fa fa-save" aria-hidden="true"></i>
+        Enregistrer
+      </button>
+    </div>
+
+  </form>
+
+  <!-- Section aperçus PDF -->
+  <div class="preview-section">
+    <h2 class="preview-section-title">Aperçus PDF</h2>
+    <p style="margin-bottom: 16px; color: #6b7280; font-size: 0.9rem;">
+      Visualisez immédiatement le rendu des documents avec la configuration actuelle. Ces aperçus n'ont pas de valeur officielle et ne sont pas enregistrés en base.
+    </p>
+    <div class="preview-actions">
+      <a href="/admin/company-settings/preview-invoice" target="_blank" class="btn-preview" id="previewInvoiceBtn">
+        <i class="fa fa-eye" aria-hidden="true"></i>
+        Aperçu facture
+      </a>
+      <a href="/admin/company-settings/preview-quote" target="_blank" class="btn-preview" id="previewQuoteBtn">
+        <i class="fa fa-eye" aria-hidden="true"></i>
+        Aperçu devis
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Stocker le chemin du logo temporaire
+  let tempLogoPath = null;
+
+  // Prévisualisation locale du logo
+  document.getElementById('logo').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      // Vérifier le type MIME
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('Type de fichier non autorisé. Seuls PNG et JPEG sont acceptés.');
+        e.target.value = '';
+        return;
+      }
+
+      // Vérifier la taille (max 2 Mo)
+      const maxSize = 2 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert('Le fichier est trop volumineux. Maximum 2 Mo.');
+        e.target.value = '';
+        return;
+      }
+
+      // Prévisualisation locale
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const preview = document.getElementById('logoPreview');
+        preview.innerHTML = '<img src="' + event.target.result + '" alt="Aperçu logo" id="logoImage">';
+        // Réinitialiser le chemin temporaire
+        tempLogoPath = null;
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // Fonction pour uploader le logo temporaire
+  async function uploadTempLogo() {
+    const fileInput = document.getElementById('logo');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+      return tempLogoPath; // Retourner le logo temporaire existant ou null
+    }
+
+    const formData = new FormData();
+    formData.append('logo', file);
+
+    try {
+      const response = await fetch('/admin/company-settings/upload-logo-temp', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erreur lors de l\'upload');
+      }
+      
+      const result = await response.json();
+      tempLogoPath = result.logo_path;
+      return tempLogoPath;
+    } catch (error) {
+      console.error('Erreur upload temporaire:', error);
+      alert('Erreur lors de l\'upload du logo: ' + error.message);
+      return null;
+    }
+  }
+
+  // Modifier les boutons d'aperçu pour uploader le logo temporaire
+  document.getElementById('previewInvoiceBtn').addEventListener('click', async function(e) {
+    e.preventDefault();
+    const logoPath = await uploadTempLogo();
+    const url = new URL('/admin/company-settings/preview-invoice', window.location.origin);
+    if (logoPath) {
+      url.searchParams.set('logo_temp', logoPath);
+    }
+    window.open(url.toString(), '_blank');
+  });
+
+  document.getElementById('previewQuoteBtn').addEventListener('click', async function(e) {
+    e.preventDefault();
+    const logoPath = await uploadTempLogo();
+    const url = new URL('/admin/company-settings/preview-quote', window.location.origin);
+    if (logoPath) {
+      url.searchParams.set('logo_temp', logoPath);
+    }
+    window.open(url.toString(), '_blank');
+  });
+</script>
+{% endblock %}

@@ -101,6 +101,15 @@ return function (App $app, array $container) {
             $ctrl = new \App\Controller\TicketController($container);
             return $ctrl->update($request, $response, $args);
         });
+        // Marquer un ticket comme "prêt"
+        $group->post('/tickets/{id}/ready', function (Request $request, Response $response, $args) use ($container) {
+            $ctrl = new \App\Controller\TicketController($container);
+            if (method_exists($ctrl, 'markAsReady')) {
+                return $ctrl->markAsReady($request, $response, $args);
+            }
+            $response->getBody()->write('Not implemented');
+            return $response->withStatus(501);
+        });
         // Auto-save prestations (AJAX)
         $group->post('/tickets/{id}/prestations/auto-save', function (Request $request, Response $response, $args) use ($container) {
             $ctrl = new \App\Controller\TicketController($container);
@@ -184,6 +193,40 @@ return function (App $app, array $container) {
             return $response;
         });
 
+        // Admin Comptabilité
+        $group->get('/admin/accounting', function (Request $request, Response $response) use ($container) {
+            $ctrl = new \App\Controller\AccountingController($container);
+            return $ctrl->index($request, $response);
+        });
+        $group->get('/admin/accounting/export', function (Request $request, Response $response) use ($container) {
+            $ctrl = new \App\Controller\AccountingController($container);
+            return $ctrl->export($request, $response);
+        });
+
+        // Admin Company Settings
+        $group->get('/admin/company-settings', function (Request $request, Response $response) use ($container) {
+            $ctrl = new \App\Controller\AdminCompanySettingsController($container);
+            return $ctrl->index($request, $response);
+        });
+        $group->post('/admin/company-settings', function (Request $request, Response $response) use ($container) {
+            $ctrl = new \App\Controller\AdminCompanySettingsController($container);
+            return $ctrl->update($request, $response);
+        });
+        // Admin Company Settings - Upload temporaire logo (AJAX)
+        $group->post('/admin/company-settings/upload-logo-temp', function (Request $request, Response $response) use ($container) {
+            $ctrl = new \App\Controller\AdminCompanySettingsController($container);
+            return $ctrl->uploadLogoTemp($request, $response);
+        });
+        // Admin Company Settings - Aperçus PDF
+        $group->get('/admin/company-settings/preview-invoice', function (Request $request, Response $response) use ($container) {
+            $ctrl = new \App\Controller\AdminCompanySettingsController($container);
+            return $ctrl->previewInvoice($request, $response);
+        });
+        $group->get('/admin/company-settings/preview-quote', function (Request $request, Response $response) use ($container) {
+            $ctrl = new \App\Controller\AdminCompanySettingsController($container);
+            return $ctrl->previewQuote($request, $response);
+        });
+
         // Admin Prestations (catalogue)
         $group->get('/admin/prestations', function (Request $request, Response $response) use ($container) {
             $ctrl = new \App\Controller\AdminPrestationsController($container);
@@ -252,6 +295,24 @@ return function (App $app, array $container) {
         $group->get('/search', function (Request $request, Response $response) use ($container) {
             $ctrl = new \App\Controller\SearchController($container);
             return $ctrl->index($request, $response);
+        });
+
+        // Planning
+        $group->get('/planning', function (Request $request, Response $response) use ($container) {
+            $ctrl = new \App\Controller\PlanningController($container);
+            return $ctrl->index($request, $response);
+        });
+        $group->post('/planning/items', function (Request $request, Response $response) use ($container) {
+            $ctrl = new \App\Controller\PlanningController($container);
+            return $ctrl->create($request, $response);
+        });
+        $group->post('/planning/items/{id}/update', function (Request $request, Response $response, $args) use ($container) {
+            $ctrl = new \App\Controller\PlanningController($container);
+            return $ctrl->update($request, $response, $args);
+        });
+        $group->post('/planning/items/{id}/delete', function (Request $request, Response $response, $args) use ($container) {
+            $ctrl = new \App\Controller\PlanningController($container);
+            return $ctrl->delete($request, $response, $args);
         });
     })->add($authMiddleware);
 };

@@ -3,16 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{% block title %}Atelier Vélo — Facturation{% endblock %}</title>
+  <title>{% block title %}Atelier Velo - Facturation{% endblock %}</title>
 <link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
-  <!-- FontAwesome (icônes) -->
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
+  <!-- FontAwesome (icones) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" />
-  <!-- Alpine.js (interactivité tactile légère) -->
+  <!-- Alpine.js (interactivite tactile legere) -->
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.2/dist/cdn.min.js"
           onerror="(function(){var s=document.createElement('script');s.src='/js/alpine-3.15.2.min.js';s.defer=true;document.head.appendChild(s);}())"></script>
   <script>
-    // Fallback runtime si Alpine n'est pas chargé par le CDN (Tracking/CORS)
+    // Fallback runtime si Alpine n'est pas charge par le CDN (Tracking/CORS)
     window.addEventListener('DOMContentLoaded', function(){
       try {
 if (!window.Alpine) {
@@ -27,12 +30,12 @@ if (!window.Alpine) {
 
   {% block head %}{% endblock %}
 </head>
-<body>
-  <div class="container">
-    <header>
-<a href="/" class="brand-logo" aria-label="L'Atelier Vélo">
+<body x-data="adminToggle()" x-init="initAdmin()">
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navigation principale">
+      <a href="/" class="brand-logo sidebar-brand" aria-label="L'Atelier Velo">
         <span class="brand-label">
-          <span class="brand-line1">l’atelier</span>
+          <span class="brand-line1">l'atelier</span>
         </span>
         <span class="brand-group-velo">
           <span class="brand-line2">VELO</span>
@@ -40,82 +43,179 @@ if (!window.Alpine) {
         <span class="logo-subtitle">BikeOffice</span>
         <span class="logo-divider"></span>
       </a>
-      <nav class="flex header-nav">
-<a href="/catalogue" class="nav-link">Catalogue</a>
-<a href="/tickets/queue" class="nav-link">File d'attente</a>
-<a href="#" onclick="return adminAccess()" title="Accès administrateur" class="nav-link">Administrateur</a>
-<a href="/logout" class="nav-link nav-link-logout">Déconnexion</a>
-<form action="/search" method="get" class="flex" style="gap:6px; margin-left:12px; align-items:center;">
-  <input type="text" name="q" placeholder="Recherche…" style="min-width:220px; height:32px; padding:6px 10px; border:1px solid #ddd; border-radius:8px;">
-  <button class="search-btn" type="submit" aria-label="Rechercher"><img src="/img/search.png" alt="" aria-hidden="true" /><span class="sr-only">Rechercher</span></button>
-</form>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">ATELIER</div>
+          <a href="/catalogue" class="sidebar-link">
+            <span class="sidebar-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7">
+                <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+              </svg>
+            </span>
+            <span>Catalogue</span>
+          </a>
+          <a href="/tickets/queue" class="sidebar-link">
+            <span class="sidebar-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M12 7v6l4 2"></path>
+              </svg>
+            </span>
+            <span>File d'attente{% if queue_count > 0 %} ({{ queue_count }}){% endif %}</span>
+          </a>
+          <a href="/planning" class="sidebar-link">
+            <span class="sidebar-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </span>
+            <span>Planning{% if planning_count > 0 %} ({{ planning_count }}){% endif %}</span>
+          </a>
+        </div>
+        <div class="sidebar-section sidebar-section-admin">
+          <button type="button" 
+                  @click="toggleAdmin()" 
+                  class="sidebar-section-title sidebar-admin-toggle" 
+                  :aria-label="isUnlocked ? 'Fermer accès administrateur' : 'Demander accès administrateur'"
+                  style="background: none; border: none; padding: 0; text-align: left; width: 100%;">
+            <span class="sidebar-lock" aria-hidden="true" x-show="!isUnlocked">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7">
+                <rect x="4" y="11" width="16" height="9" rx="2"></rect>
+                <path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
+                <path d="M12 15v2"></path>
+              </svg>
+            </span>
+            <span class="sidebar-lock" aria-hidden="true" x-show="isUnlocked" x-cloak>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M8 11V7a4 4 0 0 1 7.5-1.5"></path>
+                <rect x="4" y="11" width="16" height="9" rx="2"></rect>
+                <path d="M12 15v2"></path>
+              </svg>
+            </span>
+            <span>ADMIN</span>
+          </button>
+          
+          <a href="/admin/prestations" class="sidebar-link is-sub" x-show="isUnlocked" x-cloak>
+            <span class="sidebar-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M4 20h4l10-10-4-4L4 16v4z"></path>
+                <path d="M13 6l4 4"></path>
+              </svg>
+            </span>
+            <span>Éditer catalogue</span>
+          </a>
+          <a href="/admin/prestations/export.xlsx" class="sidebar-link is-sub" x-show="isUnlocked" x-cloak>
+            <span class="sidebar-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M12 3v12"></path>
+                <path d="M8 11l4 4 4-4"></path>
+                <path d="M5 19h14"></path>
+              </svg>
+            </span>
+            <span>Exports (prestations)</span>
+          </a>
+          
+          <a href="/admin/accounting" class="sidebar-link is-sub" x-show="isUnlocked" x-cloak>
+            <span class="sidebar-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7">
+                <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+                <path d="M8 7h8M8 11h8M8 15h5"></path>
+              </svg>
+            </span>
+            <span>Comptabilité</span>
+          </a>
+          <a href="/admin/company-settings" class="sidebar-link is-sub" x-show="isUnlocked" x-cloak>
+            <span class="sidebar-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4.5 3.5a2.121 2.121 0 0 1 3-3L9 12l6-9.5"></path>
+              </svg>
+            </span>
+            <span>Édition facture / devis</span>
+          </a>
+        </div>
       </nav>
-    </header>
+    </aside>
+    <div class="app-main">
+      <div class="container">
+        <header class="topbar">
+          <div class="topbar-actions">
+            <form action="/search" method="get" class="topbar-search">
+              <input type="text" name="q" placeholder="Recherche." class="topbar-search-input">
+              <button class="search-btn" type="submit" aria-label="Rechercher">
+                <img src="/img/search.png" alt="" aria-hidden="true" />
+                <span class="sr-only">Rechercher</span>
+              </button>
+            </form>
+            <a href="/logout" class="topbar-link topbar-link-logout">Deconnexion</a>
+          </div>
+        </header>
 
-    <main>
-      {% block content %}{% endblock %}
-    </main>
+        <main>
+          {% block content %}{% endblock %}
+        </main>
 
-    <footer>
-      © {{ "now"|date("Y") }} L’Atelier Vélo — v1.0
-    </footer>
+        <footer>
+          (c) {{ "now"|date("Y") }} L'Atelier Velo - v1.0
+        </footer>
+      </div>
+    </div>
   </div>
   <script>
-    function adminAccess() {
-      var pwd = prompt('Mot de passe administrateur ?');
-      if (pwd === 'admin') {
-        window.location.href = '/admin';
-      } else if (pwd !== null) {
-        alert('Mot de passe incorrect.');
-      }
-      return false;
+    function adminToggle() {
+      return {
+        isUnlocked: false,
+        
+        initAdmin() {
+          // Lire l'état depuis localStorage
+          const stored = localStorage.getItem('adminUnlocked');
+          this.isUnlocked = stored === 'true';
+        },
+        
+        toggleAdmin() {
+          if (this.isUnlocked) {
+            // Re-verrouiller
+            this.isUnlocked = false;
+            localStorage.setItem('adminUnlocked', 'false');
+          } else {
+            // Demander mot de passe pour déverrouiller
+            const pwd = prompt('Mot de passe administrateur ?');
+            if (pwd === 'admin') {
+              this.isUnlocked = true;
+              localStorage.setItem('adminUnlocked', 'true');
+            } else if (pwd !== null) {
+              alert('Mot de passe incorrect.');
+            }
+          }
+        }
+      };
     }
 
-    // Mise en évidence du lien actif + barre glissante (SaaS-like) côté client
+    // Active state for sidebar links (client and admin)
     document.addEventListener('DOMContentLoaded', function(){
       try {
-        var nav = document.querySelector('nav.header-nav');
+        var nav = document.querySelector('.sidebar-nav');
         if (!nav) return;
         var path = (location.pathname || '').toLowerCase();
 
-        var links = nav.querySelectorAll('a.nav-link');
-
-        // Appliquer la classe active en fonction de l'URL
+        var links = nav.querySelectorAll('a.sidebar-link');
         links.forEach(function(a){
-          var label = (a.textContent || '').trim().toLowerCase();
-          var href  = (a.getAttribute('href') || '').toLowerCase();
-
-          // Règles simples par sections
-          if (path.indexOf('/catalogue') === 0 && label.indexOf('catalogue') >= 0) a.classList.add('active');
-          if (path.indexOf('/tickets') === 0 && (label.indexOf("file d'attente") >= 0 || label.indexOf('file') >= 0)) a.classList.add('active');
-          if (path.indexOf('/admin') === 0 && (label.indexOf('administrateur') >= 0 || href === '/admin')) a.classList.add('active');
+          var href = (a.getAttribute('href') || '').toLowerCase();
+          if (!href || href === '#') return;
+          if (path.indexOf('/catalogue') === 0 && href.indexOf('/catalogue') === 0) a.classList.add('active');
+          if (path.indexOf('/tickets') === 0 && href.indexOf('/tickets/queue') === 0) a.classList.add('active');
+          if (path.indexOf('/admin') === 0 && href.indexOf('/admin') === 0) a.classList.add('active');
         });
 
-        // Barre glissante
-        var bar = nav.querySelector('.nav-slide-bar');
-        if (!bar) {
-          bar = document.createElement('span');
-          bar.className = 'nav-slide-bar';
-          bar.setAttribute('aria-hidden', 'true');
-          nav.appendChild(bar);
-        }
-
-        function positionBar(link) {
-          if (!link || !bar) return;
-          var navRect = nav.getBoundingClientRect();
-          var rect = link.getBoundingClientRect();
-          var linkWidth = rect.width || 0;
-          if (!linkWidth) return;
-          var barWidth = linkWidth * 0.20; // 20% de la largeur du lien
-          var center = rect.left + linkWidth / 2;
-          bar.style.width = barWidth + 'px';
-          bar.style.left = (center - barWidth / 2 - navRect.left) + 'px';
-        }
-
-        // Positionner la barre sous le lien actif initial (hors Déconnexion)
-        var active = nav.querySelector('a.nav-link.active:not(.nav-link-logout)');
-        if (active) {
-          positionBar(active);
+        var adminToggle = nav.querySelector('.sidebar-admin-toggle');
+        if (adminToggle && path.indexOf('/admin') === 0) {
+          adminToggle.classList.add('active');
         }
       } catch (_e) {}
     });

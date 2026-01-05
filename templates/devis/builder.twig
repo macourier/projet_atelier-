@@ -326,8 +326,8 @@
                   <div class="zone-left">
                     <span class="mo-label">MO :</span>
 
-                    <span class="mo-price" x-text="Number(moFinal() || 0).toFixed(2) + ' €'">
-                      {{ (item.prix_main_oeuvre_ht|default(0))|number_format(2, ',', ' ') }} €
+                    <span class="mo-price" x-show="moFinal() > 0" x-text="Number(moFinal() || 0).toFixed(2) + ' €'">
+                      {% if item.prix_main_oeuvre_ht|default(0) > 0 %}{{ (item.prix_main_oeuvre_ht|default(0))|number_format(2, ',', ' ') }} €{% endif %}
                     </span>
 
                     <span class="qty-label">Qté</span>
@@ -364,8 +364,8 @@
                       {{ item.piece_libelle|default('Pièce') }}
                     </span>
 
-                    <span class="piece-price" x-text="Number(pieceFinal() || 0).toFixed(2) + ' €'">
-                      {{ (item.piece_prix_ht|default(0))|number_format(2, ',', ' ') }} €
+                    <span class="piece-price" x-show="pieceFinal() > 0" x-text="Number(pieceFinal() || 0).toFixed(2) + ' €'">
+                      {% if item.piece_prix_ht|default(0) > 0 %}{{ (item.piece_prix_ht|default(0))|number_format(2, ',', ' ') }} €{% endif %}
                     </span>
 
                     <span class="qty-label">Qté</span>
@@ -376,9 +376,6 @@
                   </div>
 
                   <div class="zone-right">
-                    <span class="piece-price" x-text="Number(pieceFinal() || 0).toFixed(2) + ' €'">
-                      {{ (item.piece_prix_ht|default(0))|number_format(2, ',', ' ') }} €
-                    </span>
                     <div x-show="!pieceEdit" style="display:flex; align-items:center; gap:4px;">
                       <button type="button" :disabled="!pieceChecked" @click="pieceEdit=true" x-transition title="Modifier le prix Pièce" class="icon-inline">
                         <img src="/img/crayon-de-couleur.png" alt="Modifier">

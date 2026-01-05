@@ -202,10 +202,15 @@ class DevisController
             'brand' => $brand !== '' ? $brand : null,
         ];
 
+        // Récupérer les informations de l'entreprise
+        $companyService = new \App\Service\CompanyProfileService($this->pdo);
+        $company = $companyService->getProfile();
+
         // Rendu PDF inline (nouvel onglet côté client via target="_blank")
         $pdf = ($this->container['get'])('pdf')->renderPdf('pdf/devis.twig', [
             'devis' => $devis,
             'client' => $client,
+            'company' => $company,
             'meta' => $meta,
             'env' => $this->container['env'] ?? []
         ], ['paper' => 'a4', 'orientation' => 'portrait']);

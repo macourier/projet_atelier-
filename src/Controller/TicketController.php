@@ -181,6 +181,34 @@ class TicketController
         return $response->withHeader('Location', '/tickets/' . $id . '/edit?success=1')->withStatus(302);
     }
 
+    /**
+     * Marquer un ticket comme "prêt" (prestation terminée)
+     * POST /tickets/{id}/ready
+     */
+    public function markAsReady(Request $request, Response $response, array $args): Response
+    {
+        $id = (int)($args['id'] ?? 0);
+        if (!$this->pdo || $id <= 0) {
+            $response->getBody()->write('Ticket introuvable');
+            return $response->withStatus(404);
+        }
+
+        // Mettre à jour les prestations avant de changer le statut
+        $data = (array)$request->getParsedBody();
+        if (!empty($data)) {
+            $this->ticketService = $this->ticketService ?? new \App\Service\TicketService($this->pdo);
+            $this->ticketService->replacePrestationsFromPost($id, $data);
+            $this->ticketService->computeTotals($id);
+        }
+
+        // Changer le statut à "ready"
+        $stmt = $this->pdo->prepare('UPDATE tickets SET status = :status, updated_at = CURRENT_TIMESTAMP WHERE id = :id');
+        $stmt->execute(['status' => 'ready', 'id' => $id]);
+
+        // Rediriger vers la file d'attente
+        return $response->withHeader('Location', '/tickets/queue?status=ready')->withStatus(302);
+    }
+
     private function gatherTicketData(int $id): array
     {
         if (!$this->pdo) {
@@ -299,9 +327,14 @@ class TicketController
             'lines' => $lines
         ];
 
+        // Récupérer les informations de l'entreprise
+        $companyService = new \App\Service\CompanyProfileService($this->pdo);
+        $company = $companyService->getProfile();
+
         $pdf = ($this->container['get'])('pdf')->renderPdf('pdf/devis.twig', [
             'devis' => $devis,
             'client' => $client,
+            'company' => $company,
             'env' => $this->container['env'] ?? []
         ], ['paper' => 'a4', 'orientation' => 'portrait']);
 
@@ -360,6 +393,10 @@ class TicketController
             ];
         }
 
+        // Récupérer les informations de l'entreprise
+        $companyService = new \App\Service\CompanyProfileService($this->pdo);
+        $company = $companyService->getProfile();
+
         // Générer PDF et enregistrer sous public/pdfs
         $webDir = '/pdfs/factures';
         $absDir = dirname(__DIR__, 2) . '/public' . $webDir;
@@ -379,6 +416,7 @@ class TicketController
                 'lines' => $lines
             ],
             'client' => $client,
+            'company' => $company,
             'payment' => $payment,
             'env' => $this->container['env'] ?? []
         ], $absPath, ['paper' => 'a4', 'orientation' => 'portrait']);
@@ -408,7 +446,13 @@ class TicketController
             $response->getBody()->write('Database not available');
             return $response->withStatus(500);
         }
-        // Tickets ouverts, tri du plus ancien au plus récent — compatibilité si la colonne received_at est absente
+
+        // Récupérer le statut demandé (par défaut: open)
+        $query = $request->getQueryParams();
+        $status = $query['status'] ?? 'open';
+        $activeTab = in_array($status, ['open', 'ready']) ? $status : 'open';
+
+        // Vérifier si la colonne received_at existe
         $hasReceived = false;
         try {
             $cols = $this->pdo->query("PRAGMA table_info(tickets)")->fetchAll(\PDO::FETCH_ASSOC) ?: [];
@@ -417,6 +461,8 @@ class TicketController
             }
         } catch (\Throwable $e) {}
 
+        // Récupérer les tickets ouverts
+        $openTickets = [];
         if ($hasReceived) {
             $sql = "SELECT t.id, t.client_id, t.bike_brand, t.bike_model, t.status,
                            t.created_at, t.received_at,
@@ -435,10 +481,24 @@ class TicketController
                     ORDER BY t.created_at ASC, t.id ASC";
         }
         $stmt = $this->pdo->query($sql);
-        $rows = $stmt->fetchAll() ?: [];
+        $openTickets = $stmt->fetchAll() ?: [];
+
+        // Récupérer les tickets prêts
+        $readyTickets = [];
+        $sqlReady = "SELECT t.id, t.client_id, t.bike_brand, t.bike_model, t.status,
+                            t.created_at, t.updated_at, t.total_ttc,
+                            c.name AS client_name
+                     FROM tickets t
+                     LEFT JOIN clients c ON c.id = t.client_id
+                     WHERE t.status = 'ready'
+                     ORDER BY t.updated_at ASC, t.id ASC";
+        $stmt = $this->pdo->query($sqlReady);
+        $readyTickets = $stmt->fetchAll() ?: [];
 
         $html = $this->twig->render('tickets/queue.twig', [
-            'tickets' => $rows,
+            'openTickets' => $openTickets,
+            'readyTickets' => $readyTickets,
+            'activeTab' => $activeTab,
             'env' => $this->container['env'] ?? []
         ]);
         $response->getBody()->write($html);

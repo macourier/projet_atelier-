@@ -1,0 +1,133 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Planning - Atelier Velo{% endblock %}
+
+{% block content %}
+<div class="planning-page" x-data="planningPage()">
+  <div class="planning-header">
+    <div class="week-nav">
+      <!-- Debug: prevUrl = {{ prevUrl }} -->
+      <!-- Debug: nextUrl = {{ nextUrl }} -->
+      <a href="{{ prevUrl }}" class="week-nav-btn">
+        <span class="sr-only">Semaine précédente</span>
+        ◀
+      </a>
+      <h1 class="week-title">{{ weekLabel }}</h1>
+      <a href="{{ nextUrl }}" class="week-nav-btn">
+        <span class="sr-only">Semaine suivante</span>
+        ▶
+      </a>
+    </div>
+    
+    <button type="button" class="btn btn-primary planning-add-btn" @click="showModal = true">
+      <span class="btn-icon">+</span> Ajouter
+    </button>
+  </div>
+
+  {% if isEmpty %}
+  <div class="planning-empty">
+    <p>Aucune intervention planifiée cette semaine.</p>
+  </div>
+  {% else %}
+  <div class="planning-grid">
+    {% for day in days %}
+    <div class="planning-day-card {{ day.is_today ? 'is-today' : '' }}">
+      <div class="planning-day-header">
+        <h2 class="planning-day-title">{{ day.name }}{% if day.count > 0 %} ({{ day.count }}){% endif %}</h2>
+        <span class="planning-day-date">{{ day.date|date('d/m') }}</span>
+      </div>
+      
+      {% if day.count > 0 %}
+      <ul class="planning-items-list">
+        {% for item in day.items %}
+        <li class="planning-item">
+          <span class="item-title">{{ item.title }}</span>
+          <div class="item-actions">
+            <form method="POST" action="/planning/items/{{ item.id }}/delete" style="display: inline;" onsubmit="return confirm('Supprimer cette intervention ?');">
+              <button type="submit" class="item-delete-btn" title="Supprimer">×</button>
+            </form>
+          </div>
+        </li>
+        {% endfor %}
+        {% if day.count > 3 %}
+        <li class="planning-item-more">
+          +{{ day.count - 3 }} autre{{ day.count > 4 ? 's' : '' }}…
+        </li>
+        {% endif %}
+      </ul>
+      {% else %}
+      <div class="planning-day-empty">
+        <span class="empty-icon">−</span>
+        <span class="empty-text">Aucune intervention</span>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Modal d'ajout -->
+  <div class="modal" x-show="showModal" x-cloak @click.self="showModal = false">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Ajouter une intervention</h3>
+        <button type="button" class="modal-close" @click="showModal = false">×</button>
+      </div>
+      <form method="POST" action="/planning/items">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="title">Titre *</label>
+            <input type="text" id="title" name="title" required placeholder="Ex: Réparation vélo M. Dupont">
+          </div>
+          <div class="form-group">
+            <label for="scheduled_date">Date prévue *</label>
+            <input type="date" id="scheduled_date" name="scheduled_date" required>
+          </div>
+          <div class="form-group">
+            <label for="status">Statut</label>
+            <select id="status" name="status">
+              <option value="planned">Planifié</option>
+              <option value="done">Terminé</option>
+              <option value="cancelled">Annulé</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="showModal = false">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Messages flash -->
+  {% if app.request.query.get('success') %}
+  <div class="alert alert-success">
+    Intervention enregistrée avec succès.
+  </div>
+  {% endif %}
+  
+  {% if app.request.query.get('deleted') %}
+  <div class="alert alert-success">
+    Intervention supprimée avec succès.
+  </div>
+  {% endif %}
+  
+  {% if app.request.query.get('error') %}
+  <div class="alert alert-error">
+    {{ app.request.query.get('error') }}
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function planningPage() {
+  return {
+    showModal: false
+  };
+}
+document.addEventListener('alpine:init', () => {
+  Alpine.data('planningPage', planningPage);
+});
+</script>
+{% endblock %}

@@ -1,42 +1,122 @@
 {% extends 'layout.twig' %}
 
-{% block title %}File d'attente — Tickets ouverts{% endblock %}
+{% block title %}File d'attente — Tickets{% endblock %}
 
 {% block content %}
-<h2 class="page-title-inside">File d'attente — Tickets ouverts</h2>
+<div x-data="{ activeTab: '{{ activeTab|default('open') }}' }" style="margin-bottom:20px;">
+  <h2 class="page-title-inside">File d'attente — Tickets</h2>
 
-{% if tickets is empty %}
-  <p class="text-muted">Aucun ticket ouvert.</p>
-{% else %}
-  <div style="overflow:auto;">
-    <table style="width:100%; border-collapse:collapse;">
-      <thead>
-        <tr style="border-bottom:1px solid #e5e7eb;">
-          <th style="text-align:left; padding:8px;">Client</th>
-          <th style="text-align:left; padding:8px;">Vélo</th>
-          <th style="text-align:left; padding:8px;">Reçu / Créé le</th>
-          <th style="text-align:left; padding:8px;">Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for t in tickets %}
-        <tr style="border-bottom:1px solid #f3f4f6;">
-          <td style="padding:8px;">{{ t.client_name|default('—') }}</td>
-          <td style="padding:8px;">{{ t.bike_brand|default('') }} {{ t.bike_model|default('') }}</td>
-          <td style="padding:8px;">
-            {% if t.received_at %}
-              {{ t.received_at|date('Y-m-d H:i') }}
-            {% else %}
-              {{ t.created_at|date('Y-m-d H:i') }}
-            {% endif %}
-          </td>
-          <td style="padding:8px;">
-            <a class="btn btn-secondary" href="/tickets/{{ t.id }}/edit">Ouvrir</a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  {# Onglets #}
+  <div class="tabs" style="display:flex; gap:8px; margin-bottom:16px; border-bottom:2px solid #e5e7eb; padding-bottom:0;">
+    <button type="button"
+            class="tab-btn"
+            :class="{ 'active': activeTab === 'open' }"
+            @click="activeTab = 'open'; window.location.href = '/tickets/queue?status=open';"
+            style="padding:12px 24px; border:none; background:transparent; cursor:pointer; font-weight:600; font-size:1rem; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all 0.2s ease;"
+            x-bind:style="activeTab === 'open' ? { borderBottomColor: '#3b82f6', color: '#3b82f6' } : { borderBottomColor: 'transparent', color: '#6b7280' }">
+      Vélo en attente
+    </button>
+    <button type="button"
+            class="tab-btn"
+            :class="{ 'active': activeTab === 'ready' }"
+            @click="activeTab = 'ready'; window.location.href = '/tickets/queue?status=ready';"
+            style="padding:12px 24px; border:none; background:transparent; cursor:pointer; font-weight:600; font-size:1rem; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all 0.2s ease;"
+            x-bind:style="activeTab === 'ready' ? { borderBottomColor: '#10b981', color: '#10b981' } : { borderBottomColor: 'transparent', color: '#6b7280' }">
+      Vélo prêt
+    </button>
   </div>
-{% endif %}
+
+  {# Contenu de l'onglet actif #}
+  <div x-show="activeTab === 'open'" x-transition.opacity>
+    <h3 style="margin:0 0 12px; color:#111827;">Tickets en attente de réparation</h3>
+    {% if openTickets is empty %}
+      <p class="text-muted" style="padding:20px; text-align:center; background:#f9fafb; border-radius:8px;">
+        Aucun ticket en attente.
+      </p>
+    {% else %}
+      <div style="overflow:auto;">
+        <table class="tickets-queue" style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="border-bottom:1px solid #e5e7eb; background:#f9fafb;">
+              <th style="text-align:left; padding:12px 8px;">Client</th>
+              <th style="text-align:left; padding:12px 8px;">Vélo</th>
+              <th style="text-align:left; padding:12px 8px;">Reçu / Créé le</th>
+              <th class="tickets-queue-action" style="padding:12px 8px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in openTickets %}
+            <tr style="border-bottom:1px solid #f3f4f6; transition:background-color 0.15s ease;" 
+                onmouseover="this.style.backgroundColor='#f9fafb'" 
+                onmouseout="this.style.backgroundColor='transparent'">
+              <td style="padding:12px 8px; font-weight:500;">{{ t.client_name|default('—') }}</td>
+              <td style="padding:12px 8px;">
+                {{ t.bike_brand|default('') }} {{ t.bike_model|default('') }}
+              </td>
+              <td style="padding:12px 8px; color:#6b7280; font-size:0.95rem;">
+                {% if t.received_at %}
+                  {{ t.received_at|date('Y-m-d H:i') }}
+                {% else %}
+                  {{ t.created_at|date('Y-m-d H:i') }}
+                {% endif %}
+              </td>
+              <td class="tickets-queue-action" style="padding:12px 8px;">
+                <a class="btn btn-secondary" href="/tickets/{{ t.id }}/edit">
+                  Ouvrir
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+
+  <div x-show="activeTab === 'ready'" x-transition.opacity style="display:none;">
+    <h3 style="margin:0 0 12px; color:#111827;">Tickets prêts à être facturés</h3>
+    {% if readyTickets is empty %}
+      <p class="text-muted" style="padding:20px; text-align:center; background:#f9fafb; border-radius:8px;">
+        Aucun vélo prêt en attente de facturation.
+      </p>
+    {% else %}
+      <div style="overflow:auto;">
+        <table class="tickets-queue" style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="border-bottom:1px solid #e5e7eb; background:#f0fdf4;">
+              <th style="text-align:left; padding:12px 8px;">Client</th>
+              <th style="text-align:left; padding:12px 8px;">Vélo</th>
+              <th style="text-align:left; padding:12px 8px;">Prêt le</th>
+              <th style="text-align:right; padding:12px 8px;">Total TTC</th>
+              <th class="tickets-queue-action" style="padding:12px 8px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in readyTickets %}
+            <tr style="border-bottom:1px solid #d1fae5; transition:background-color 0.15s ease;" 
+                onmouseover="this.style.backgroundColor='#f0fdf4'" 
+                onmouseout="this.style.backgroundColor='transparent'">
+              <td style="padding:12px 8px; font-weight:500;">{{ t.client_name|default('—') }}</td>
+              <td style="padding:12px 8px;">
+                {{ t.bike_brand|default('') }} {{ t.bike_model|default('') }}
+              </td>
+              <td style="padding:12px 8px; color:#6b7280; font-size:0.95rem;">
+                {{ t.updated_at|date('Y-m-d H:i') }}
+              </td>
+              <td style="padding:12px 8px; text-align:right; font-weight:600; color:#111827;">
+                {{ t.total_ttc|number_format(2, ',', ' ') }} €
+              </td>
+              <td class="tickets-queue-action" style="padding:12px 8px;">
+                <a class="btn btn-primary" href="/tickets/{{ t.id }}/edit">
+                  Facturer
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

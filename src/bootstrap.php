@@ -68,10 +68,75 @@ try {
 $templatesPath = $envPath . '/templates';
 $twigLoader = new FilesystemLoader($templatesPath);
 $twig = new TwigEnvironment($twigLoader, [
-    'cache' => false,
-    'debug' => ($_ENV['APP_DEBUG'] ?? 'false') === 'true',
+  'cache' => false,
+  'debug' => ($_ENV['APP_DEBUG'] ?? 'false') === 'true',
 ]);
 
+// Ajouter admin_access comme variable globale Twig
+$twig->addGlobal('admin_access', isset($_SESSION['admin_access']) && $_SESSION['admin_access']);
+
+// Charger le profil entreprise et l'ajouter comme global Twig
+// Gérer le cas où la table n'existe pas encore
+$companyProfile = [
+    'name' => 'L\'atelier vélo',
+    'address_line1' => '10 avenue Willy Brandt',
+    'address_line2' => '',
+    'postcode' => '59000',
+    'city' => 'Lille',
+    'phone' => '03 20 78 80 63',
+    'email' => '',
+    'logo_path' => null
+];
+
+if ($pdo) {
+    try {
+        // Vérifier si la table existe
+        $checkTable = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='company_profile'");
+        if ($checkTable->fetch()) {
+            $companyProfileService = new \App\Service\CompanyProfileService($pdo);
+            $companyProfile = $companyProfileService->getProfile();
+        }
+    } catch (PDOException $e) {
+        // Table n'existe pas encore, utiliser les valeurs par défaut
+    }
+}
+
+$twig->addGlobal('company', $companyProfile);
+
+// Charger le nombre d'interventions futures pour le planning
+$planningCount = 0;
+if ($pdo) {
+    try {
+        // Vérifier si la table planning_items existe
+        $checkTable = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='planning_items'");
+        if ($checkTable->fetch()) {
+            $planningService = new \App\Service\PlanningService($pdo);
+            $planningCount = $planningService->countFutureInterventions();
+        }
+    } catch (PDOException $e) {
+        // Table n'existe pas encore, utiliser 0 par défaut
+    }
+}
+
+$twig->addGlobal('planning_count', $planningCount);
+
+// Charger le nombre de tickets en file d'attente (statut 'open')
+$queueCount = 0;
+if ($pdo) {
+    try {
+        // Vérifier si la table tickets existe
+        $checkTable = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='tickets'");
+        if ($checkTable->fetch()) {
+            $stmt = $pdo->query("SELECT COUNT(*) as count FROM tickets WHERE status = 'open'");
+            $result = $stmt->fetch();
+            $queueCount = (int)($result['count'] ?? 0);
+        }
+    } catch (PDOException $e) {
+        // Table n'existe pas encore, utiliser 0 par défaut
+    }
+}
+
+$twig->addGlobal('queue_count', $queueCount);
 
 // Simple container array
 $container = [];

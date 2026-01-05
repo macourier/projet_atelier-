@@ -18,6 +18,11 @@
       </button>
     {% endif %}
 
+    <button class="btn btn-ready" type="submit"
+            {% if mode == 'ticket' and not ticket %}disabled{% endif %}
+            formaction="/tickets/{{ ticket ? ticket.id : 0 }}/ready">
+      <i class="fas fa-check-circle" style="margin-right:6px;"></i>PRÊT
+    </button>
     <button class="btn" type="submit" @click.prevent="handleFacturer($el)"
             {% if mode == 'ticket' and not ticket %}disabled{% endif %}
             name="payment_method" value="ESPECE"
