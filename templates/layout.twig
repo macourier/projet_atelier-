@@ -173,9 +173,9 @@ if (!window.Alpine) {
         isUnlocked: false,
         
         initAdmin() {
-          // Lire l'état depuis localStorage
-          const stored = localStorage.getItem('adminUnlocked');
-          this.isUnlocked = stored === 'true';
+          // Admin toujours verrouillé par défaut au chargement
+          this.isUnlocked = false;
+          localStorage.setItem('adminUnlocked', 'false');
         },
         
         toggleAdmin() {
