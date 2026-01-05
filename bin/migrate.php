@@ -109,6 +109,39 @@ try {
                     continue;
                 }
             }
+            if ($f === '013_client_note.sql') {
+                $stmt = $pdo->query("PRAGMA table_info(clients)");
+                $cols = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+                $hasNote = false;
+                foreach ($cols as $c) {
+                    if (strcasecmp($c['name'] ?? '', 'note') === 0) { $hasNote = true; break; }
+                }
+                if ($hasNote) {
+                    echo "[skip] Column clients.note already exists — skipping $f\n";
+                    continue;
+                }
+            }
+            if ($f === '015_add_notes_to_tickets.sql') {
+                // Vérifier si la table tickets existe
+                $stmt = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='tickets'");
+                $tableExists = $stmt && $stmt->fetch();
+                
+                if (!$tableExists) {
+                    echo "[skip] Table tickets does not exist yet — skipping $f\n";
+                    continue;
+                }
+                
+                $stmt = $pdo->query("PRAGMA table_info(tickets)");
+                $cols = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+                $hasNotes = false;
+                foreach ($cols as $c) {
+                    if (strcasecmp($c['name'] ?? '', 'notes') === 0) { $hasNotes = true; break; }
+                }
+                if ($hasNotes) {
+                    echo "[skip] Column tickets.notes already exists — skipping $f\n";
+                    continue;
+                }
+            }
 
             // Execute SQL (SQLite supports multiple statements via exec)
             try {
