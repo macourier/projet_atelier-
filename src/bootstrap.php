@@ -34,7 +34,7 @@ if (!is_dir($dataDir)) {
 }
 
 // Helper function to run database migrations automatically
-function runMigrations(PDO $pdo, string $root): void {
+function runMigrations(PDO $pdo, string $root, string $driver = 'sqlite'): void {
     $migrationsDir = $root . '/migrations';
     if (!is_dir($migrationsDir)) {
         return;
@@ -42,7 +42,13 @@ function runMigrations(PDO $pdo, string $root): void {
 
     $files = [];
     foreach (scandir($migrationsDir) as $f) {
-        if (preg_match('/^\d+_.*\.sql$/', $f)) {
+        // Use PostgreSQL migrations if driver is pgsql, otherwise use SQLite migrations
+        $pattern = ($driver === 'pgsql') ? '/^\d+_.*_pg\.sql$/' : '/^\d+_.*\.sql$/';
+        if (preg_match($pattern, $f)) {
+            // Skip PostgreSQL migration files when using SQLite
+            if ($driver !== 'pgsql' && str_ends_with($f, '_pg.sql')) {
+                continue;
+            }
             $files[] = $f;
         }
     }
@@ -60,30 +66,33 @@ function runMigrations(PDO $pdo, string $root): void {
             continue;
         }
 
-        // Idempotency guards for specific migrations
-        if ($f === '003_add_ticket_id_to_factures.sql') {
-            $stmt = $pdo->query("PRAGMA table_info(factures)");
-            $cols = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
-            $has = false;
-            foreach ($cols as $c) {
-                if (strcasecmp($c['name'] ?? '', 'ticket_id') === 0) { $has = true; break; }
+        // Idempotency guards for specific SQLite migrations
+        if ($driver === 'sqlite') {
+            if ($f === '003_add_ticket_id_to_factures.sql') {
+                $stmt = $pdo->query("PRAGMA table_info(factures)");
+                $cols = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+                $has = false;
+                foreach ($cols as $c) {
+                    if (strcasecmp($c['name'] ?? '', 'ticket_id') === 0) { $has = true; break; }
+                }
+                if ($has) continue;
             }
-            if ($has) continue;
-        }
-        if ($f === '004_tickets_bike_fields.sql') {
-            $stmt = $pdo->query("PRAGMA table_info(tickets)");
-            $cols = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
-            $hasBike = false;
-            foreach ($cols as $c) {
-                if (strcasecmp($c['name'] ?? '', 'bike_brand') === 0) { $hasBike = true; break; }
+            if ($f === '004_tickets_bike_fields.sql') {
+                $stmt = $pdo->query("PRAGMA table_info(tickets)");
+                $cols = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+                $hasBike = false;
+                foreach ($cols as $c) {
+                    if (strcasecmp($c['name'] ?? '', 'bike_brand') === 0) { $hasBike = true; break; }
+                }
+                if ($hasBike) continue;
             }
-            if ($hasBike) continue;
         }
 
         try {
             $pdo->exec($sql);
         } catch (Throwable $e) {
             // Silently continue on error - migrations may already be applied
+            error_log("Migration error in $f: " . $e->getMessage());
         }
     }
 }
@@ -116,7 +125,7 @@ try {
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     
     // Run migrations automatically on startup
-    runMigrations($pdo, $envPath);
+    runMigrations($pdo, $envPath, $driver);
 } catch (Throwable $e) {
     // In case of DB error, we still continue but $pdo may be null
     $pdo = null;
@@ -149,8 +158,11 @@ $companyProfile = [
 if ($pdo) {
     try {
         // Vérifier si la table existe
-        $checkTable = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='company_profile'");
-        if ($checkTable->fetch()) {
+        $checkTableQuery = ($driver === 'sqlite') 
+            ? "SELECT name FROM sqlite_master WHERE type='table' AND name='company_profile'"
+            : "SELECT table_name FROM information_schema.tables WHERE table_name='company_profile'";
+        $checkTable = $pdo->query($checkTableQuery);
+        if ($checkTable && $checkTable->fetch()) {
             $companyProfileService = new \App\Service\CompanyProfileService($pdo);
             $companyProfile = $companyProfileService->getProfile();
         }
@@ -166,8 +178,11 @@ $planningCount = 0;
 if ($pdo) {
     try {
         // Vérifier si la table planning_items existe
-        $checkTable = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='planning_items'");
-        if ($checkTable->fetch()) {
+        $checkTableQuery = ($driver === 'sqlite')
+            ? "SELECT name FROM sqlite_master WHERE type='table' AND name='planning_items'"
+            : "SELECT table_name FROM information_schema.tables WHERE table_name='planning_items'";
+        $checkTable = $pdo->query($checkTableQuery);
+        if ($checkTable && $checkTable->fetch()) {
             $planningService = new \App\Service\PlanningService($pdo);
             $planningCount = $planningService->countFutureInterventions();
         }
@@ -183,8 +198,11 @@ $queueCount = 0;
 if ($pdo) {
     try {
         // Vérifier si la table tickets existe
-        $checkTable = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='tickets'");
-        if ($checkTable->fetch()) {
+        $checkTableQuery = ($driver === 'sqlite')
+            ? "SELECT name FROM sqlite_master WHERE type='table' AND name='tickets'"
+            : "SELECT table_name FROM information_schema.tables WHERE table_name='tickets'";
+        $checkTable = $pdo->query($checkTableQuery);
+        if ($checkTable && $checkTable->fetch()) {
             $stmt = $pdo->query("SELECT COUNT(*) as count FROM tickets WHERE status = 'open'");
             $result = $stmt->fetch();
             $queueCount = (int)($result['count'] ?? 0);
