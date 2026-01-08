@@ -1,4 +1,4 @@
-# Configuration Render pour la persistance SQLite
+# Configuration Render pour le déploiement
 
 ## Problème actuel
 
@@ -45,7 +45,75 @@ Ce script affichera :
 - Les tables présentes
 - Le nombre de tickets
 
-## Alternative : Exécuter manuellement les migrations
+## Configuration PostgreSQL (Recommandé pour la production)
+
+Pour une base de données plus robuste et persistante, utilisez PostgreSQL sur Render.
+
+### Étape 1 : Créer une base de données PostgreSQL
+
+1. Dans votre dashboard Render, cliquez sur "New+" → "PostgreSQL"
+2. Configurez votre base de données :
+   - **Name** : projet-atelier-db
+   - **Database** : projet_atelier
+   - **User/Password** : seront générés automatiquement
+   - **Region** : même région que votre service web
+3. Cliquez sur "Create Database"
+
+### Étape 2 : Connecter votre service à PostgreSQL
+
+1. Accédez à votre service web
+2. Allez dans "Settings" → "Environment"
+3. Ajoutez les variables d'environnement suivantes :
+
+```
+DB_DRIVER=pgsql
+DB_HOST=votre-db-host.internal
+DB_PORT=5432
+DB_NAME=projet_atelier
+DB_USER=votre-db-user
+DB_PASSWORD=votre-db-password
+```
+
+⚠️ **Important** : Ne copiez pas l'intégralité de `DATABASE_URL`, séparez les composants comme ci-dessus.
+
+### Étape 3 : Variables d'environnement supplémentaires
+
+Ajoutez également ces variables :
+
+```
+APP_ENV=production
+APP_DEBUG=false
+ADMIN_EMAIL=votre@email.com
+ADMIN_PASSWORD=votre_mot_de_passe
+```
+
+### Étape 4 : Redéployer
+
+1. Cliquez sur "Manual Deploy" → "Deploy latest commit"
+2. Le script d'entrypoint détectera automatiquement PostgreSQL et exécutera `migrate_pg.php`
+3. Les migrations seront appliquées sur votre base PostgreSQL
+
+### Vérifier la connexion PostgreSQL
+
+Via le Render Shell de votre service web :
+
+```bash
+# Vérifier les variables d'environnement
+env | grep DB_
+
+# Tester la connexion PostgreSQL
+php bin/check_db.php
+```
+
+### Avantages de PostgreSQL sur Render
+
+- ✅ **Persistance automatique** : Pas besoin de volume persistant
+- ✅ **Sauvegardes automatiques** : Render backup votre base quotidiennement
+- ✅ **Haute disponibilité** : Réplication automatique
+- ✅ **Scalabilité** : Peut gérer plus de connexions que SQLite
+- ✅ **Pas de perte de données** : Même si le conteneur redémarre
+
+### Alternative : Exécuter manuellement les migrations
 
 Si vous avez un accès SSH à votre service Render :
 
