@@ -316,7 +316,7 @@
         </div>
         
         <!-- Section Prestation -->
-        <div class="panel-section" x-show="pending.some(p => p.moQty > 0)">
+        <div class="panel-section">
           <div class="section-bar">Prestation</div>
           <table class="selected-table">
             <thead>
@@ -328,6 +328,9 @@
               </tr>
             </thead>
             <tbody>
+              <tr x-show="!pending.some(p => p.moQty > 0)">
+                <td colspan="4" class="empty-msg">Aucune sélection</td>
+              </tr>
               <template x-for="(p, idx) in pending" :key="p.id + '-mo'">
                 <tr x-show="p.moQty > 0">
                   <td x-text="p.label"></td>
@@ -341,7 +344,7 @@
         </div>
         
         <!-- Section Consommable -->
-        <div class="panel-section" x-show="pending.some(p => p.pieceQty > 0)">
+        <div class="panel-section">
           <div class="section-bar">Consommable</div>
           <table class="selected-table">
             <thead>
@@ -353,6 +356,9 @@
               </tr>
             </thead>
             <tbody>
+              <tr x-show="!pending.some(p => p.pieceQty > 0)">
+                <td colspan="4" class="empty-msg">Aucune sélection</td>
+              </tr>
               <template x-for="(p, idx) in pending" :key="p.id + '-piece'">
                 <tr x-show="p.pieceQty > 0">
                   <td x-text="p.pieceLabel || p.label"></td>
@@ -366,7 +372,7 @@
         </div>
         
         <!-- Section Vente de vélo -->
-        <div class="panel-section" x-show="pending.some(p => p.type === 'bike')">
+        <div class="panel-section">
           <div class="section-bar">Vente</div>
           <table class="selected-table">
             <thead>
@@ -378,6 +384,9 @@
               </tr>
             </thead>
             <tbody>
+              <tr x-show="!pending.some(p => p.type === 'bike')">
+                <td colspan="4" class="empty-msg">Aucune sélection</td>
+              </tr>
               <template x-for="(p, idx) in pending" :key="(p.id || p.label) + '-bike'">
                 <tr x-show="p.type === 'bike'">
                   <td x-text="p.label"></td>
@@ -487,6 +496,9 @@
 </div>
 
 <style>
+  /* Alpine x-cloak pour éviter les flashs au chargement */
+  [x-cloak] { display: none !important; }
+  
   /* Styles pour la nouvelle interface Catalogue */
   .catalogue-container {
     background: #F8F9FA;
@@ -826,6 +838,13 @@
   .selected-table th:nth-child(4) {
     text-align: center;
     width: 50px;
+  }
+  
+  .empty-msg {
+    text-align: center;
+    color: #9CA3AF;
+    font-style: italic;
+    padding: 20px 6px;
   }
   
   /* Total */
