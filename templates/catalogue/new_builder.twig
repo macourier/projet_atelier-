@@ -1,0 +1,998 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Catalogue{% endblock %}
+
+{% block head %}
+<script>
+  // Masquer la sidebar sur cette page
+  window.addEventListener('DOMContentLoaded', function() {
+    document.body.setAttribute('x-data', document.body.getAttribute('x-data') + ' hideSidebar: true');
+    Alpine.data('adminToggle', function() {
+      return {
+        isUnlocked: false,
+        hideSidebar: true,
+        initAdmin() {
+          const stored = localStorage.getItem('adminUnlocked');
+          this.isUnlocked = stored === 'true';
+        },
+        toggleAdmin() {
+          if (this.isUnlocked) {
+            this.isUnlocked = false;
+            localStorage.setItem('adminUnlocked', 'false');
+          } else {
+            const pwd = prompt('Mot de passe administrateur ?');
+            if (pwd === 'admin') {
+              this.isUnlocked = true;
+              localStorage.setItem('adminUnlocked', 'true');
+            } else if (pwd !== null) {
+              alert('Mot de passe incorrect.');
+            }
+          }
+        }
+      };
+    });
+    Alpine.init();
+  });
+</script>
+{% endblock %}
+
+{% block content %}
+<div x-data="ticketForm()" 
+     x-init="recalc(); loadDevisDraft(); hideSidebar = true"
+     @change="recalc()" 
+     @input="recalc()"
+     @add-bike-sale.window="addBikeSale($event.detail)"
+     @recalc-needed.window="recalc()"
+     class="catalogue-container">
+
+  <!-- Titre Catalogue -->
+  <div class="catalogue-header">
+    <h1 class="catalogue-title">Catalogue</h1>
+  </div>
+
+  <!-- Grille principale 2 colonnes -->
+  <div class="catalogue-grid">
+    
+    <!-- Colonne gauche: Catégories + Prestations -->
+    <div class="catalogue-left">
+      <div x-data="{ openCat: 'Direction' }">
+        {% for cat, items in catalogue|default({}) %}
+          {% if loop.index == 1 %}
+            <!-- Catégorie Direction (ouverte par défaut) -->
+            <div class="category-section" :class="{ 'active': openCat === '{{ cat|e('js') }}' }" 
+                 x-data="{ id: '{{ cat|e('js') }}' }">
+              <div class="category-bar category-bar-primary"
+                   role="button"
+                   tabindex="0"
+                   @click="openCat = (openCat === id ? null : id)">
+                <span class="category-text">{{ cat }}</span>
+              </div>
+              
+              <div class="category-content" x-show="openCat === id" x-transition>
+                <div class="cards-grid">
+                  {% for item in items %}
+                    <div class="prestation-card" data-id="{{ item.id }}"
+                         :class="{ 'selected': checked || pieceChecked }"
+                         x-data="{
+                            checked: false, pieceChecked: false, 
+                            moQty: 1, pieceQty: 1, 
+                            moBase: 0, pieceBase: 0, 
+                            moEdit: false, pieceEdit: false, 
+                            moInput: '', pieceInput: '',
+                            pieceLabel: '',
+                            moFinal(){ return this.moInput !== '' && !isNaN(+this.moInput) ? +this.moInput : this.moBase; },
+                            pieceFinal(){ return this.pieceInput !== '' && !isNaN(+this.pieceInput) ? +this.pieceInput : this.pieceBase; },
+                            moValid(){ return this.moInput !== '' && !isNaN(+this.moInput); },
+                            pieceValid(){ return this.pieceInput !== '' && !isNaN(+this.pieceInput); },
+                            resetMo(){ this.moInput = ''; this.moQty = 1; },
+                            resetPiece(){ this.pieceInput = ''; this.pieceQty = 1; },
+                            sanitizePrice(val){
+                              let s = String(val ?? '').replace(',', '.').replace(/[^\d.]/g, '');
+                              let num = parseFloat(s);
+                              if (isNaN(num) || num < 0) return '';
+                              if (num > 9999) num = 9999;
+                              return num.toString().slice(0, 7);
+                            }
+                         }"
+                         x-init="moBase = parseFloat($el.dataset.price) || 0; pieceBase = parseFloat($el.dataset.piecePrice) || 0; baseTva = parseFloat($el.dataset.tva) || 20; pieceLabel = ($el.dataset.pieceLabel || 'Pièce').slice(0, 19)"
+                         data-price="{{ item.prix_main_oeuvre_ht|default(0) }}"
+                         data-tva="{{ item.tva_pct|default(tvadef) }}"
+                         data-piece-price="{{ item.piece_prix_ht|default(0) }}"
+                         data-piece-label="{{ item.piece_libelle|default('Pièce') }}">
+                      
+                      <div class="card-header">
+                        <input type="checkbox" class="prest-check" 
+                               x-model="checked" @change="if($el.checked){ pieceChecked = true; } $dispatch('recalc-needed')">
+                        <span class="card-title">{{ item.libelle }}</span>
+                      </div>
+                      
+                      <div class="card-body">
+                        <!-- Main d'œuvre -->
+                        <div class="service-line">
+                          <div class="service-label">
+                            <span class="service-type">MO</span>
+                            <span class="service-price" x-show="moFinal() > 0" x-text="Number(moFinal() || 0).toFixed(2) + ' €'">
+                              {% if item.prix_main_oeuvre_ht|default(0) > 0 %}{{ (item.prix_main_oeuvre_ht|default(0))|number_format(2, ',', ' ') }} €{% endif %}
+                            </span>
+                          </div>
+                          <div class="service-actions">
+                            <select x-model="moQty" :disabled="!checked" @change="$dispatch('recalc-needed')" class="qty-select">
+                              <option value="1">1</option>
+                              <option value="2">2</option>
+                            </select>
+                            <button type="button" :disabled="!checked" @click="moEdit = true" x-show="!moEdit" class="icon-btn">
+                              <i class="fas fa-pencil-alt"></i>
+                            </button>
+                            <button type="button" x-show="moEdit" x-transition @click="resetMo(); $root.recalc()" class="icon-btn">
+                              <i class="fas fa-times"></i>
+                            </button>
+                          </div>
+                          <div x-show="moEdit" x-transition class="price-edit">
+                            <input type="number" step="0.01" min="0" max="9999" inputmode="decimal" 
+                                   :disabled="!checked" x-model="moInput" @input="moInput = sanitizePrice(moInput); $root.recalc()" 
+                                   class="price-input">
+                          </div>
+                        </div>
+                        
+                        <!-- Pièce -->
+                        <div class="service-line">
+                          <div class="service-label">
+                            <input type="checkbox" class="piece-check" x-model="pieceChecked" @change="$root.recalc()">
+                            <span class="service-name" x-text="pieceLabel">
+                              {{ item.piece_libelle|default('Pièce') }}
+                            </span>
+                            <span class="service-price" x-show="pieceFinal() > 0" x-text="Number(pieceFinal() || 0).toFixed(2) + ' €'">
+                              {% if item.piece_prix_ht|default(0) > 0 %}{{ (item.piece_prix_ht|default(0))|number_format(2, ',', ' ') }} €{% endif %}
+                            </span>
+                          </div>
+                          <div class="service-actions">
+                            <select x-model="pieceQty" :disabled="!pieceChecked" @change="$dispatch('recalc-needed')" class="qty-select">
+                              <option value="1">1</option>
+                              <option value="2">2</option>
+                            </select>
+                            <button type="button" :disabled="!pieceChecked" @click="pieceEdit = true" x-show="!pieceEdit" class="icon-btn">
+                              <i class="fas fa-pencil-alt"></i>
+                            </button>
+                            <button type="button" x-show="pieceEdit" x-transition @click="resetPiece(); $root.recalc()" class="icon-btn">
+                              <i class="fas fa-times"></i>
+                            </button>
+                          </div>
+                          <div x-show="pieceEdit" x-transition class="price-edit">
+                            <input type="number" step="0.01" min="0" max="9999" inputmode="decimal" 
+                                   :disabled="!pieceChecked" x-model="pieceInput" @input="pieceInput = sanitizePrice(pieceInput); $root.recalc()" 
+                                   class="price-input">
+                          </div>
+                        </div>
+                        
+                        <!-- Inputs masqués pour POST -->
+                        <input type="hidden" name="prest_id[]" value="{{ item.id }}" :disabled="!checked">
+                        <input type="hidden" name="qty[]" :value="moQty" :disabled="!checked">
+                        <input type="hidden" name="price_override[]" :value="moInput" :disabled="!checked">
+                        <input type="hidden" name="piece_qty[]" :value="pieceQty" :disabled="!pieceChecked">
+                        <input type="hidden" name="piece_price_override[]" :value="pieceInput" :disabled="!pieceChecked">
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <!-- Autres catégories (collapsées) -->
+            <div class="category-section" :class="{ 'active': openCat === '{{ cat|e('js') }}' }"
+                 x-data="{ id: '{{ cat|e('js') }}' }">
+              <div class="category-bar"
+                   role="button"
+                   tabindex="0"
+                   @click="openCat = (openCat === id ? null : id)">
+                <span class="category-text">{{ cat }}</span>
+                <i class="fas fa-chevron-down category-arrow" x-show="openCat !== id"></i>
+                <i class="fas fa-chevron-up category-arrow" x-show="openCat === id"></i>
+              </div>
+              
+              <div class="category-content" x-show="openCat === id" x-transition>
+                <div class="cards-grid">
+                  {% for item in items %}
+                    <div class="prestation-card" data-id="{{ item.id }}"
+                         :class="{ 'selected': checked || pieceChecked }"
+                         x-data="{
+                            checked: false, pieceChecked: false, 
+                            moQty: 1, pieceQty: 1, 
+                            moBase: 0, pieceBase: 0, 
+                            moEdit: false, pieceEdit: false, 
+                            moInput: '', pieceInput: '',
+                            pieceLabel: '',
+                            moFinal(){ return this.moInput !== '' && !isNaN(+this.moInput) ? +this.moInput : this.moBase; },
+                            pieceFinal(){ return this.pieceInput !== '' && !isNaN(+this.pieceInput) ? +this.pieceInput : this.pieceBase; },
+                            moValid(){ return this.moInput !== '' && !isNaN(+this.moInput); },
+                            pieceValid(){ return this.pieceInput !== '' && !isNaN(+this.pieceInput); },
+                            resetMo(){ this.moInput = ''; this.moQty = 1; },
+                            resetPiece(){ this.pieceInput = ''; this.pieceQty = 1; },
+                            sanitizePrice(val){
+                              let s = String(val ?? '').replace(',', '.').replace(/[^\d.]/g, '');
+                              let num = parseFloat(s);
+                              if (isNaN(num) || num < 0) return '';
+                              if (num > 9999) num = 9999;
+                              return num.toString().slice(0, 7);
+                            }
+                         }"
+                         x-init="moBase = parseFloat($el.dataset.price) || 0; pieceBase = parseFloat($el.dataset.piecePrice) || 0; baseTva = parseFloat($el.dataset.tva) || 20; pieceLabel = ($el.dataset.pieceLabel || 'Pièce').slice(0, 19)"
+                         data-price="{{ item.prix_main_oeuvre_ht|default(0) }}"
+                         data-tva="{{ item.tva_pct|default(tvadef) }}"
+                         data-piece-price="{{ item.piece_prix_ht|default(0) }}"
+                         data-piece-label="{{ item.piece_libelle|default('Pièce') }}">
+                      
+                      <div class="card-header">
+                        <input type="checkbox" class="prest-check" 
+                               x-model="checked" @change="if($el.checked){ pieceChecked = true; } $dispatch('recalc-needed')">
+                        <span class="card-title">{{ item.libelle }}</span>
+                      </div>
+                      
+                      <div class="card-body">
+                        <!-- Main d'œuvre -->
+                        <div class="service-line">
+                          <div class="service-label">
+                            <span class="service-type">MO</span>
+                            <span class="service-price" x-show="moFinal() > 0" x-text="Number(moFinal() || 0).toFixed(2) + ' €'">
+                              {% if item.prix_main_oeuvre_ht|default(0) > 0 %}{{ (item.prix_main_oeuvre_ht|default(0))|number_format(2, ',', ' ') }} €{% endif %}
+                            </span>
+                          </div>
+                          <div class="service-actions">
+                            <select x-model="moQty" :disabled="!checked" @change="$dispatch('recalc-needed')" class="qty-select">
+                              <option value="1">1</option>
+                              <option value="2">2</option>
+                            </select>
+                            <button type="button" :disabled="!checked" @click="moEdit = true" x-show="!moEdit" class="icon-btn">
+                              <i class="fas fa-pencil-alt"></i>
+                            </button>
+                            <button type="button" x-show="moEdit" x-transition @click="resetMo(); $root.recalc()" class="icon-btn">
+                              <i class="fas fa-times"></i>
+                            </button>
+                          </div>
+                          <div x-show="moEdit" x-transition class="price-edit">
+                            <input type="number" step="0.01" min="0" max="9999" inputmode="decimal" 
+                                   :disabled="!checked" x-model="moInput" @input="moInput = sanitizePrice(moInput); $root.recalc()" 
+                                   class="price-input">
+                          </div>
+                        </div>
+                        
+                        <!-- Pièce -->
+                        <div class="service-line">
+                          <div class="service-label">
+                            <input type="checkbox" class="piece-check" x-model="pieceChecked" @change="$root.recalc()">
+                            <span class="service-name" x-text="pieceLabel">
+                              {{ item.piece_libelle|default('Pièce') }}
+                            </span>
+                            <span class="service-price" x-show="pieceFinal() > 0" x-text="Number(pieceFinal() || 0).toFixed(2) + ' €'">
+                              {% if item.piece_prix_ht|default(0) > 0 %}{{ (item.piece_prix_ht|default(0))|number_format(2, ',', ' ') }} €{% endif %}
+                            </span>
+                          </div>
+                          <div class="service-actions">
+                            <select x-model="pieceQty" :disabled="!pieceChecked" @change="$dispatch('recalc-needed')" class="qty-select">
+                              <option value="1">1</option>
+                              <option value="2">2</option>
+                            </select>
+                            <button type="button" :disabled="!pieceChecked" @click="pieceEdit = true" x-show="!pieceEdit" class="icon-btn">
+                              <i class="fas fa-pencil-alt"></i>
+                            </button>
+                            <button type="button" x-show="pieceEdit" x-transition @click="resetPiece(); $root.recalc()" class="icon-btn">
+                              <i class="fas fa-times"></i>
+                            </button>
+                          </div>
+                          <div x-show="pieceEdit" x-transition class="price-edit">
+                            <input type="number" step="0.01" min="0" max="9999" inputmode="decimal" 
+                                   :disabled="!pieceChecked" x-model="pieceInput" @input="pieceInput = sanitizePrice(pieceInput); $root.recalc()" 
+                                   class="price-input">
+                          </div>
+                        </div>
+                        
+                        <!-- Inputs masqués pour POST -->
+                        <input type="hidden" name="prest_id[]" value="{{ item.id }}" :disabled="!checked">
+                        <input type="hidden" name="qty[]" :value="moQty" :disabled="!checked">
+                        <input type="hidden" name="price_override[]" :value="moInput" :disabled="!checked">
+                        <input type="hidden" name="piece_qty[]" :value="pieceQty" :disabled="!pieceChecked">
+                        <input type="hidden" name="piece_price_override[]" :value="pieceInput" :disabled="!pieceChecked">
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      
+      <!-- Tuile Vente de vélo -->
+      <div class="category-section" :class="{ 'active': openCat === '_bike_sale' }"
+           x-data="{ id: '_bike_sale' }">
+        <div class="category-bar"
+             role="button"
+             tabindex="0"
+             @click="openCat = (openCat === id ? null : id)">
+          <span class="category-text">Vente de vélo</span>
+          <i class="fas fa-chevron-down category-arrow" x-show="openCat !== id"></i>
+          <i class="fas fa-chevron-up category-arrow" x-show="openCat === id"></i>
+        </div>
+        
+        <div class="category-content" x-show="openCat === id" x-transition>
+          <div class="bike-sale-card">
+            <div class="form-field">
+              <label>Modèle du vélo</label>
+              <input x-ref="bikeModel" type="text" class="input-field">
+            </div>
+            <div class="form-field">
+              <label>Prix du vélo</label>
+              <input x-ref="bikePrice" type="number" step="0.01" inputmode="decimal" class="input-field">
+            </div>
+            <div class="form-field">
+              <button type="button" class="btn btn-secondary"
+                      @click.prevent="
+                        $dispatch('add-bike-sale', { model: $refs.bikeModel.value, price: $refs.bikePrice.value });
+                        openCat = null;
+                        $refs.bikeModel.value = '';
+                        $refs.bikePrice.value = '';
+                      ">
+                Ajouter
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Colonne droite: Éléments sélectionnés -->
+    <div class="catalogue-right">
+      <div class="selected-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Éléments sélectionnés</h2>
+          <button class="cart-icon">
+            <i class="fas fa-shopping-cart"></i>
+          </button>
+        </div>
+        
+        <!-- Section Prestation -->
+        <div class="panel-section" x-show="pending.some(p => p.moQty > 0)">
+          <div class="section-bar">Prestation</div>
+          <table class="selected-table">
+            <thead>
+              <tr>
+                <th>DESCRIPTION</th>
+                <th>QTÉ</th>
+                <th>UNIT.</th>
+                <th>S.TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="(p, idx) in pending" :key="p.id + '-mo'">
+                <tr x-show="p.moQty > 0">
+                  <td x-text="p.label"></td>
+                  <td x-text="p.moQty"></td>
+                  <td x-text="fmt(p.moUnit)"></td>
+                  <td x-text="fmt(p.moTotal)"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Section Consommable -->
+        <div class="panel-section" x-show="pending.some(p => p.pieceQty > 0)">
+          <div class="section-bar">Consommable</div>
+          <table class="selected-table">
+            <thead>
+              <tr>
+                <th>DESCRIPTION</th>
+                <th>QTÉ</th>
+                <th>UNIT.</th>
+                <th>S.TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="(p, idx) in pending" :key="p.id + '-piece'">
+                <tr x-show="p.pieceQty > 0">
+                  <td x-text="p.pieceLabel || p.label"></td>
+                  <td x-text="p.pieceQty"></td>
+                  <td x-text="fmt(p.pieceUnit)"></td>
+                  <td x-text="fmt(p.pieceTotal)"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Section Vente de vélo -->
+        <div class="panel-section" x-show="pending.some(p => p.type === 'bike')">
+          <div class="section-bar">Vente</div>
+          <table class="selected-table">
+            <thead>
+              <tr>
+                <th>DESCRIPTION</th>
+                <th>QTÉ</th>
+                <th>UNIT.</th>
+                <th>S.TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="(p, idx) in pending" :key="(p.id || p.label) + '-bike'">
+                <tr x-show="p.type === 'bike'">
+                  <td x-text="p.label"></td>
+                  <td x-text="p.qty"></td>
+                  <td x-text="fmt(p.unit)"></td>
+                  <td x-text="fmt(p.subtotal)"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Total -->
+        <div class="panel-total">
+          <div class="total-row">
+            <span class="total-label">TOTAL</span>
+            <span class="total-amount" id="t-total">0.00 €</span>
+          </div>
+        </div>
+        
+        <!-- Boutons d'action -->
+        <div class="panel-actions">
+          <button type="button" class="btn btn-outline-primary" onclick="saveDevisDraft(); return openDevisModal();">
+            <i class="fas fa-file-invoice"></i>
+            Devis
+          </button>
+          <button type="button" class="btn btn-outline-primary" onclick="saveDevisDraft(); return openClientSelectModal();">
+            <i class="fas fa-user"></i>
+            Client
+          </button>
+          <button type="button" class="btn btn-primary btn-full" onclick="saveDevisDraft(); return goNewClient();">
+            <i class="fas fa-user-plus"></i>
+            Nouveau client
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Devis PDF -->
+<div id="devis-modal" style="position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:2000;">
+  <div style="background:#fff; padding:16px; border-radius:12px; width:90%; max-width:420px;">
+    <h3 style="margin-top:0;">Informations client (optionnel)</h3>
+    <div class="form-field">
+      <label for="m_name">Nom</label>
+      <input id="m_name" type="text" placeholder="Nom (optionnel)">
+    </div>
+    <div class="form-field">
+      <label for="m_phone">Téléphone</label>
+      <input id="m_phone" type="text" placeholder="Téléphone (optionnel)">
+    </div>
+    <div class="form-field">
+      <label for="m_brand">Marque du vélo</label>
+      <input id="m_brand" type="text" placeholder="Marque du vélo (optionnel)">
+    </div>
+    <div style="display:flex; gap:8px; justify-content:flex-end;">
+      <button type="button" class="btn btn-ghost btn-ghost-sm" onclick="closeDevisModal()">Annuler</button>
+      <button type="button" class="btn btn-secondary" onclick="submitDirectPdf()">Continuer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Sélection Client -->
+<div id="client-select-modal" style="position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:2000;">
+  <div style="background:#fff; padding:16px; border-radius:12px; width:92%; max-width:520px;">
+    <h3 style="margin-top:0;">Sélectionner un client</h3>
+    <div class="form-field">
+      <input id="client-search-input" type="text" placeholder="Rechercher un client…" oninput="debouncedClientSearch()" style="width:100%;">
+    </div>
+    <div id="client-search-results" style="max-height:300px; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; padding:6px;"></div>
+    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:10px;">
+      <button type="button" class="btn btn-ghost btn-ghost-sm" onclick="closeClientSelectModal()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Validation Ticket -->
+<div id="ticket-validation-modal" style="position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:2000;">
+  <div style="background:#fff; padding:20px; border-radius:12px; width:95%; max-width:500px; max-height:90vh; overflow-y:auto;">
+    <h3 style="margin-top:0;">Créer le ticket</h3>
+    <div class="form-field">
+      <label for="tv_client_name">Nom du client</label>
+      <input id="tv_client_name" type="text" readonly style="background:#f5f5f5; color:#666;">
+    </div>
+    <div class="form-field">
+      <label for="tv_bike_model">Modèle du vélo</label>
+      <input id="tv_bike_model" type="text" class="input-field">
+    </div>
+    <div class="form-field">
+      <label for="tv_email">Email</label>
+      <input id="tv_email" type="email" class="input-field">
+    </div>
+    <div class="form-field">
+      <label for="tv_phone">Téléphone</label>
+      <input id="tv_phone" type="tel" class="input-field">
+    </div>
+    <div class="form-field">
+      <label for="tv_note">Note interne</label>
+      <textarea id="tv_note" rows="3" class="input-field"></textarea>
+    </div>
+    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:16px;">
+      <button type="button" class="btn btn-ghost btn-ghost-sm" onclick="closeTicketValidationModal()">Annuler</button>
+      <button type="button" class="btn btn-secondary" onclick="submitTicketValidation()">Créer le ticket</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Styles pour la nouvelle interface Catalogue */
+  .catalogue-container {
+    background: #F8F9FA;
+    min-height: calc(100vh - 120px);
+  }
+  
+  .catalogue-header {
+    padding: 24px 0 16px;
+  }
+  
+  .catalogue-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1F2937;
+    margin: 0;
+  }
+  
+  .catalogue-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: start;
+  }
+  
+  @media (max-width: 1024px) {
+    .catalogue-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  /* Catégories */
+  .category-section {
+    margin-bottom: 20px;
+  }
+  
+  .category-bar {
+    background: #3B82F6;
+    color: white;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.2s ease;
+  }
+  
+  .category-bar:hover {
+    background: #2563EB;
+  }
+  
+  .category-bar-primary {
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
+  }
+  
+  .category-text {
+    flex: 1;
+  }
+  
+  .category-arrow {
+    font-size: 0.9rem;
+    transition: transform 0.2s ease;
+  }
+  
+  .category-content {
+    margin-top: 16px;
+  }
+  
+  /* Grille de cartes */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  
+  /* Carte de prestation */
+  .prestation-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+  }
+  
+  .prestation-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  
+  .prestation-card.selected {
+    border-color: #3B82F6;
+    background: #F0F9FF;
+  }
+  
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .prest-check, .piece-check {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+  
+  .card-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #1F2937;
+  }
+  
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  /* Ligne de service */
+  .service-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: #F9FAFB;
+    border-radius: 8px;
+  }
+  
+  .service-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+  
+  .service-type {
+    background: #DBEAFE;
+    color: #1D4ED8;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .service-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+  }
+  
+  .service-price {
+    font-weight: 600;
+    color: #1F2937;
+    font-size: 0.9rem;
+  }
+  
+  .service-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .qty-select {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid #D1D5DB;
+    background: white;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  
+  .icon-btn {
+    background: transparent;
+    border: none;
+    color: #6B7280;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+  }
+  
+  .icon-btn:hover {
+    background: #F3F4F6;
+    color: #374151;
+  }
+  
+  .icon-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  
+  .price-edit {
+    width: 100%;
+  }
+  
+  .price-input {
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid #3B82F6;
+    border-radius: 4px;
+    font-size: 0.85rem;
+  }
+  
+  .price-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+  
+  /* Carte vente de vélo */
+  .bike-sale-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  
+  .form-field {
+    margin-bottom: 16px;
+  }
+  
+  .form-field label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #374151;
+  }
+  
+  .input-field {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #D1D5DB;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  
+  .input-field:focus {
+    outline: none;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  /* Panneau Éléments sélectionnés */
+  .selected-panel {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    padding: 20px;
+    position: sticky;
+    top: 20px;
+  }
+  
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #E5E7EB;
+  }
+  
+  .panel-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1F2937;
+    margin: 0;
+  }
+  
+  .cart-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: #F3F4F6;
+    border: none;
+    color: #6B7280;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .cart-icon:hover {
+    background: #E5E7EB;
+    color: #374151;
+  }
+  
+  .panel-section {
+    margin-bottom: 16px;
+  }
+  
+  .section-bar {
+    background: #3B82F6;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+  }
+  
+  /* Tableau sélection */
+  .selected-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  
+  .selected-table th {
+    background: #F9FAFB;
+    color: #6B7280;
+    font-weight: 600;
+    padding: 8px 6px;
+    text-align: left;
+    font-size: 0.8rem;
+  }
+  
+  .selected-table td {
+    padding: 8px 6px;
+    border-bottom: 1px solid #F3F4F6;
+    color: #374151;
+  }
+  
+  .selected-table td:first-child,
+  .selected-table th:first-child {
+    width: auto;
+  }
+  
+  .selected-table td:nth-child(2),
+  .selected-table th:nth-child(2),
+  .selected-table td:nth-child(3),
+  .selected-table th:nth-child(3),
+  .selected-table td:nth-child(4),
+  .selected-table th:nth-child(4) {
+    text-align: center;
+    width: 50px;
+  }
+  
+  /* Total */
+  .panel-total {
+    margin: 20px 0;
+    padding: 16px;
+    background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+    border-radius: 12px;
+    border: 1px solid #BFDBFE;
+  }
+  
+  .total-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .total-label {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1D4ED8;
+  }
+  
+  .total-amount {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1E3A8A;
+  }
+  
+  /* Actions */
+  .panel-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .btn-outline-primary {
+    background: white;
+    border: 2px solid #3B82F6;
+    color: #3B82F6;
+    font-weight: 600;
+    min-height: 44px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .btn-outline-primary:hover {
+    background: #EFF6FF;
+    border-color: #2563EB;
+    color: #2563EB;
+  }
+  
+  .btn-full {
+    width: 100%;
+  }
+  
+  .btn-primary {
+    background: #3B82F6;
+    color: white;
+    border: none;
+    font-weight: 600;
+    min-height: 48px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .btn-primary:hover {
+    background: #2563EB;
+  }
+  
+  .btn-secondary {
+    background: #F3F4F6;
+    color: #1F2937;
+    border: 1px solid #E5E7EB;
+    font-weight: 500;
+    min-height: 40px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .btn-secondary:hover {
+    background: #E5E7EB;
+  }
+  
+  .btn-ghost {
+    background: transparent;
+    border: none;
+    color: #6B7280;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  
+  .btn-ghost:hover {
+    background: #F3F4F6;
+  }
+  
+  .btn-ghost-sm {
+    padding: 4px 8px;
+    font-size: 0.85rem;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .catalogue-title {
+      font-size: 1.5rem;
+    }
+    
+    .cards-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .selected-panel {
+      position: static;
+      margin-top: 24px;
+    }
+  }
+</style>
+
+<script src="/js/catalogue.js"></script>
+{% endblock %}

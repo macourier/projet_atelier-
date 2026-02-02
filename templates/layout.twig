@@ -30,9 +30,9 @@ if (!window.Alpine) {
 
   {% block head %}{% endblock %}
 </head>
-<body x-data="adminToggle()" x-init="initAdmin()">
+<body x-data="adminToggle()" x-init="initAdmin()" :class="{ 'hide-sidebar': hideSidebar }">
   <div class="app-shell">
-    <aside class="sidebar" aria-label="Navigation principale">
+    <aside class="sidebar" x-show="!hideSidebar" aria-label="Navigation principale">
       <a href="/" class="brand-logo sidebar-brand" aria-label="L'Atelier Velo">
         <span class="brand-label">
           <span class="brand-line1">l'atelier</span>

@@ -44,11 +44,15 @@ class DevisController
         $error = isset($query['error']) ? (string)$query['error'] : null;
         $totaux = ['ht' => 0.0, 'tva' => 0.0, 'ttc' => 0.0];
 
-        $response->getBody()->write($this->twig->render('devis/builder.twig', [
+        // TVA par défaut
+        $tvadef = 20.0;
+
+        $response->getBody()->write($this->twig->render('catalogue/new_builder.twig', [
             'client' => $client,
             'catalogue' => $catalogue,
             'totaux' => $totaux,
             'error' => $error,
+            'tvadef' => $tvadef,
         ]));
         return $response;
     }

@@ -96,7 +96,9 @@ body{
 .sidebar-lock{display:inline-flex; align-items:center; color:#64748b;}
 .sidebar-link.active .sidebar-icon,
 .sidebar-section-title.active .sidebar-lock{color:#1d4ed8;}
-.app-main{margin-left:260px; width:calc(100% - 260px); min-height:100vh;}
+.app-main{margin-left:260px; width:calc(100% - 260px); min-height:100vh; transition:margin-left .3s ease, width .3s ease;}
+.hide-sidebar .sidebar{display:none;}
+.hide-sidebar .app-main{margin-left:0; width:100%;}
 
 /* Topbar actions only */
 .topbar{display:flex; align-items:center; justify-content:flex-end; padding:8px 0 4px;}
