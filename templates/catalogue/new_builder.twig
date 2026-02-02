@@ -2,43 +2,9 @@
 
 {% block title %}Catalogue{% endblock %}
 
-{% block head %}
-<script>
-  // Masquer la sidebar sur cette page
-  window.addEventListener('DOMContentLoaded', function() {
-    document.body.setAttribute('x-data', document.body.getAttribute('x-data') + ' hideSidebar: true');
-    Alpine.data('adminToggle', function() {
-      return {
-        isUnlocked: false,
-        hideSidebar: true,
-        initAdmin() {
-          const stored = localStorage.getItem('adminUnlocked');
-          this.isUnlocked = stored === 'true';
-        },
-        toggleAdmin() {
-          if (this.isUnlocked) {
-            this.isUnlocked = false;
-            localStorage.setItem('adminUnlocked', 'false');
-          } else {
-            const pwd = prompt('Mot de passe administrateur ?');
-            if (pwd === 'admin') {
-              this.isUnlocked = true;
-              localStorage.setItem('adminUnlocked', 'true');
-            } else if (pwd !== null) {
-              alert('Mot de passe incorrect.');
-            }
-          }
-        }
-      };
-    });
-    Alpine.init();
-  });
-</script>
-{% endblock %}
-
 {% block content %}
 <div x-data="ticketForm()" 
-     x-init="recalc(); loadDevisDraft(); hideSidebar = true"
+     x-init="recalc(); loadDevisDraft()"
      @change="recalc()" 
      @input="recalc()"
      @add-bike-sale.window="addBikeSale($event.detail)"
