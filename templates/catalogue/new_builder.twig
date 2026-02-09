@@ -1,6 +1,8 @@
 {% extends 'layout.twig' %}
 
-{% block title %}Catalogue{% endblock %}
+{% block title %}Catalogue - Atelier Velo{% endblock %}
+
+{% block container_class %} container-standard{% endblock %}
 
 {% block content %}
 <div x-data="ticketForm()" 
@@ -265,40 +267,40 @@
             </div>
           {% endif %}
         {% endfor %}
-      </div>
       
-      <!-- Tuile Vente de vélo -->
-      <div class="category-section" :class="{ 'active': openCat === '_bike_sale' }"
-           x-data="{ id: '_bike_sale' }">
-        <div class="category-bar"
-             role="button"
-             tabindex="0"
-             @click="openCat = (openCat === id ? null : id)">
-          <span class="category-text">Vente de vélo</span>
-          <i class="fas fa-chevron-down category-arrow" x-show="openCat !== id"></i>
-          <i class="fas fa-chevron-up category-arrow" x-show="openCat === id"></i>
-        </div>
-        
-        <div class="category-content" x-show="openCat === id" x-transition>
-          <div class="bike-sale-card">
-            <div class="form-field">
-              <label>Modèle du vélo</label>
-              <input x-ref="bikeModel" type="text" class="input-field">
-            </div>
-            <div class="form-field">
-              <label>Prix du vélo</label>
-              <input x-ref="bikePrice" type="number" step="0.01" inputmode="decimal" class="input-field">
-            </div>
-            <div class="form-field">
-              <button type="button" class="btn btn-secondary"
-                      @click.prevent="
-                        $dispatch('add-bike-sale', { model: $refs.bikeModel.value, price: $refs.bikePrice.value });
-                        openCat = null;
-                        $refs.bikeModel.value = '';
-                        $refs.bikePrice.value = '';
-                      ">
-                Ajouter
-              </button>
+        <!-- Tuile Vente de vélo -->
+        <div class="category-section" :class="{ 'active': openCat === '_bike_sale' }"
+             x-data="{ id: '_bike_sale' }">
+          <div class="category-bar"
+               role="button"
+               tabindex="0"
+               @click="openCat = (openCat === id ? null : id)">
+            <span class="category-text">Vente de vélo</span>
+            <i class="fas fa-chevron-down category-arrow" x-show="openCat !== id"></i>
+            <i class="fas fa-chevron-up category-arrow" x-show="openCat === id"></i>
+          </div>
+          
+          <div class="category-content" x-show="openCat === id" x-transition>
+            <div class="bike-sale-card">
+              <div class="form-field">
+                <label>Modèle du vélo</label>
+                <input x-ref="bikeModel" type="text" class="input-field">
+              </div>
+              <div class="form-field">
+                <label>Prix du vélo</label>
+                <input x-ref="bikePrice" type="number" step="0.01" inputmode="decimal" class="input-field">
+              </div>
+              <div class="form-field">
+                <button type="button" class="btn btn-secondary"
+                        @click.prevent="
+                          $dispatch('add-bike-sale', { model: $refs.bikeModel.value, price: $refs.bikePrice.value });
+                          openCat = null;
+                          $refs.bikeModel.value = '';
+                          $refs.bikePrice.value = '';
+                        ">
+                  Ajouter
+                </button>
+              </div>
             </div>
           </div>
         </div>
