@@ -1430,3 +1430,37 @@ input.price-input-compact{
   color: #991B1B;
   border: 1px solid #FECACA;
 }
+
+/* === Planning items cliquables === */
+.item-link {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  padding: 2px 0;
+  border-radius: 6px;
+}
+
+.item-link:hover .item-title {
+  color: #1D4ED8;
+}
+
+.planning-item.has-ticket:hover {
+  background: #EFF6FF;
+}
+
+.item-ticket-ref {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #3B82F6;
+  background: #EFF6FF;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  align-self: flex-start;
+}

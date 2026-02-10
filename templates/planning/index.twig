@@ -40,8 +40,17 @@
       {% if day.count > 0 %}
       <ul class="planning-items-list">
         {% for item in day.items %}
-        <li class="planning-item">
-          <span class="item-title">{{ item.title }}</span>
+        <li class="planning-item {% if item.ticket_id %}has-ticket{% endif %}">
+          {% if item.ticket_id %}
+            <a href="/tickets/{{ item.ticket_id }}/edit" class="item-link">
+              <span class="item-title">{{ item.title }}</span>
+              {% if item.ticket_id %}
+              <span class="item-ticket-ref">#{{ item.ticket_id }}</span>
+              {% endif %}
+            </a>
+          {% else %}
+            <span class="item-title">{{ item.title }}</span>
+          {% endif %}
           <div class="item-actions">
             <form method="POST" action="/planning/items/{{ item.id }}/delete" style="display: inline;" onsubmit="return confirm('Supprimer cette intervention ?');">
               <button type="submit" class="item-delete-btn" title="Supprimer">×</button>

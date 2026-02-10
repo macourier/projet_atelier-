@@ -14,13 +14,20 @@ class PlanningService
 
     /**
      * Récupère les items de planning pour une période donnée, groupés par jour
+     * Exclut les tickets facturés (status = 'invoiced')
      */
     public function getWeekItems(DateTime $startDate, DateTime $endDate): array
     {
         $stmt = $this->pdo->prepare("
-            SELECT * FROM planning_items
-            WHERE scheduled_date >= :start AND scheduled_date <= :end
-            ORDER BY scheduled_date ASC, created_at ASC
+            SELECT p.*, 
+                   t.id as ticket_id,
+                   t.status as ticket_status
+            FROM planning_items p
+            LEFT JOIN tickets t ON p.ticket_id = t.id
+            WHERE p.scheduled_date >= :start 
+              AND p.scheduled_date <= :end
+              AND (t.id IS NULL OR t.status != 'invoiced')
+            ORDER BY p.scheduled_date ASC, p.created_at ASC
         ");
         $stmt->execute([
             'start' => $startDate->format('Y-m-d'),
