@@ -143,6 +143,65 @@ class PlanningService
     }
 
     /**
+     * Récupère un item de planning par ticket_id
+     */
+    public function getByTicketId(int $ticketId): ?array
+    {
+        $stmt = $this->pdo->prepare("SELECT * FROM planning_items WHERE ticket_id = :ticket_id LIMIT 1");
+        $stmt->execute(['ticket_id' => $ticketId]);
+        $item = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $item ?: null;
+    }
+
+    /**
+     * Crée un item de planning depuis un ticket
+     */
+    public function createFromTicket(int $ticketId, array $data): int
+    {
+        // Récupérer les infos du ticket
+        $stmt = $this->pdo->prepare("
+            SELECT t.id, t.bike_model, c.name as client_name 
+            FROM tickets t 
+            JOIN clients c ON t.client_id = c.id 
+            WHERE t.id = :id
+        ");
+        $stmt->execute(['id' => $ticketId]);
+        $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$ticket) {
+            throw new \Exception('Ticket introuvable');
+        }
+        
+        // Créer le titre automatiquement
+        $title = "Réparation - {$ticket['client_name']} — {$ticket['bike_model']}";
+        
+        // Insérer dans planning_items
+        $stmt = $this->pdo->prepare("
+            INSERT INTO planning_items (title, scheduled_date, recovery_date, ticket_id, status, notes)
+            VALUES (:title, :date, :recovery_date, :ticket_id, :status, :notes)
+        ");
+        $stmt->execute([
+            'title' => $title,
+            'date' => $data['recovery_date'],
+            'recovery_date' => $data['recovery_date'],
+            'ticket_id' => $ticketId,
+            'status' => 'planned',
+            'notes' => $data['notes'] ?? null
+        ]);
+        
+        return (int)$this->pdo->lastInsertId();
+    }
+
+    /**
+     * Supprime un item de planning par ticket_id
+     */
+    public function deleteByTicketId(int $ticketId): bool
+    {
+        $stmt = $this->pdo->prepare("DELETE FROM planning_items WHERE ticket_id = :ticket_id");
+        return $stmt->execute(['ticket_id' => $ticketId]);
+    }
+
+    /**
      * Calcule le lundi de la semaine pour une date donnée
      */
     public function getMondayOfWeek(DateTime $date): DateTime

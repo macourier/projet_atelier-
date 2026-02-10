@@ -14,6 +14,7 @@ class TicketController
     private ?\App\Service\TicketService $ticketService = null;
 
     public function __construct(array $container = [])
+    
     {
         $this->container = $container;
         $this->pdo = $container['pdo'] ?? null;
@@ -83,6 +84,13 @@ class TicketController
             $recentDocs['factures'] = $stmt->fetchAll() ?: [];
         }
 
+        // Charger le planning existant pour ce ticket
+        $ticketPlanning = null;
+        if ($this->pdo && $ticket && !empty($ticket['id'])) {
+            $planningService = new \App\Service\PlanningService($this->pdo);
+            $ticketPlanning = $planningService->getByTicketId((int)$ticket['id']);
+        }
+
         $response->getBody()->write($this->twig->render('tickets/edit.twig', [
             'ticket' => $ticket,
             'client' => $client,
@@ -90,7 +98,8 @@ class TicketController
             'consommables' => $consommables,
             'catalogue' => $catalogue,
             'totaux' => $totaux,
-            'recentDocs' => $recentDocs
+            'recentDocs' => $recentDocs,
+            'ticketPlanning' => $ticketPlanning
         ]));
         return $response;
     }
@@ -98,6 +107,7 @@ class TicketController
     public function update(Request $request, Response $response, array $args): Response
     {
         $id = (int)($args['id'] ?? 0);
+        $wasCreatedNow = false;
         $data = (array)$request->getParsedBody();
         $bikeBrand = trim((string)($data['bike_brand'] ?? ''));
         $bikeModel = trim((string)($data['bike_model'] ?? ''));
@@ -112,10 +122,19 @@ class TicketController
         // création si nécessaire
         if ($id <= 0) {
             $client_id = (int)($data['client_id'] ?? 0);
+            
+            // Protection: ne créer un ticket que si on a au moins un client
+            if ($client_id <= 0) {
+                $response->getBody()->write('Client requis pour créer un ticket');
+                return $response->withStatus(400);
+            }
+            
+            // Créer le ticket même sans prestations (l'utilisateur pourra en ajouter plus tard)
             // received_at initialized to CURRENT_TIMESTAMP
             $stmt = $this->pdo->prepare('INSERT INTO tickets (client_id, status) VALUES (:client_id, :status)');
             $stmt->execute(['client_id' => $client_id, 'status' => 'open']);
             $id = (int)$this->pdo->lastInsertId();
+            $wasCreatedNow = true;
             try {
                 $this->pdo->prepare('UPDATE tickets SET received_at = CURRENT_TIMESTAMP WHERE id = :id')
                     ->execute(['id' => $id]);
@@ -124,29 +143,93 @@ class TicketController
             }
 
             // Stocker les infos vélo directement sur le ticket
-            $updBike = $this->pdo->prepare('UPDATE tickets SET bike_brand = :bb, bike_model = :bm, bike_serial = :bs, bike_notes = :bn WHERE id = :tid');
-            $updBike->execute([
-                'bb' => $bikeBrand,
-                'bm' => $bikeModel,
-                'bs' => $bikeSerial,
-                'bn' => $bikeNotes,
-                'tid' => $id
-            ]);
+            try {
+                $updBike = $this->pdo->prepare('UPDATE tickets SET bike_brand = :bb, bike_model = :bm, bike_serial = :bs, bike_notes = :bn WHERE id = :tid');
+                $updBike->execute([
+                    'bb' => $bikeBrand,
+                    'bm' => $bikeModel,
+                    'bs' => $bikeSerial,
+                    'bn' => $bikeNotes,
+                    'tid' => $id
+                ]);
+            } catch (\PDOException $e) {
+                // Ignorer si colonnes absentes
+            }
         } else {
-            $stmt = $this->pdo->prepare('UPDATE tickets SET bike_brand = :bb, bike_model = :bm, bike_serial = :bs, bike_notes = :bn, updated_at = CURRENT_TIMESTAMP WHERE id = :id');
-            $stmt->execute([
-                'bb' => $bikeBrand,
-                'bm' => $bikeModel,
-                'bs' => $bikeSerial,
-                'bn' => $bikeNotes,
-                'id' => $id
-            ]);
+            try {
+                $updBike = $this->pdo->prepare('UPDATE tickets SET bike_brand = :bb, bike_model = :bm, bike_serial = :bs, bike_notes = :bn WHERE id = :tid');
+                $updBike->execute([
+                    'bb' => $bikeBrand,
+                    'bm' => $bikeModel,
+                    'bs' => $bikeSerial,
+                    'bn' => $bikeNotes,
+                    'tid' => $id
+                ]);
+            } catch (\PDOException $e) {
+                // Ignorer si colonnes absentes
+            }
+        }
+
+        // Protection: si c'est un nouveau ticket sans prestations ni vélo, le supprimer pour éviter la pollution
+        $hasNonEmptyArrayValue = static function ($value): bool {
+            if (!is_array($value)) {
+                return false;
+            }
+            foreach ($value as $v) {
+                if (trim((string)$v) !== '') {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        $hasPrestations = $hasNonEmptyArrayValue($data['prest_id'] ?? null);
+        $hasBikeInfo = !empty($bikeBrand) || !empty($bikeModel) || !empty($bikeSerial) || !empty($bikeNotes);
+        $hasCustomPrestations = $hasNonEmptyArrayValue($data['custom_prest_label'] ?? null);
+        $hasCustomPieces = $hasNonEmptyArrayValue($data['custom_piece_label'] ?? null);
+        $hasCustomBikeSales = $hasNonEmptyArrayValue($data['custom_bike_label'] ?? null);
+        $hasBikeSales = $hasCustomPieces || $hasCustomBikeSales;
+        $hasTicketPayload = $hasPrestations || $hasCustomPrestations || $hasBikeSales;
+        
+        if ($id > 0 && !$hasPrestations && !$hasBikeInfo && !$hasCustomPrestations && !$hasBikeSales) {
+            // Vérifier si le ticket a des lignes en base (prestations + consommables)
+            $check = $this->pdo->prepare('
+                SELECT
+                    (SELECT COUNT(*) FROM ticket_prestations WHERE ticket_id = :id)
+                  + (SELECT COUNT(*) FROM ticket_consommables WHERE ticket_id = :id)
+                AS total_lines
+            ');
+            $check->execute(['id' => $id]);
+            $prestCount = (int)($check->fetchColumn() ?? 0);
+            if ($prestCount === 0) {
+                // Ticket vide récemment créé : le supprimer
+                $this->pdo->prepare('DELETE FROM tickets WHERE id = :id')->execute(['id' => $id]);
+                
+                // Rediriger avec un message d'erreur
+                return $response->withHeader('Location', '/catalogue?error=empty_ticket_deleted')->withStatus(302);
+            }
         }
 
         // Mettre à jour les prestations sélectionnées depuis l'UI tactile
         $this->ticketService = $this->ticketService ?? new \App\Service\TicketService($this->pdo);
         $this->ticketService->replacePrestationsFromPost($id, $data);
         $this->ticketService->computeTotals($id);
+
+        // Garde-fou: éviter de conserver un ticket nouvellement créé avec payload inexploitable.
+        if ($wasCreatedNow && $hasTicketPayload) {
+            $check = $this->pdo->prepare('
+                SELECT
+                    (SELECT COUNT(*) FROM ticket_prestations WHERE ticket_id = :id)
+                  + (SELECT COUNT(*) FROM ticket_consommables WHERE ticket_id = :id)
+                AS total_lines
+            ');
+            $check->execute(['id' => $id]);
+            $totalLines = (int)($check->fetchColumn() ?? 0);
+            if ($totalLines === 0 && !$hasBikeInfo) {
+                $this->pdo->prepare('DELETE FROM tickets WHERE id = :id')->execute(['id' => $id]);
+                return $response->withHeader('Location', '/catalogue?error=invalid_ticket_payload')->withStatus(302);
+            }
+        }
 
         // Si on vient du constructeur de devis: rediriger vers l'aperçu ou le PDF
         $action = $data['_action'] ?? '';
@@ -173,9 +256,20 @@ class TicketController
 
         // Si la requête provient de la fiche client (autostart), revenir au tableau de bord client
         $referer = $request->getHeaderLine('Referer') ?? '';
-        if (!empty($referer) && strpos($referer, '/clients/') !== false) {
-            $sep = (strpos($referer, '?') === false) ? '?' : '&';
-            return $response->withHeader('Location', $referer . $sep . 'created_ticket=' . $id)->withStatus(302);
+        if (!empty($referer)) {
+            $parsed = parse_url($referer);
+            $path = (string)($parsed['path'] ?? '');
+            if ($path !== '' && strpos($path, '/clients/') !== false) {
+                $queryParams = [];
+                if (!empty($parsed['query'])) {
+                    parse_str((string)$parsed['query'], $queryParams);
+                }
+                // Empêcher la boucle de recréation auto depuis la fiche client.
+                unset($queryParams['autostart'], $queryParams['auto_create'], $queryParams['from']);
+                $queryParams['created_ticket'] = (string)$id;
+                $location = $path . '?' . http_build_query($queryParams);
+                return $response->withHeader('Location', $location)->withStatus(302);
+            }
         }
         // Comportement par défaut: rester sur la page du ticket
         return $response->withHeader('Location', '/tickets/' . $id . '/edit?success=1')->withStatus(302);
@@ -452,19 +546,24 @@ class TicketController
         $status = $query['status'] ?? 'open';
         $activeTab = in_array($status, ['open', 'ready']) ? $status : 'open';
 
-        // Vérifier si la colonne received_at existe
+        // Vérifier si les colonnes existent
         $hasReceived = false;
+        $hasBikeCols = false;
         try {
             $cols = $this->pdo->query("PRAGMA table_info(tickets)")->fetchAll(\PDO::FETCH_ASSOC) ?: [];
             foreach ($cols as $col) {
-                if (strtolower((string)($col['name'] ?? '')) === 'received_at') { $hasReceived = true; break; }
+                if (strtolower((string)($col['name'] ?? '')) === 'received_at') { $hasReceived = true; }
+                if ($col['name'] === 'bike_brand') { $hasBikeCols = true; }
             }
         } catch (\Throwable $e) {}
 
+        // Construire la requête SQL en fonction des colonnes disponibles
+        $bikeSelect = $hasBikeCols ? 't.bike_brand, t.bike_model' : 'NULL as bike_brand, NULL as bike_model';
+        
         // Récupérer les tickets ouverts
         $openTickets = [];
         if ($hasReceived) {
-            $sql = "SELECT t.id, t.client_id, t.bike_brand, t.bike_model, t.status,
+            $sql = "SELECT t.id, t.client_id, $bikeSelect, t.status,
                            t.created_at, t.received_at,
                            c.name AS client_name
                     FROM tickets t
@@ -472,7 +571,7 @@ class TicketController
                     WHERE t.status = 'open'
                     ORDER BY COALESCE(t.received_at, t.created_at) ASC, t.id ASC";
         } else {
-            $sql = "SELECT t.id, t.client_id, t.bike_brand, t.bike_model, t.status,
+            $sql = "SELECT t.id, t.client_id, $bikeSelect, t.status,
                            t.created_at, NULL AS received_at,
                            c.name AS client_name
                     FROM tickets t
@@ -485,7 +584,7 @@ class TicketController
 
         // Récupérer les tickets prêts
         $readyTickets = [];
-        $sqlReady = "SELECT t.id, t.client_id, t.bike_brand, t.bike_model, t.status,
+        $sqlReady = "SELECT t.id, t.client_id, $bikeSelect, t.status,
                             t.created_at, t.updated_at, t.total_ttc,
                             c.name AS client_name
                      FROM tickets t
@@ -569,5 +668,73 @@ class TicketController
 
         // Redirection vers la page d'édition du ticket
         return $response->withHeader('Location', '/tickets/' . $ticketId . '/edit?deleted=1')->withStatus(302);
+    }
+
+    /**
+     * Planifier la récupération d'un ticket
+     * POST /tickets/{id}/plan
+     */
+    public function plan(Request $request, Response $response, array $args): Response
+    {
+        $id = (int)($args['id'] ?? 0);
+        
+        if (!$this->pdo || $id <= 0) {
+            $response->getBody()->write('Ticket introuvable');
+            return $response->withStatus(404);
+        }
+
+        try {
+            $data = (array)$request->getParsedBody();
+            $recoveryDate = $data['recovery_date'] ?? '';
+            
+            if (empty($recoveryDate)) {
+                throw new \Exception('La date de récupération est obligatoire.');
+            }
+
+            // Créer le planning via le service
+            $planningService = new \App\Service\PlanningService($this->pdo);
+            $planningService->createFromTicket($id, [
+                'recovery_date' => $recoveryDate,
+                'notes' => $data['notes'] ?? null
+            ]);
+
+            return $response
+                ->withHeader('Location', "/tickets/{$id}/edit?planned=1")
+                ->withStatus(302);
+
+        } catch (\Exception $e) {
+            return $response
+                ->withHeader('Location', "/tickets/{$id}/edit?error=" . urlencode($e->getMessage()))
+                ->withStatus(302);
+        }
+    }
+
+    /**
+     * Supprimer le planning d'un ticket
+     * POST /tickets/{id}/unplan
+     */
+    public function unplan(Request $request, Response $response, array $args): Response
+    {
+        $id = (int)($args['id'] ?? 0);
+        
+        if (!$this->pdo || $id <= 0) {
+            $response->getBody()->write('Ticket introuvable');
+            return $response->withStatus(404);
+        }
+
+        try {
+            // Supprimer le planning via le service
+            $planningService = new \App\Service\PlanningService($this->pdo);
+            $planningService->deleteByTicketId($id);
+
+            return $response
+                ->withHeader('Location', "/tickets/{$id}/edit?unplanned=1")
+                ->withStatus(302);
+
+        } catch (\Exception $e) {
+            return $response
+                ->withHeader('Location', "/tickets/{$id}/edit?error=" . urlencode($e->getMessage()))
+                ->withStatus(302);
+        }
     }
 }

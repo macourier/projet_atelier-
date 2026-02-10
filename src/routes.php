@@ -128,6 +128,24 @@ return function (App $app, array $container) {
             $response->getBody()->write('Not implemented');
             return $response->withStatus(501);
         });
+        // Planifier la récupération d'un ticket
+        $group->post('/tickets/{id}/plan', function (Request $request, Response $response, $args) use ($container) {
+            $ctrl = new \App\Controller\TicketController($container);
+            if (method_exists($ctrl, 'plan')) {
+                return $ctrl->plan($request, $response, $args);
+            }
+            $response->getBody()->write('Not implemented');
+            return $response->withStatus(501);
+        });
+        // Annuler le planning d'un ticket
+        $group->post('/tickets/{id}/unplan', function (Request $request, Response $response, $args) use ($container) {
+            $ctrl = new \App\Controller\TicketController($container);
+            if (method_exists($ctrl, 'unplan')) {
+                return $ctrl->unplan($request, $response, $args);
+            }
+            $response->getBody()->write('Not implemented');
+            return $response->withStatus(501);
+        });
         // Tickets → Devis / Facturation
         $group->get('/tickets/{id}/devis/preview', function (Request $request, Response $response, $args) use ($container) {
             $ctrl = new \App\Controller\TicketController($container);
